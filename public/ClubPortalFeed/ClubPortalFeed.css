@@ -1,0 +1,106 @@
+#MainSideBar{
+    height: 90%; /* Full-height: remove this if you want "auto" height */
+  width: 200px; /* Set the width of the sidebar */
+  position: fixed; /* Fixed Sidebar (stay in place on scroll) */
+  z-index: 1; /* Stay on top */
+  bottom:0 ; /* Stay at the top */
+  left: 0;
+  border: 1px solid lightgray;
+  overflow-x: hidden; /* Disable horizontal scroll */
+  padding-top: 20px;
+  
+}
+#MainSideBarList{
+    list-style-type: none;
+
+}
+.SidebarItem{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 25px;
+    background-color: aliceblue;
+    display: block;
+    text-decoration: none;/* no underline */
+    padding: 6px 8px 6px 16px;
+    
+    margin-left: -30%;
+    color: gray;
+}
+#HomeHeader{
+    margin-left: -10px;
+    top:0;
+    height:7.3%;
+    width:100%;
+    position: fixed;
+    background-color: rgb(250, 55, 55) ;
+    border: 0.5px solid lightgray;
+
+}
+#homebutton{
+    position:fixed;
+    margin-top: 15px;
+    margin-left: 25px;
+    font-family: Arial, Helvetica, sans-serif;
+    text-decoration: none;
+    background-color: transparent;
+    font-weight: 550;
+    font-size: 1.5em;
+    color: White;
+}
+#SchoolYear{
+    position: fixed;
+    margin-left: 80%;
+    margin-top: 18px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+    font-size: 1em;
+}
+#ProfilePicture{
+    position: fixed;
+    line-height: 15px;
+    margin-left: 90%;
+    top: 10px;
+    
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid white;
+}
+#Name{
+    font-family: Arial, Helvetica, sans-serif;
+    position:fixed;
+    color:white;
+    font-size: 12px;
+    left: 93%;
+    top: 24px;
+}
+.SidebarItem:hover{
+    background-color: #747373;
+    color: black;
+    transition: background-color 0.5s;
+}
+#noclub{
+    position: relative;
+    top: 100px;
+    left: 1650px;
+    transform: translate(-50%, -50%);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 48px;
+    color: gray;
+}
+#exploreclubsbutton{
+    position: relative;
+    top: 150px;
+    left: 52.5%;
+    transform: translate(-50%, -50%);
+    padding: 10px 20px;
+    font-size: 32px;
+    background-color: rgb(250, 55, 55);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width:320px;
+    height:60px;
+    text-decoration: none;
+}

@@ -1,0 +1,138 @@
+#MainSideBar{
+    height: 90%; /* Full-height: remove this if you want "auto" height */
+  width: 200px; /* Set the width of the sidebar */
+  position: fixed; /* Fixed Sidebar (stay in place on scroll) */
+  z-index: 1; /* Stay on top */
+  bottom:0 ; /* Stay at the top */
+  left: 0;
+  border: 1px solid lightgray;
+  overflow-x: hidden; /* Disable horizontal scroll */
+  padding-top: 20px;
+  
+}
+#MainSideBarList{
+    list-style-type: none;
+
+}
+.SidebarItem{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 25px;
+    background-color: aliceblue;
+    display: block;
+    text-decoration: none;/* no underline */
+    padding: 6px 8px 6px 16px;
+    
+    margin-left: -30%;
+    color: gray;
+}
+#HomeHeader{
+    margin-left: -10px;
+    top:0;
+    height:7.3%;
+    width:100%;
+    position: fixed;
+    background-color: rgb(250, 55, 55) ;
+    border: 0.5px solid lightgray;
+
+}
+#homebutton{
+    position:fixed;
+    margin-top: 15px;
+    margin-left: 25px;
+    font-family: Arial, Helvetica, sans-serif;
+    text-decoration: none;
+    background-color: transparent;
+    font-weight: 550;
+    font-size: 1.5em;
+    color: White;
+}
+#SchoolYear{
+    position: fixed;
+    margin-left: 80%;
+    margin-top: 18px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+    font-size: 1em;
+}
+#ProfilePicture{
+    position: fixed;
+    line-height: 15px;
+    margin-left: 90%;
+    top: 10px;
+    
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid white;
+}
+#Name{
+    font-family: Arial, Helvetica, sans-serif;
+    position:fixed;
+    color:white;
+    font-size: 12px;
+    left: 93%;
+    top: 24px;
+}
+.SidebarItem:hover {
+    background-color: #747373;
+    color: black;
+    transition: background-color 0.5s;
+}
+.ContentArea{
+    width: 1500px;
+    height: 300px;
+    border: 2.5px solid rgb(0, 0, 0);
+    position: relative;
+    
+    
+}
+#exampleclub{
+    margin-left:185px;
+    margin-top: 50px;
+    
+}
+#exampleclubbg{
+    
+    background-image: url(../ApplyClub/ExampleClubBgPic.jpg);
+    background-size: 1500px 300px;
+    opacity: 75%;
+    
+}
+#exampleclubbg:hover{
+    
+    transition: 0.5s;
+    opacity: 100%;
+    
+}
+
+.clubphoto{
+    width: 250px;
+    height: 250px;
+    border: 5px solid rgb(255, 255, 255);
+    position: absolute;
+    top: 22.5px;
+    left: 25px;
+    opacity: 100%;
+    background-image: url(../ApplyClub/ExamoleClubProfilePic.jpg);
+    background-size:250px 250px;
+    
+}
+#PageTitle{
+    font-family: myriad pro, sans-serif;
+    font-size: 40px;
+    text-align: center;
+    margin-top: 100px;
+    margin-left: 75px
+}
+.clubname{
+    font-family: myriad pro, sans-serif;
+    font-size: 30px;
+    position: absolute;
+    top: -40px;
+    left: 300px;
+    color: white;
+    text-shadow: 2px 2px 4px #000000;
+    font-size:5em ;
+}
+
