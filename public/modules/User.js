@@ -1,3 +1,5 @@
+//The schema for the user profile in the database
+
 const mongoose = require('mongoose');
 
 const UserProfile = new mongoose.Schema({

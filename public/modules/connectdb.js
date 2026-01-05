@@ -1,3 +1,5 @@
+//modue to connect to the dtaabase
+
 const mongoose = require('mongoose');
 require('dotenv').config();
 

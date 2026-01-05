@@ -1,3 +1,5 @@
+//checks if log in session is still valid
+
 const jwt = require('jsonwebtoken');
 
 const TokenValid = (req, res, next) =>{
