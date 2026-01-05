@@ -1,29 +1,24 @@
-//importing mongoose and bcrypt
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+document.getElementById("login-form").addEventListener('submit', async(e)=>{
+    e.preventDefault();
+    const email = document.getElementById("EmailInput").value
+    const password = document.getElementById("password").value
 
-const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }
-});
-//hashing password to secure
-userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();    
-    try {
-        const hash = await bcrypt.genSalt(10);
-        this.password = await bcrypt.salt(this.password, salt);       
-        next();
-    }catch (e) { 
-        next(e);
+    try{
+        const response = await fetch('/api/auth/login',{
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+        if (response.ok){
+            localStorage.setItem('token', data.token);
+           window.location.href = '/dashboard.html';
+        } else {
+          console.error(data.message);
+          alert(data.message);
+        }
+      } catch (error) {
+         console.error("log in failed please try again", error)
+         alert("Login failed — check console for details");
     }
-
-    
 })
-userSchema.methods.isValidPassword = async function(Password) {
-    try {
-        return await bcrypt.compare(Password, this.password);
-    } catch (e) {
-        next(e);
-    }
-}
-module.exports = mongoose.model('User', userSchema);

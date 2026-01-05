@@ -7,7 +7,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "DevStart": "nodemon server.js"
+    "start": "nodemon server.js"
   },
   "dependencies": {
     "@types/react": "^19.2.7",
@@ -15,6 +15,7 @@
     "axios": "^1.13.2",
     "base64-js": "^1.5.1",
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "bignumber.js": "^9.0.0",
     "bl": "^4.1.0",
     "bootstrap": "^5.3.8",
@@ -75,5 +76,14 @@
   "devDependencies": {
     "dotenv": "^17.2.3",
     "nodemon": "^3.1.11"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nyde14/PR.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/Nyde14/PR/issues"
+  },
+  "homepage": "https://github.com/Nyde14/PR#readme"
 }
