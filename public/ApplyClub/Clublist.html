@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <link rel="stylesheet" href="ApplyClub.css">
+    <link rel="stylesheet" href="Clublist.css">
     <title>Club Portal</title>
 </head>
 <body>
@@ -31,20 +31,12 @@
 
     
         <h1 id="PageTitle">Apply to Clubs</h1>
-    <ul id="clublist">
-    <li><div class="ContentArea" id="exampleclub">
-
-        <div class="ContentArea" id="exampleclubbg"></div>
-            
-        <!-- Content specific to ApplyClub page goes here -->
-         <div class="clubphoto"  id="exampleclubphoto"></div>
-         <h1 class="clubname">Club name</h1>   
-         
-         
+    <div id="ApplyContent">
+      <ul id="clublist"></ul>
+      <p id="no-clubs-msg" style="display:none; text-align:center; margin-top:40px; color:#666">No clubs found.</p>
     </div>
-    </li>
-    </ul>
     
+<script src="Clublist.js"></script>
 <script src="ClubPortalFeed.js"></script>
 </body>
 </html>

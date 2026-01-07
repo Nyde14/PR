@@ -12,7 +12,7 @@ document.getElementById("login-form").addEventListener('submit', async(e)=>{
         const data = await response.json();
         if (response.ok){
             localStorage.setItem('token', data.token);
-           window.location.href = '/dashboard.html';
+           window.location.href = '/ClubPortalFeed/ClubPortalFeed.html';
         } else {
           console.error(data.message);
           alert(data.message);

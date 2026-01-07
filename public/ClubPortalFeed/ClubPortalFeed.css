@@ -1,106 +1,188 @@
-#MainSideBar{
-    height: 90%; /* Full-height: remove this if you want "auto" height */
-  width: 200px; /* Set the width of the sidebar */
-  position: fixed; /* Fixed Sidebar (stay in place on scroll) */
-  z-index: 1; /* Stay on top */
-  bottom:0 ; /* Stay at the top */
-  left: 0;
-  border: 1px solid lightgray;
-  overflow-x: hidden; /* Disable horizontal scroll */
-  padding-top: 20px;
-  
+/* Improved, responsive Club Portal UI */
+:root{
+    --primary: #fa3737;
+    --sidebar-bg: #f8fbff;
+    --muted: #6b7280;
+    --header-h: 64px;
+    --sidebar-w: 240px;
 }
-#MainSideBarList{
-    list-style-type: none;
 
-}
-.SidebarItem{
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 25px;
-    background-color: aliceblue;
-    display: block;
-    text-decoration: none;/* no underline */
-    padding: 6px 8px 6px 16px;
-    
-    margin-left: -30%;
-    color: gray;
-}
+*{ box-sizing: border-box; }
+
+/* Header */
 #HomeHeader{
-    margin-left: -10px;
-    top:0;
-    height:7.3%;
-    width:100%;
     position: fixed;
-    background-color: rgb(250, 55, 55) ;
-    border: 0.5px solid lightgray;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background-color: var(--primary);
+    color: #fff;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
 
-}
 #homebutton{
-    position:fixed;
-    margin-top: 15px;
-    margin-left: 25px;
-    font-family: Arial, Helvetica, sans-serif;
+    background: transparent;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1rem;
     text-decoration: none;
-    background-color: transparent;
-    font-weight: 550;
-    font-size: 1.5em;
-    color: White;
+    border: none;
+    cursor: pointer;
 }
+
 #SchoolYear{
-    position: fixed;
-    margin-left: 80%;
-    margin-top: 18px;
-    font-family: Arial, Helvetica, sans-serif;
-    color: white;
-    font-size: 1em;
+    color: #fff;
+    font-size: 0.95rem;
+    margin-left: 12px;
 }
+
 #ProfilePicture{
-    position: fixed;
-    line-height: 15px;
-    margin-left: 90%;
-    top: 10px;
-    
-    height: 40px;
     width: 40px;
+    height: 40px;
     border-radius: 50%;
     overflow: hidden;
-    border: 2px solid white;
+    border: 2px solid #fff;
+    object-fit: cover;
 }
+
 #Name{
+    color: #fff;
+    font-size: 0.95rem;
+    margin-left: 8px;
+}
+
+/* Sidebar */
+#MainSideBar{
+    position: fixed;
+    top: calc(var(--header-h));
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    padding: 20px 12px;
+    border-right: 1px solid #e6e6e6;
+    overflow-y: auto;
+}
+
+#MainSideBarList{ list-style: none; padding: 0; margin: 0; }
+
+.SidebarItem{
     font-family: Arial, Helvetica, sans-serif;
-    position:fixed;
-    color:white;
-    font-size: 12px;
-    left: 93%;
-    top: 24px;
+    font-size: 1.05rem;
+    display: block;
+    text-decoration: none;
+    padding: 10px 14px;
+    margin: 6px 8px;
+    color: #374151;
+    border-radius: 6px;
+    transition: background-color 180ms ease, transform 120ms ease, color 180ms ease;
 }
+
 .SidebarItem:hover{
-    background-color: #747373;
-    color: black;
-    transition: background-color 0.5s;
+    background-color: rgba(15,99,179,0.08);
+    color: #0f63b3;
+    transform: translateX(4px);
 }
+
+/* Main content helpers */
+/* Center key messages and keep them away from sidebar on wide screens */
+/* Empty state: center call-to-action on the main content area */
+#MainContent.empty-state{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--header-h));
+    padding: 24px;
+    text-align: center;
+    gap: 20px;
+}
+
 #noclub{
-    position: relative;
-    top: 100px;
-    left: 1650px;
-    transform: translate(-50%, -50%);
     font-family: Arial, Helvetica, sans-serif;
     font-size: 48px;
-    color: gray;
+    color: #9ca3af;
+    margin: 0;
 }
+
+/* Make the CTA an anchor styled like a button for accessibility */
 #exploreclubsbutton{
-    position: relative;
-    top: 150px;
-    left: 52.5%;
-    transform: translate(-50%, -50%);
-    padding: 10px 20px;
-    font-size: 32px;
-    background-color: rgb(250, 55, 55);
+    display: inline-block;
+    padding: 12px 28px;
+    font-size: 1.25rem;
+    background-color: var(--primary);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    width:320px;
-    height:60px;
     text-decoration: none;
+    min-width: 220px;
 }
+#exploreclubsbutton.button{ line-height: 1; }
+#exploreclubsbutton:focus,
+#exploreclubsbutton:active,
+#exploreclubsbutton:hover{ opacity: 0.95; transform: translateY(-2px); transition: all 160ms ease; }
+
+/* Layout offset to avoid sidebar overlap on wide screens */
+@media (min-width: 901px){
+    #MainContent.empty-state{ margin-left: var(--sidebar-w); }
+    #noclub{ font-size: 48px; }
+}
+
+@media (max-width: 900px){
+    /* When sidebar becomes horizontal, center normally */
+    #MainContent.empty-state{ margin-left: 0; min-height: calc(100vh - var(--header-h) - 40px); }
+    #noclub{ font-size: 36px; }
+    #exploreclubsbutton{ width: 90%; max-width: 420px; }
+}
+
+@media (max-width: 480px){
+    #noclub{ font-size: 28px; }
+    #exploreclubsbutton{ font-size: 1rem; padding: 10px 18px; height: 52px; }
+}
+
+/* Tablet and smaller: convert sidebar to a horizontal bar */
+@media (max-width: 900px){
+    #MainSideBar{
+        position: relative;
+        width: 100%;
+        height: auto;
+        display: flex;
+        flex-wrap: wrap;
+        padding: 8px;
+        border-right: none;
+        border-bottom: 1px solid #e6e6e6;
+    }
+
+    .SidebarItem{ display: inline-block; margin: 6px 10px; }
+
+    #noclub{
+        margin-top: 40px;
+        font-size: 36px;
+        margin-left: 16px;
+        text-align: center;
+    }
+
+    #exploreclubsbutton{ width: 90%; max-width: 420px; margin-left: auto; margin-right: auto; }
+
+    #Name{ display: none; }
+}
+
+/* Small phones */
+@media (max-width: 480px){
+    #HomeHeader{ height: 56px; }
+    :root{ --header-h: 56px; }
+    #noclub{ font-size: 28px; margin-top: 32px; }
+    .SidebarItem{ font-size: 0.95rem; padding: 8px 10px; }
+    #exploreclubsbutton{ font-size: 1rem; height: 52px; }
+    #ProfilePicture{ width: 34px; height: 34px; }
+}
+
+/* Small visual improvements */
+.SidebarItem.active{ background-color: rgba(15,99,179,0.12); color: #0f63b3; }
