@@ -4,26 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UE Club Portal | Log in</title>
-    <link rel ="icon" type="image/png" href="" />
+    <link rel="icon" type="image/png" href="/public/favicon.png">
     <link rel="stylesheet" href="../Login/Login.css">
     
 </head>
 <body>
-    
+    <body>
+        <div id="IntroOverlay">
+        <video id="IntroVideo" autoplay muted playsinline>
+            <source src="intro.mp4" type="video/mp4">
+        </video>
+    </div>
     <form id="login-form">
+    <div class="slideshow-container">
+        <div class="slideshow-overlay"></div>
+        
+        <img src="ue_bg1.jpg" class="slide">
+        <img src="ue_bg2.jpg" class="slide">
+        <img src="ue_bg3.gif" class="slide">
+    </div>
     
-        <h2 id="logintxt">CLUB PORTAL</h2>
+    <img src="logo.png" id="LoginLogo" alt="Club Logo">
+        <h2 id="logintxt">UE CLUB PORTAL</h2>
 
         <input type="text" id="EmailInput" class="input-field" placeholder="Your UE Gmail" required>
         
         <input type="password" id="password" class="input-field" placeholder="Password" required>
         
         <a href="" id="forgotpass">Forgot password?</a>
-
+        <div id="LoginMessage" style="display:none; color: #dc3545; background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin-bottom: 15px; border-radius: 5px; text-align: center; font-size: 0.9rem;"></div>
         <button id="loginbtn" type="submit">Log In</button>
+            <p class="signup-link" style="text-align: center; margin-top: 15px;">
+    Don't have an account? <a href="/Register/Register.html">Sign Up</a>
+</p>
 
     </form>
 
+<div id="ForgotModal" class="modal-overlay">
+    <div class="modal-box">
+        <span class="close-modal" onclick="closeModal()">×</span>
+        
+        <div id="Step1">
+            <h3>Reset Password</h3>
+            <p>Enter your email to receive a code.</p>
+            <input type="email" id="ForgotEmail" class="input-field" placeholder="Enter your email">
+            <button id="SendOtpBtn" onclick="requestOTP()">Send Code</button>
+        </div>
+
+        <div id="Step2" style="display: none;">
+            <h3>Verify Code</h3>
+            <p>Check your email for the 6-digit code.</p>
+            <input type="text" id="OtpInput" class="input-field" placeholder="6-Digit Code">
+            <input type="password" id="NewPassInput" class="input-field" placeholder="New Password">
+            <button id="ResetBtn" onclick="resetPassword()">Reset Password</button>
+        </div>
+        
+        <div id="ModalMessage" style="margin-top:10px; font-size:0.9rem;"></div>
+    </div>
+</div>
 <script src = "Login.js"></script>
 
 </body> 

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Inbox</title>
+    <link rel="stylesheet" href="../ClubPortalFeed/ClubPortalFeed.css">
+    <link rel="stylesheet" href="Inbox.css">
+</head>
+<body>
+    <div id="HomeHeader">
+        <div id="UserProfile">
+            <div id="StatusBadge" class="status-badge">Checking...</div>
+            <div id="Name">Name</div>
+        </div>
+        <a href="/ClubPortalFeed/ClubPortalFeed.html" id="homebutton">UE Club Portal</a>
+        <p id="SchoolYear">Messages</p>
+    </div>
+
+    <nav id="MainSideBar">
+        <ul id="MainSideBarList">
+            <li><a href="/ClubPortalFeed/ClubPortalFeed.html" class="SidebarItem">Home</a></li>
+            <li><a href="/ApplyClub/Clublist.html" class="SidebarItem">Clubs</a></li>
+            <li><a href="/TeacherDashboard/ClubAdviserDashboard.html" class="SidebarItem">Club Dashboard</a></li>
+            <li><a href="#" class="SidebarItem active">Messages</a></li>
+            <li><a href="/Login/Login.html" class="SidebarItem">Log out</a></li>
+        </ul>
+    </nav>
+
+    <main id="MainContent">
+        <div class="inbox-container">
+            
+            <h3>Club Group Chat</h3>
+            <div id="ClubGroupContainer">
+                <p class="DirectMessagesList">Loading club info...</p>
+            </div>
+
+            <div class="dm-header">
+                <h3>Direct Messages</h3>
+                <button id="NewChatBtn" onclick="openUserList()">+ New Message</button>
+            </div>
+            
+            <div id="DirectMessagesList">
+                <p class="empty-text">No private messages yet.</p>
+            </div>
+
+        </div>
+    </main>
+    
+<div id="UserListModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeUserList()">&times;</span>
+        <h3>Start a Conversation</h3>
+        
+        <input type="text" id="UserSearchInput" placeholder="Search name..." onkeyup="filterContacts()">
+        
+        <div id="AvailableUsersList">Loading...</div>
+    </div>
+</div>
+
+    <script src="/Global.js"></script>
+    <script src="inbox.js"></script>
+</body>
+</html>

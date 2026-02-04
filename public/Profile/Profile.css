@@ -1,8 +1,0 @@
-#ProfileContainer{max-width:900px;margin:40px auto;padding:20px;border:1px solid #ddd;border-radius:8px;background:#fff}
-#ProfileHeader{display:flex;align-items:center;gap:20px}
-#ProfilePicture{width:96px;height:96px;border-radius:50%;background-color:#eee;background-size:cover;background-position:center}
-#ProfileName{font-size:24px;font-weight:700}
-#ProfileMeta{color:#555}
-#ProfileBio{margin-top:20px;white-space:pre-wrap}
-#ProfileActions{margin-top:16px}
-#EditProfileBtn{padding:8px 12px;border-radius:6px}

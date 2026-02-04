@@ -1,42 +1,107 @@
-<!DOCTYPE html> 
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <link rel="stylesheet" href="Clublist.css">
-    <title>Club Portal</title>
+    <title>All Clubs</title>
+    <link rel="stylesheet" href="../ClubPortalFeed/ClubPortalFeed.css">
+    <link rel="stylesheet" href="../ApplyClub/Clublist.css"
+    <link rel="stylesheet" href="../FollowedClubs/FollowedClubs.css"> 
 </head>
 <body>
-    <div id="MainSideBar">
-        <ul id = "MainSideBarList">
-            <li><a href="" class="SidebarItem">Home</a></li>
-            <li><a href="" class="SidebarItem">Clubs</a></li>
-            <li><a href="" class="SidebarItem">Messages</a></li>
-            <li><a href="/Login/Login.html" class="SidebarItem">Log out</a></li>
-         
-        </ul>
-    </div>
-    <div id="HomeHeader">
-        <a href="" id="homebutton">UE Club Portal</a>
-        <p id="SchoolYear">School Year 2025-2026</p>
-        <div id="UserProfile">
-            <div id="ProfilePicture">
-                
-            </div>
-        <div id="Name">Name</p>
-            
-    </div>
-    
 
-    
-        <h1 id="PageTitle">Apply to Clubs</h1>
-    <div id="ApplyContent">
-      <ul id="clublist"></ul>
-      <p id="no-clubs-msg" style="display:none; text-align:center; margin-top:40px; color:#666">No clubs found.</p>
+    <nav id="MainSideBar">
+        <ul id="MainSideBarList">
+            </ul>
+    </nav>
+
+    <div id="HomeHeader">
+        <div id="UserProfile">
+            <div id="StatusBadge" class="status-badge">Student</div>
+            <div id="Name">Loading...</div>
+        </div>
+        <a href="../ClubPortalFeed/ClubPortalFeed.html" id="homebutton">UE Club Portal</a>
+        <p id="SchoolYear">Club List</p>
+    </div>
+<main id="MainContent">
+    <div class="club-page-layout">
+        
+        <div class="club-list-section">
+            <div class="header-card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+    <div>
+        <h2 style="margin:0;">Explore Clubs</h2>
+        <p style="margin:5px 0 0; color:#666;">Find and join organizations.</p>
     </div>
     
-<script src="Clublist.js"></script>
-<script src="ClubPortalFeed.js"></script>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="text" id="ClubSearchInput" onkeyup="filterClubs()" 
+               placeholder="🔍 Search clubs..." 
+               style="padding: 10px 15px; width: 250px; border-radius: 20px; border: 1px solid #ccc; outline: none;">
+        
+        <button onclick="openFilterModal()" class="filter-btn" title="Filter & Sort">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line>
+                <line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+        </button>
+    </div>
+</div>
+
+            <div id="ClubsGrid" class="clubs-grid">
+                <p style="text-align:center; padding:20px;">Loading clubs...</p>
+            </div>
+        </div>
+
+        <aside class="recommendations-sidebar">
+            <h3>You Might also Like</h3>
+            <div id="RecommendationList">
+                <p style="color:#888; font-size:0.9rem;">Finding hidden gems...</p>
+            </div>
+        </aside>
+
+    </div>
+</main>
+<div id="FilterModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Refine Results</h3>
+            <span class="close-modal" onclick="closeFilterModal()">×</span>
+        </div>
+        
+        <div class="modal-body">
+            <div class="filter-section">
+                <h4>Sort By</h4>
+                <div class="radio-group">
+                    <label><input type="radio" name="sortOrder" value="az" checked> Name (A-Z)</label>
+                    <label><input type="radio" name="sortOrder" value="za"> Name (Z-A)</label>
+                    <label><input type="radio" name="sortOrder" value="members_high"> Most Members</label>
+                    <label><input type="radio" name="sortOrder" value="members_low"> Fewest Members</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h4>Category</h4>
+                <div class="tags-container">
+                    <button class="filter-tag" onclick="toggleTag(this, 'Academic')">Academic</button>
+                    <button class="filter-tag" onclick="toggleTag(this, 'Sports')">Sports</button>
+                    <button class="filter-tag" onclick="toggleTag(this, 'Social')">Social</button>
+                    <button class="filter-tag" onclick="toggleTag(this, 'Arts')">Arts</button>
+                    <button class="filter-tag" onclick="toggleTag(this, 'Performance')">Performance</button>
+                    <button class="filter-tag" onclick="toggleTag(this, 'Tech')">Tech</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="clear-btn" onclick="clearFilters()">Reset</button>
+            <button class="apply-btn" onclick="applyFilters()">Apply Filters</button>
+        </div>
+    </div>
+</div>
+    <script src="/Global.js"></script>
+    <script src="Clublist.js"></script>
 </body>
 </html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club Chat</title>
+    
+    <link rel="stylesheet" href="/public/ClubChat/ClubChat.css">
+    <link rel="stylesheet" href="/public/ClubPortalFeed/ClubPortalFeed.css">
+    
+    
+</head>
+<body>
+    <div id="HomeHeader">
+        <div id="UserProfile">
+            <div id="StatusBadge" class="status-badge">Checking...</div>
+            <div id="Name">Student Name</div>
+        </div>
+        <a href="/ClubPortalFeed/ClubPortalFeed.html" id="homebutton">UE Club Portal</a>
+        <p id="SchoolYear">SY 2025-2026</p>
+    </div>
+
+    <nav id="MainSideBar">
+        <ul id="MainSideBarList">
+            <li><a href="/ClubPortalFeed/ClubPortalFeed.html" class="SidebarItem">Home</a></li>
+            <li><a href="/ApplyClub/Clublist.html" class="SidebarItem">Clubs</a></li>
+            <li><a href="/ClubChat/ChatInbox.html" class="SidebarItem">Messages</a></li>
+            <li><a href="/Login/Login.html" class="SidebarItem">Log out</a></li>
+        </ul>
+    </nav>
+
+    <main id="MainContent">
+        <div class="club-chat-container">
+            <div class="chat-header">
+                <h2 id="ChatTitle" style="margin:0; font-size:1.2rem;">Loading Chat...</h2>
+            </div>
+
+            <div id="MessageArea">
+                <p style="text-align:center; color:#888; margin-top:50px;">Connecting...</p>
+            </div>
+
+            <div id="FilePreview">
+    <div id="PreviewContainer">
+        </div>
+
+    <div class="preview-info">
+        <span id="FileName"></span>
+        <span id="FileType" class="file-type-label"></span>
+    </div>
+
+    <button onclick="clearFile()" class="remove-preview-btn" title="Remove File">✕</button>
+</div>
+
+            <div class="chat-input-area">
+                <input type="file" id="MediaInput" style="display: none;">
+
+                <label for="MediaInput" class="attach-btn" title="Attach File">📎</label>
+
+                <input type="text" id="MessageInput" placeholder="Type a message..." autocomplete="off">
+                
+                <button id="SendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="/Global.js"></script>
+    <script src="/public/ClubChat/ClubChat.js"></script>
+</body>
+</html>

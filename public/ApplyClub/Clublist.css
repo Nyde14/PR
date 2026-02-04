@@ -1,139 +1,269 @@
-#MainSideBar{
-    height: 90%; /* Full-height: remove this if you want "auto" height */
-  width: 200px; /* Set the width of the sidebar */
-  position: fixed; /* Fixed Sidebar (stay in place on scroll) */
-  z-index: 1; /* Stay on top */
-  bottom:0 ; /* Stay at the top */
-  left: 0;
-  border: 1px solid lightgray;
-  overflow-x: hidden; /* Disable horizontal scroll */
-  padding-top: 20px;
-  
+:root {
+    --primary: #fa3737;
+    --sidebar-bg: #f8fbff;
+    --header-h: 64px;
+    --sidebar-w: 240px;
+    --card-height: 280px; /* Consistent height for cards */
 }
-#MainSideBarList{
-    list-style-type: none;
 
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
-.SidebarItem{
+
+body {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 25px;
-    background-color: aliceblue;
-    display: block;
-    text-decoration: none;/* no underline */
-    padding: 6px 8px 6px 16px;
-    
-    margin-left: -30%;
-    color: gray;
+    background-color: #f4f4f4;
+    padding-top: var(--header-h); /* Prevent content hiding behind header */
 }
-#HomeHeader{
-    margin-left: -10px;
-    top:0;
-    height:7.3%;
-    width:100%;
+
+/* --- HEADER --- */
+#HomeHeader {
     position: fixed;
-    background-color: rgb(250, 55, 55) ;
-    border: 0.5px solid lightgray;
-
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background-color: var(--primary);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    z-index: 1000;
 }
-#homebutton{
-    position:fixed;
-    margin-top: 15px;
-    margin-left: 25px;
-    font-family: Arial, Helvetica, sans-serif;
+
+#homebutton {
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
     text-decoration: none;
-    background-color: transparent;
-    font-weight: 550;
-    font-size: 1.5em;
-    color: White;
-}
-#SchoolYear{
-    position: fixed;
-    margin-left: 80%;
-    margin-top: 18px;
-    font-family: Arial, Helvetica, sans-serif;
-    color: white;
-    font-size: 1em;
-}
-#ProfilePicture{
-    position: fixed;
-    line-height: 15px;
-    margin-left: 90%;
-    top: 10px;
-    
-    height: 40px;
-    width: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 2px solid white;
-}
-#Name{
-    font-family: Arial, Helvetica, sans-serif;
-    position:fixed;
-    color:white;
-    font-size: 12px;
-    left: 93%;
-    top: 24px;
-}
-.SidebarItem:hover {
-    background-color: #747373;
-    color: black;
-    transition: background-color 0.5s;
-}
-.ContentArea{
-    width: 1500px;
-    height: 300px;
-    border: 2.5px solid rgb(0, 0, 0);
-    position: relative;
-    
-    
-}
-#exampleclub{
-    margin-left:185px;
-    margin-top: 50px;
-    
-}
-#exampleclubbg{
-    
-    background-image: url(../ApplyClub/ExampleClubBgPic.jpg);
-    background-size: 1500px 300px;
-    opacity: 75%;
-    
-}
-#exampleclubbg:hover{
-    
-    transition: 0.5s;
-    opacity: 100%;
-    
 }
 
-.clubphoto{
-    width: 250px;
-    height: 250px;
-    border: 5px solid rgb(255, 255, 255);
-    position: absolute;
-    top: 22.5px;
-    left: 25px;
-    opacity: 100%;
-    background-image: url(../ApplyClub/ExamoleClubProfilePic.jpg);
-    background-size:250px 250px;
-    
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
-#PageTitle{
-    font-family: myriad pro, sans-serif;
-    font-size: 40px;
-    text-align: center;
-    margin-top: 100px;
-    margin-left: 75px
-}
-.clubname{
-    font-family: myriad pro, sans-serif;
-    font-size: 30px;
-    position: absolute;
-    top: -40px;
-    left: 300px;
+
+#SchoolYear {
     color: white;
-    text-shadow: 2px 2px 4px #000000;
-    font-size:5em ;
+    font-size: 0.9rem;
+}
+
+#UserProfile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#ProfilePicture {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid white;
+    object-fit: cover;
+    background-color: #ddd; /* Fallback color */
+}
+
+#Name {
+    color: white;
+    font-size: 0.9rem;
+}
+
+/* --- SIDEBAR --- */
+#MainSideBar {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    padding: 20px 10px;
+    border-right: 1px solid #e6e6e6;
+    overflow-y: auto;
+    z-index: 900;
+}
+
+#MainSideBarList {
+    list-style: none;
+}
+
+.SidebarItem {
+    display: block;
+    text-decoration: none;
+    padding: 12px 16px;
+    margin-bottom: 5px;
+    color: #555;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.SidebarItem:hover, .SidebarItem.active {
+    background-color: rgba(250, 55, 55, 0.1); /* Light red tint */
+    color: var(--primary);
+    transform: translateX(5px);
+}
+
+/* --- MAIN CONTENT (The Grid) --- */
+#MainContent {
+    margin-left: var(--sidebar-w); /* Push content right */
+    padding: 30px;
+    min-height: calc(100vh - var(--header-h));
+}
+
+.page-title {
+    font-family: "Myriad Pro", Arial, sans-serif;
+    margin-bottom: 25px;
+    color: #333;
+}
+
+/* GRID SETUP - Automatically adjusts columns */
+.clubs-grid {
+    display: grid;
+    /* This creates as many columns as fit, minimum 350px wide each */
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+    gap: 25px;
+}
+
+/* --- CARD DESIGN (Based on your request) --- */
+.club-card {
+    position: relative;
+    height: var(--card-height);
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.club-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    border-color: var(--primary);
+}
+
+/* Background Image */
+.card-bg {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.75;
+    transition: opacity 0.5s;
+}
+
+.club-card:hover .card-bg {
+    opacity: 1; /* Brighten on hover */
+}
+
+/* Info container overlay */
+.card-info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allows clicks to go through */
+}
+
+/* Club Logo (Circle) */
+.club-logo {
+    width: 100px;
+    height: 100px;
+    border: 4px solid white;
+    border-radius: 50%; /* Make it circular like a profile pic */
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-size: cover;
+    background-position: center;
+    background-color: #eee;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Club Name */
+.club-name {
+    font-family: "Myriad Pro", Arial, sans-serif;
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
+    text-align: right;
+    color: white;
+    font-size: 2.5rem;
+    text-shadow: 2px 2px 4px #000000; /* Black shadow for readability */
+    margin: 0;
+    line-height: 1;
+}
+
+/* Full card clickable link */
+.card-link {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 2;
+}
+
+/* --- RESPONSIVE MEDIA QUERIES --- */
+
+/* Tablet (Max width 900px) */
+@media (max-width: 900px) {
+    #MainSideBar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        top: 0;
+        display: flex;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+        padding: 10px;
+    }
+    
+    #MainSideBarList {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .SidebarItem:hover {
+        transform: translateY(-2px); /* Move up instead of right */
+    }
+
+    #MainContent {
+        margin-left: 0; /* Remove sidebar margin */
+        padding: 20px;
+    }
+    
+    .club-name {
+        font-size: 2rem;
+    }
+}
+
+/* Mobile (Max width 600px) */
+@media (max-width: 600px) {
+    #Name, #SchoolYear {
+        display: none; /* Simplify header */
+    }
+    
+    .clubs-grid {
+        grid-template-columns: 1fr; /* Stack cards vertically */
+    }
+    
+    .club-card {
+        height: 220px; /* Slightly shorter cards on phone */
+    }
+    
+    .club-logo {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .club-name {
+        font-size: 1.8rem;
+    }
 }
 
 /* New club list styles */
@@ -159,4 +289,577 @@
   .club-info{ padding: 12px; }
   .join-btn{ width: 100%; }
 }
+.status-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    margin-right: 10px;
+    text-transform: uppercase;
+    display: inline-block;
+}
+/* This pushes the content down so it doesn't hide behind the red header */
+main, .dashboard-container, .profile-container {
+    margin-top: var(--header-h); 
+    padding-top: 20px;
+}
 
+/* If the page has a sidebar, ensure the content stays to the right */
+@media (min-width: 901px) {
+    main, .dashboard-container {
+        margin-left: var(--sidebar-w);
+    }
+}
+/* Add this to Clublist.css */
+
+.club-short-desc {
+    font-size: 0.9rem;
+    color: #6b7280; /* Gray text for description */
+    margin-top: 8px;
+    line-height: 1.4;
+    
+    /* Limit to 2 lines and add "..." if it's too long */
+    display: -webkit-box;
+    
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 10px; /* Add some side padding */
+}
+
+/* Adjust card info to handle the extra text */
+.card-info {
+    text-align: center;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.club-name {
+    margin-bottom: 4px; /* Reduce gap between name and description */
+}
+/* Base Badge Style */
+.status-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: white !important; /* Text always white */
+    display: inline-block;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+/* 1. Gray for "No Club" */
+.status-badge.gray {
+    background-color: #6b7280 !important; 
+}
+
+/* 2. Yellow for "Pending" */
+.status-badge.yellow {
+    background-color: #f59e0b !important; 
+}
+
+/* 3. Green for "Active Club" */
+.status-badge.green {
+    background-color: #10b981 !important; 
+}
+.club-page-layout {
+    display: flex;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: flex-start; /* Keeps sidebar at top */
+}
+
+.club-list-section {
+    flex: 1; /* Takes up remaining space */
+}
+
+/* =========================================
+   RIGHT SIDEBAR (Recommendations)
+   ========================================= */
+.recommendations-sidebar {
+    width: 320px; /* Fixed width */
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+    position: sticky;
+    top: 100px; /* Stays visible while scrolling */
+}
+
+.recommendations-sidebar h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    color: #333;
+    border-bottom: 2px solid #fa3737;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+/* MINI CARD STYLE */
+.mini-club-card {
+    background: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.mini-club-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    background: white;
+    border-color: #fa3737;
+}
+
+.mini-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.mini-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    background: #ccc;
+}
+
+.mini-info h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.mini-members {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.mini-post-snippet {
+    font-size: 0.8rem;
+    color: #555;
+    background: white;
+    padding: 8px;
+    border-radius: 5px;
+    border-left: 3px solid #fa3737;
+    margin-top: 8px;
+    
+    /* TRUNCATE LOGIC */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;             /* <--- ADD THIS LINE TO FIX THE WARNING */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+/* Responsive: Hide sidebar on small screens */
+@media (max-width: 900px) {
+    .recommendations-sidebar { display: none; }
+    .club-page-layout { display: block; }
+}
+.club-page-layout {
+    display: flex;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: flex-start; /* Keeps sidebar at top */
+}
+
+.club-list-section {
+    flex: 1; /* Takes up remaining space (Left Side) */
+    min-width: 0; /* Prevents grid overflow issues */
+}
+
+/* =========================================
+   THE GRID (Left Side)
+   ========================================= */
+.clubs-grid {
+    display: grid;
+    /* Responsive columns: min 280px wide */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+    gap: 20px;
+}
+
+/* =========================================
+   CLUB CARD DESIGN (Matches your JS)
+   ========================================= */
+.club-card {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    height: 280px; /* Fixed height for uniformity */
+    position: relative;
+}
+
+.club-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    border-color: var(--primary);
+}
+
+/* 1. Banner Image */
+.card-banner {
+    height: 100px;
+    background-size: cover;
+    background-position: center;
+    background-color: #eee;
+}
+
+/* 2. Floating Logo */
+.card-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid white;
+    background-size: cover;
+    background-position: center;
+    background-color: #fff;
+    margin-top: -30px; /* Pull it up into the banner */
+    margin-left: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 2;
+}
+
+/* 3. Text Content */
+.card-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+    padding: 10px 15px 0;
+    
+    /* Truncate name if too long */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-category {
+    font-size: 0.85rem;
+    color: #888;
+    padding: 0 15px;
+    margin-bottom: 10px;
+}
+
+/* 4. Action Button (Bottom) */
+.card-actions {
+    margin-top: auto; /* Push to bottom */
+    padding: 15px;
+    border-top: 1px solid #f9f9f9;
+    text-align: right;
+}
+
+.visit-btn {
+    font-size: 0.8rem;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: bold;
+    display: inline-block;
+}
+body.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+/* 1. Sidebar Dark Mode */
+body.dark-mode .recommendations-sidebar {
+    background-color: #1e1e1e; /* Darker gray background */
+    border-color: #333;
+    color: #e0e0e0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .recommendations-sidebar h3 {
+    color: #fff;
+    border-bottom-color: #fa3737; /* Keep accent red */
+}
+
+body.dark-mode .recommendations-sidebar p {
+    color: #aaa;
+}
+
+/* 2. Mini Cards (Inside Sidebar) */
+body.dark-mode .mini-club-card {
+    background-color: #2a2a2a;
+    border-color: #444;
+}
+
+body.dark-mode .mini-club-card:hover {
+    background-color: #333;
+    border-color: #fa3737;
+}
+
+body.dark-mode .mini-info h4 {
+    color: #fff;
+}
+
+body.dark-mode .mini-members {
+    color: #bbb;
+}
+
+body.dark-mode .mini-post-snippet {
+    background-color: #383838; /* Slightly lighter than card */
+    color: #ccc;
+    border-left-color: #fa3737;
+}
+
+/* 3. Main Club Grid (Left Side) Dark Mode */
+body.dark-mode .club-card {
+    background-color: #1e1e1e;
+    border-color: #333;
+}
+
+body.dark-mode .card-name {
+    color: #fff;
+}
+
+body.dark-mode .card-category {
+    color: #aaa;
+}
+
+body.dark-mode .card-actions {
+    border-top-color: #333;
+}
+
+/* 4. Search Bar & Header */
+body.dark-mode .header-card h2 {
+    color: #fff;
+}
+
+body.dark-mode .header-card p {
+    color: #aaa;
+}
+
+body.dark-mode #ClubSearchInput {
+    background-color: #2a2a2a;
+    color: white;
+    border-color: #444;
+}
+
+body.dark-mode #ClubSearchInput::placeholder {
+    color: #888;
+}
+.mini-media-thumb {
+    width: 100%;
+    height: 120px; /* Fixed height for consistency */
+    background-size: cover;
+    background-position: center;
+    border-radius: 6px;
+    margin-top: 10px;
+    border: 1px solid #eee;
+}
+
+.mini-video-placeholder {
+    width: 100%;
+    height: 120px;
+    background-color: #000;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+/* Dark Mode Support */
+body.dark-mode .mini-media-thumb {
+    border-color: #444;
+    opacity: 0.9;
+}
+.filter-btn {
+    background: white;
+    border: 1px solid #ccc;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #555;
+}
+
+.filter-btn:hover {
+    border-color: #fa3737;
+    color: #fa3737;
+    background: #fff0f0;
+}
+
+/* =========================================
+   MODAL STYLES
+   ========================================= */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10vh auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 { margin: 0; font-size: 1.1rem; color: #333; }
+
+.close-modal {
+    font-size: 28px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+}
+.close-modal:hover { color: #fa3737; }
+
+.modal-body { padding: 20px; }
+
+.filter-section { margin-bottom: 25px; }
+.filter-section h4 { 
+    margin: 0 0 10px; 
+    font-size: 0.9rem; 
+    color: #666; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+}
+
+/* Radio Buttons */
+.radio-group { display: flex; flex-direction: column; gap: 8px; }
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    color: #333;
+}
+
+/* Filter Tags */
+.tags-container { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.filter-tag {
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: #555;
+    transition: all 0.2s;
+}
+
+.filter-tag:hover { background: #e0e0e0; }
+
+.filter-tag.selected {
+    background: #fa3737;
+    color: white;
+    border-color: #fa3737;
+}
+
+/* Footer Buttons */
+.modal-footer {
+    padding: 15px 20px;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+}
+
+.clear-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.apply-btn {
+    background: #fa3737;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Dark Mode Support for Modal */
+body.dark-mode .modal-content { background-color: #1e1e1e; color: #fff; }
+body.dark-mode .modal-header { border-bottom-color: #333; }
+body.dark-mode .modal-header h3 { color: #fff; }
+body.dark-mode .radio-group label { color: #ccc; }
+body.dark-mode .filter-tag { background: #333; border-color: #444; color: #ccc; }
+body.dark-mode .filter-tag.selected { background: #fa3737; color: white; }
+body.dark-mode .modal-footer { background: #2a2a2a; border-top-color: #333; }
+
+.message-bubble.deleted-visible {
+    border: 2px dashed #fa3737 !important; /* Red dashed border */
+    background-color: #fff5f5 !important;
+    opacity: 0.9;
+    position: relative;
+}
+
+.message-bubble.deleted-visible::before {
+    content: "(Deleted)";
+    display: block;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #fa3737;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+/* 2. Student View (Hidden content) */
+.message-bubble.deleted-hidden {
+    background-color: #f0f0f0 !important;
+    color: #999 !important;
+    font-style: italic;
+    border: 1px solid #e5e7eb;
+}
+
+/* Dark Mode Support */
+body.dark-mode .message-bubble.deleted-visible {
+    background-color: #3a1515 !important; /* Dark Red */
+    border-color: #fa3737 !important;
+    color: #ddd !important;
+}
+
+body.dark-mode .message-bubble.deleted-hidden {
+    background-color: #2c2c2c !important;
+    color: #666 !important;
+    border-color: #444 !important;
+}

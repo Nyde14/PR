@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration - UE Club Portal</title>
+    <link rel="stylesheet" href="Register.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        .email-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .small-btn {
+            padding: 0 15px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.3s;
+        }
+
+        .small-btn:hover {
+            background-color: #555;
+        }
+
+        .small-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* Style for the code input to look distinctive */
+        #regOtp {
+            text-align: center;
+            letter-spacing: 4px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-box">
+            <div class="form-header">
+                <h2>Create Account</h2>
+                <p>Join the UE Club Community</p>
+            </div>
+
+            <form id="RegisterForm">
+                
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="regName" placeholder="Juan Dela Cruz" required>
+                </div>
+
+                <div class="input-group">
+                    <label>UE Email Address</label>
+                    <div class="email-row">
+                        <input 
+                            type="email" 
+                            id="regEmail" 
+                            placeholder="student@ue.edu.ph" 
+                            pattern=".+@ue\.edu\.ph" 
+                            title="Please use your official UE email address (ending in @ue.edu.ph)"
+                            required
+                        >
+                        <button type="button" id="sendOtpBtn" class="small-btn">Send Code</button>
+                    </div>
+                </div>
+
+                <div class="input-group" id="otpGroup" style="display: none;">
+                    <label>Verification Code</label>
+                    <input type="text" id="regOtp" placeholder="123456" maxlength="6">
+                    <small style="color: #666; font-size: 0.8rem; display:block; margin-top:5px;">
+                        Check your UE email for the 6-digit code.
+                    </small>
+                </div>
+
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" placeholder="Minimum 6 characters" minlength="6" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" placeholder="Re-enter password" required>
+                </div>
+
+                <button type="submit" class="register-btn">Sign Up</button>
+                
+                <p class="login-link">
+                    Already have an account? <a href="/Login/Login.html">Log In</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script src="Register.js"></script>
+</body>
+</html>

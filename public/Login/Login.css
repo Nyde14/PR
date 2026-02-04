@@ -76,3 +76,150 @@ body{
     .input-field{ font-size: 1rem; padding: 10px; }
     #loginbtn{ font-size: 1rem; padding: 10px; }
 }
+/* =========================================
+   CUSTOM "WD" LOGO STYLES
+   ========================================= */
+
+#IntroOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff; /* White background */
+    z-index: 9999; /* Sit on top of everything */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.8s ease; /* Smooth fade out */
+}
+
+#IntroVideo {
+    width: 100%;
+    max-width: 800px; /* Limits video size so it doesn't look huge on desktop */
+    height: auto;
+    
+    /* This ensures the video's white background blends perfectly with the overlay */
+    mix-blend-mode: multiply; 
+}
+
+/* Class to trigger the fade out */
+.fade-out {
+    opacity: 0;
+    pointer-events: none; /* Let clicks pass through */
+}
+.slideshow-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Puts it BEHIND everything */
+    background-color: #1a1a1a; /* Fallback color */
+}
+
+/* Dark Tint Overlay */
+.slideshow-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(250, 80, 80, 0.6);
+    
+    z-index: 1; /* Sits on top of images */
+}
+
+.slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures image covers screen without stretching */
+    opacity: 0; /* Hidden by default */
+    z-index: 0;
+    
+    /* Animation: 15s total loop (5s per image) */
+    animation: slideFade 15s infinite;
+}
+
+/* TIMING LOGIC:
+   We have 3 images. Total Loop = 15s.
+   Each image waits its turn to start.
+*/
+
+.slide:nth-child(2) {
+    animation-delay: 0s;
+}
+
+.slide:nth-child(3) {
+    animation-delay: 5s; /* Starts after 1st image finishes its show */
+}
+
+.slide:nth-child(4) {
+    animation-delay: 10s; /* Starts after 2nd image finishes */
+}
+
+/* =========================================
+   KEYFRAME ANIMATION
+   ========================================= */
+
+@keyframes slideFade {
+    0% { opacity: 0; transform: scale(1); }
+    10% { opacity: 1; }      /* Fade In */
+    33% { opacity: 1; }      /* Stay Visible */
+    43% { opacity: 0; transform: scale(1.05); } /* Fade Out + Subtle Zoom */
+    100% { opacity: 0; }     /* Stay Hidden */
+}
+.modal-overlay {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-box {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-box h3 { margin-top: 0; color: #fa3737; }
+.modal-box p { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+
+.close-modal {
+    position: absolute;
+    top: 10px; right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+}
+.close-modal:hover { color: #333; }
+
+/* Reuse your existing button style but specific for modal */
+#SendOtpBtn, #ResetBtn {
+    width: 100%;
+    background-color: #fa3737;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 10px;
+}
+#SendOtpBtn:hover, #ResetBtn:hover { background-color: #d62f2f; }
+#LoginLogo {
+    display: block;        /* Allows us to use margin auto */
+    margin: 0 auto 15px;   /* Top:0, Side:Auto (Center), Bottom:15px */
+    width: 80px;           /* Adjust this to change logo size */
+    height: auto;          /* Maintains aspect ratio */
+}

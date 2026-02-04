@@ -10,53 +10,58 @@
 *{ box-sizing: border-box; }
 
 /* Header */
-#HomeHeader{
+#HomeHeader {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
+    width: 100%;
     height: var(--header-h);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 20px;
     background-color: var(--primary);
-    color: #fff;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
     z-index: 1000;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
-#homebutton{
-    background: transparent;
-    color: #fff;
-    font-weight: 600;
-    font-size: 1.1rem;
+#homebutton {
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
     text-decoration: none;
-    border: none;
-    cursor: pointer;
 }
 
-#SchoolYear{
-    color: #fff;
-    font-size: 0.95rem;
-    margin-left: 12px;
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
-#ProfilePicture{
-    width: 40px;
-    height: 40px;
+#SchoolYear {
+    color: white;
+    font-size: 0.9rem;
+}
+
+#UserProfile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#ProfilePicture {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    overflow: hidden;
-    border: 2px solid #fff;
+    border: 2px solid white;
     object-fit: cover;
+    background-color: #ddd; /* Fallback color */
 }
 
-#Name{
-    color: #fff;
-    font-size: 0.95rem;
-    margin-left: 8px;
+#Name {
+    color: white;
+    font-size: 0.9rem;
 }
-
 /* Sidebar */
 #MainSideBar{
     position: fixed;
@@ -186,3 +191,1962 @@
 
 /* Small visual improvements */
 .SidebarItem.active{ background-color: rgba(15,99,179,0.12); color: #0f63b3; }
+.status-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    margin-right: 10px;
+    text-transform: uppercase;
+    display: inline-block;
+}
+/* This pushes the content down so it doesn't hide behind the red header */
+main, .dashboard-container, .profile-container {
+    margin-top: var(--header-h); 
+    padding-top: 20px;
+}
+
+/* If the page has a sidebar, ensure the content stays to the right */
+@media (min-width: 901px) {
+    main, .dashboard-container {
+        margin-left: var(--sidebar-w);
+    }
+}
+/* Status Badge Styling */
+.status-badge {
+    background-color: #fa3737; /* Your primary UE Red */
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px; /* Pill shape */
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(250, 55, 55, 0.2); /* Soft red shadow */
+    transition: all 0.3s ease;
+}
+
+/* Optional: Different style for "Student" or "None" */
+.status-badge.student {
+    background-color: #6b7280; /* Gray for non-members */
+    box-shadow: none;
+}/* Base Badge Style */
+.status-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: white !important; /* Text always white */
+    display: inline-block;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+/* 1. Gray for "No Club" */
+.status-badge.gray {
+    background-color: #6b7280 !important; 
+}
+
+/* 2. Yellow for "Pending" */
+.status-badge.yellow {
+    background-color: #f59e0b !important; 
+}
+
+/* 3. Green for "Active Club" */
+.status-badge.green {
+    background-color: #10b981 !important; 
+}
+.post-card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+}
+
+/* Update these classes in public/ClubPortalFeed/ClubPortalFeed.css */
+
+.post-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+/* The clickable area containing Logo + Name */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none; /* Remove underline from link */
+    cursor: pointer;
+}
+
+.header-left:hover .club-name-link {
+    color: #fa3737; /* Turn red on hover */
+    text-decoration: underline;
+}
+
+/* The Round Logo */
+.club-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%; /* Circle shape */
+    object-fit: cover;
+    border: 1px solid #eee;
+    background-color: #f0f0f0;
+}
+
+.header-info {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Club Name Text */
+.club-name-link {
+    color: #333;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.2;
+    transition: color 0.2s;
+}
+
+/* Date and Author Text */
+.post-date {
+    color: #888;
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+.post-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.action-btn:hover {
+    background-color: #f5f5f5;
+}
+
+.action-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.action-btn:active svg {
+    transform: scale(1.2); /* Pop effect when clicked */
+}
+/* --- COMMENT SECTION STYLES --- */
+.comments-section {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    border: 1px solid #eee;
+}
+
+/* Update/Add these in public/ClubPortalFeed/ClubPortalFeed.css */
+
+.comment-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 12px; /* Slightly boxier than the pill shape */
+    outline: none;
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: vertical; /* Allows user to drag to make it bigger */
+    min-height: 40px;
+    max-height: 150px;
+}
+
+/* IMPORTANT: This makes the line breaks (Enter key) visible in the list */
+.comment-text {
+    color: #555;
+    white-space: pre-wrap; /* Preserves new lines */
+    word-break: break-word; /* Prevents long words from overflowing */
+}
+
+.comment-input-area {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    align-items: flex-start; /* Aligns button to top if text box grows */
+}
+
+.comment-btn {
+    background-color: #fa3737;
+    color: white;
+    border: none;
+    padding: 0 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.comment-item {
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.comment-author {
+    font-weight: bold;
+    color: #333;
+    margin-right: 5px;
+}
+
+.comment-text {
+    color: #555;
+}
+
+.action-btn {
+    /* Reuse your existing button styles, adding margin */
+    margin-right: 15px;
+}
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.delete-comment-btn {
+    background: none;
+    border: none;
+    color: #ff4d4d;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 2px 5px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.delete-comment-btn:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+/* Add to public/ClubPortalFeed/ClubPortalFeed.css */
+
+.replies-list {
+    margin-left: 20px;
+    margin-top: 8px;
+    padding-left: 10px;
+    border-left: 3px solid #eee; /* Visual indicator of threading */
+}
+
+.reply-item {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    background-color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #f0f0f0;
+}
+
+.reply-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+.reply-btn:hover {
+    color: #fa3737;
+    text-decoration: underline;
+}
+
+.reply-input-container {
+    margin-top: 5px;
+    margin-left: 20px;
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.reply-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    outline: none;
+}.share-modal {
+    background: white;
+    padding: 0; /* Reset padding for header layout */
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    height: 500px; /* Fixed height for consistency */
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    overflow: hidden;
+}
+
+.share-header {
+    padding: 15px;
+    background: #fa3737;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.share-tabs {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    background: #f8fbff;
+}
+
+.share-tab {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+}
+
+.share-tab:hover {
+    background-color: #f0f0f0;
+}
+
+.share-tab.active {
+    color: #fa3737;
+    border-bottom: 3px solid #fa3737;
+    background: white;
+}
+
+.share-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.share-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.share-list-item:hover {
+    background-color: #f9f9f9;
+}
+
+.share-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.share-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.share-name {
+    font-weight: bold;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.share-subtext {
+    font-size: 0.8rem;
+    color: #888;
+}
+/* --- SHARE MODAL OVERLAY (The dark background) --- */
+.modal-overlay {
+    position: fixed;       /* Stays in place when scrolling */
+    top: 0;
+    left: 0;
+    width: 100vw;          /* Full Viewport Width */
+    height: 100vh;         /* Full Viewport Height */
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+    display: flex;         /* Enables Flexbox Centering */
+    justify-content: center; /* Horizontally Center */
+    align-items: center;     /* Vertically Center */
+    z-index: 10000;        /* Sit on top of EVERYTHING */
+    backdrop-filter: blur(3px); /* Optional: Blurs the background slightly */
+}
+
+/* --- THE MODAL BOX ITSELF --- */
+.share-modal {
+    background: white;
+    width: 90%;
+    max-width: 400px;      /* Standard chat popup width */
+    height: 500px;         /* Fixed height */
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;      /* Keeps content inside rounded corners */
+    position: relative;    /* Ensures internal positioning works */
+    animation: fadeIn 0.2s ease-out; /* Smooth pop-in animation */
+}
+
+/* Simple Pop-in Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* (Ensure these internal styles from the previous step exist too) */
+.share-header {
+    padding: 15px;
+    background: #fa3737;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.share-tabs {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    background: #f8fbff;
+}
+
+.share-tab {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+}
+
+.share-tab:hover {
+    background-color: #f0f0f0;
+}
+
+.share-tab.active {
+    color: #fa3737;
+    border-bottom: 3px solid #fa3737;
+    background: white;
+}
+
+.share-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+.delete-post-btn:hover {
+    color: red !important;
+    transform: scale(1.1);
+    transition: all 0.2s;
+}
+/* =========================================
+   DARK MODE STYLES
+   ========================================= */
+
+/* The Switch Slider (When Checked) */
+input:checked + .slider {
+    background-color: #fa3737;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #fa3737;
+}
+
+input:checked + .slider .slider-icon {
+    transform: translateX(26px);
+}
+
+/* -----------------------------------------
+   Dark Mode Color Overrides
+   ----------------------------------------- */
+body.dark-mode {
+    background-color: #121212; /* Very Dark Grey Background */
+    color: #e0e0e0;            /* Light Grey Text */
+}
+
+/* Header */
+body.dark-mode #HomeHeader {
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #333;
+    color: #fff;
+}
+body.dark-mode #Name { color: #fff; }
+body.dark-mode #SchoolYear { color: #bbb; }
+
+/* Sidebar */
+body.dark-mode #MainSideBar {
+    background-color: #1e1e1e;
+    border-right: 1px solid #333;
+}
+body.dark-mode .SidebarItem {
+    color: #ccc;
+}
+body.dark-mode .SidebarItem:hover {
+    background-color: #333;
+    color: white;
+}
+body.dark-mode #ModeLabel {
+    color: #aaa !important;
+}
+
+/* Cards (Posts, Profile, Lists) */
+body.dark-mode .post-card, 
+body.dark-mode .info-card, 
+body.dark-mode .header-card,
+body.dark-mode .club-card,
+body.dark-mode .hidden-post-card,
+body.dark-mode .inbox-item,
+body.dark-mode .chat-card,
+body.dark-mode .profile-header {
+    background-color: #1e1e1e;
+    border-color: #333;
+    color: #e0e0e0;
+}
+
+/* Text Overrides inside cards */
+body.dark-mode .post-title,
+body.dark-mode .club-name-link, 
+body.dark-mode h2, 
+body.dark-mode h3 {
+    color: #fff !important;
+}
+
+body.dark-mode .post-content,
+body.dark-mode .post-date,
+body.dark-mode p {
+    color: #ccc !important;
+}
+
+/* Inputs & Modals */
+body.dark-mode input[type="text"], 
+body.dark-mode textarea {
+    background-color: #2c2c2c;
+    border: 1px solid #444;
+    color: white;
+}
+
+body.dark-mode .modal-content {
+    background-color: #1e1e1e;
+    color: white;
+}
+
+/* Chat Bubbles */
+body.dark-mode .message-bubble.others {
+    background-color: #2c2c2c;
+    color: white;
+    border-color: #444;
+}
+
+/* Tables (Admin) */
+body.dark-mode .admin-table th {
+    background-color: #333;
+    color: white;
+}
+body.dark-mode .admin-table td {
+    border-bottom: 1px solid #333;
+    color: #ddd;
+}
+/* =========================================
+   SMOOTH THEME TRANSITION
+   ========================================= */
+body, 
+#HomeHeader, 
+#MainSideBar, 
+#MainContent,
+.post-card, 
+.info-card, 
+.header-card, 
+.club-card, 
+.hidden-post-card, 
+.inbox-item, 
+.chat-card, 
+.profile-header,
+.modal-content,
+input, 
+textarea,
+button,
+a {
+    /* This creates the smooth fade effect for colors */
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+} 
+/* The Slider Circle */
+.slider-icon {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    height: 16px;
+    width: 16px;
+    background-color: white;
+    border-radius: 50%;
+    
+    /* Add rotation transition */
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55), background-color 0.4s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* When Checked (Dark Mode) -> Move & Rotate */
+input:checked + .slider .slider-icon {
+    transform: translateX(26px) rotate(360deg);
+    background-color: #121212; /* Turns dark like a moon */
+    box-shadow: inset -3px -2px 0px 0px white; /* CSS trick to look like a crescent moon */
+}
+
+/* Make the background slider turn dark grey instead of Red */
+input:checked + .slider {
+    background-color: #444; /* Dark Grey background for the switch track */
+}
+/* =========================================
+   FIX: TEXT COLOR FOR WHITE ELEMENTS
+   ========================================= */
+
+/* 1. Dropdown Menus (Share, Options) */
+/* These often retain white backgrounds via inline styles or default CSS */
+body.dark-mode .post-dropdown,
+body.dark-mode .share-dropdown,
+body.dark-mode .post-menu-container div {
+    background-color: white !important; /* Ensure they stay white if desired */
+    color: #333 !important;             /* Force text BLACK */
+    border: 1px solid #555;             /* Add border for visibility against dark bg */
+}
+
+/* 2. Specific Buttons that are White */
+body.dark-mode .unfollow-btn,
+body.dark-mode .visit-btn, 
+body.dark-mode .btn-cancel,
+body.dark-mode .reply-btn {
+    color: #333 !important; /* Black Text */
+    border-color: #999 !important;
+}
+
+/* Hover states for those buttons */
+body.dark-mode .unfollow-btn:hover,
+body.dark-mode .btn-cancel:hover {
+    background-color: #eee !important;
+    color: black !important;
+}
+/* =========================================
+   UPDATED DARK MODE CARDS
+   ========================================= */
+
+/* This list now includes Dashboard elements */
+body.dark-mode .post-card, 
+body.dark-mode .info-card, 
+body.dark-mode .header-card,
+body.dark-mode .club-card,
+body.dark-mode .hidden-post-card,
+body.dark-mode .inbox-item,
+body.dark-mode .chat-container,      /* Chat Box */
+body.dark-mode .club-chat-container, /* Chat Box */
+body.dark-mode .profile-header,
+body.dark-mode .table-card,          /* Admin Dashboard */
+body.dark-mode .table-container,     /* Adviser Dashboard */
+body.dark-mode .dashboard-card,      /* Adviser Dashboard */
+body.dark-mode .modal-content {
+    background-color: #1e1e1e !important; /* Force Dark Background */
+    border-color: #333 !important;
+    color: #e0e0e0 !important;            /* Light Text */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* Darker Shadow */
+}
+
+/* Fix for Table Headers inside these cards */
+body.dark-mode th {
+    background-color: #2c2c2c !important;
+    color: #fff !important;
+    border-bottom: 1px solid #444 !important;
+}
+
+body.dark-mode td {
+    border-bottom: 1px solid #333 !important;
+    color: #ccc !important;
+}
+
+/* Fix for Input Fields inside Dashboards */
+body.dark-mode input, 
+body.dark-mode select, 
+body.dark-mode textarea {
+    background-color: #2c2c2c !important;
+    border: 1px solid #444 !important;
+    color: white !important;
+}
+
+/* Fix for "Create Post" form labels */
+body.dark-mode label {
+    color: #ccc !important;
+}
+
+/* =========================================
+   FINAL DARK MODE POLISH (Chat, Inbox, Dashboard)
+   ========================================= */
+
+/* 1. MAIN CONTAINERS (Force Dark Backgrounds) */
+body.dark-mode .club-chat-container,
+body.dark-mode .chat-container,
+body.dark-mode .inbox-container,
+body.dark-mode .table-container,
+body.dark-mode .info-card,
+body.dark-mode .dashboard-card,
+body.dark-mode .modal-content {
+    background-color: #1e1e1e !important;
+    border-color: #333 !important;
+    color: #e0e0e0 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+}
+
+/* 2. CHAT SPECIFICS */
+body.dark-mode .message-area,
+body.dark-mode #MessageArea {
+    background-color: #121212 !important; /* Darker bg for message scroll area */
+}
+
+body.dark-mode .chat-input-area,
+body.dark-mode .input-area {
+    background-color: #1e1e1e !important;
+    border-top: 1px solid #333 !important;
+}
+
+/* Chat Bubbles (The white ones need to turn dark) */
+body.dark-mode .message-bubble.others {
+    background-color: #2c2c2c !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
+
+body.dark-mode .sender-name {
+    color: #bbb !important;
+}
+
+/* 3. INBOX ITEMS */
+body.dark-mode .inbox-item {
+    background-color: #1e1e1e !important;
+    border-bottom: 1px solid #333 !important;
+    color: #e0e0e0 !important;
+}
+body.dark-mode .inbox-item:hover {
+    background-color: #2c2c2c !important;
+}
+body.dark-mode .inbox-item .name {
+    color: #fff !important;
+}
+body.dark-mode .inbox-item .subtext,
+body.dark-mode .inbox-item .date {
+    color: #999 !important;
+}
+
+/* Club Invite Highlight in Inbox (Red tint needs to be darker) */
+body.dark-mode .club-item {
+    background-color: #3a1515 !important; /* Dark Red */
+    border-color: #5c1e1e !important;
+}
+
+/* 4. DASHBOARD TABLES & HEADERS */
+body.dark-mode .table-container h3,
+body.dark-mode .info-card h3,
+body.dark-mode .dashboard-header h1 {
+    color: #fff !important;
+    background-color: #1e1e1e !important; /* Fixes sticky headers */
+    border-bottom: 1px solid #333 !important;
+}
+
+body.dark-mode th {
+    background-color: #252525 !important;
+    color: #ddd !important;
+    border-bottom: 1px solid #444 !important;
+}
+
+body.dark-mode td {
+    color: #ccc !important;
+    border-bottom: 1px solid #333 !important;
+}
+
+body.dark-mode tr:hover {
+    background-color: #2c2c2c !important;
+}
+
+/* 5. INPUTS & FORMS (Global Fix) */
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+    background-color: #2c2c2c !important;
+    border: 1px solid #444 !important;
+    color: white !important;
+}
+
+/* Fix "Attach" paperclip icon color */
+body.dark-mode .attach-btn {
+    color: #ccc !important;
+}
+body.dark-mode .attach-btn:hover {
+    color: #fff !important;
+}
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+/* 2. Hide default checkbox */
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* 3. The Track (Background) */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+/* 4. The Circle Icon (The part that moves) */
+.slider-icon {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    
+    /* Animation: Smoothly move and rotate */
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55), background-color 0.4s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    pointer-events: none; /* Let clicks pass through to the input */
+}
+
+/* =========================================
+   CHECKED STATE (Dark Mode Active)
+   ========================================= */
+
+/* Change Track Color */
+input:checked + .slider {
+    background-color: #444; /* Dark Grey Track */
+}
+
+/* MOVE THE ICON (The Fix: Use '~' instead of nesting) */
+input:checked ~ .slider-icon {
+    transform: translateX(26px) rotate(360deg); /* Move Right & Spin */
+    background-color: #fa3737; /* Turn Red (or Dark Grey if you prefer Moon style) */
+}
+
+/* Optional: Moon Style Effect */
+/* If you want the icon to look like a moon when dark, keep background-color dark and use box-shadow */
+input:checked ~ .slider-icon {
+    background-color: transparent;
+    box-shadow: inset -6px -2px 1px 1px #fff; 
+    transform: translateX(26px) rotate(320deg);
+}
+/* =========================================
+   POST MENU (TRIPLE DOTS) STYLES
+   ========================================= */
+
+/* 1. Container Positioning */
+.post-menu-container {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 20; /* Ensure it sits above post content */
+}
+
+/* 2. The Dots Button (⋮) */
+.menu-dots-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.6rem;
+    line-height: 0.5;
+    color: #999;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding-bottom: 10px; /* Aligns the dots better visually */
+}
+
+.menu-dots-btn:hover {
+    background-color: rgba(0,0,0,0.05); /* Light grey circle on hover */
+    color: #333;
+    transform: scale(1.1);
+}
+
+/* 3. The Dropdown Box */
+.post-dropdown {
+    display: none; /* Toggled by JS */
+    position: absolute;
+    right: 0;
+    top: 40px; /* Pushes it down below the button */
+    background: white;
+    min-width: 160px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    border: 1px solid #eee;
+    overflow: hidden;
+    z-index: 100;
+    animation: fadeInMenu 0.1s ease-out;
+}
+
+/* 4. Menu Items */
+.menu-item {
+    padding: 12px 15px;
+    font-size: 0.9rem;
+    color: #444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon and text if you add icons */
+    transition: background 0.1s;
+    border-bottom: 1px solid #f9f9f9;
+}
+
+.menu-item:last-child {
+    border-bottom: none;
+}
+
+.menu-item:hover {
+    background-color: #fff0f0; /* Light Red Tint */
+    color: #fa3737; /* UE Red text */
+}
+
+/* Special styling for Delete button */
+.menu-item.delete-item {
+    color: #dc3545;
+}
+.menu-item.delete-item:hover {
+    background-color: #ffe6e6;
+    font-weight: bold;
+}
+
+/* Animation */
+@keyframes fadeInMenu {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   DARK MODE SUPPORT FOR MENUS
+   ========================================= */
+
+body.dark-mode .menu-dots-btn {
+    color: #888;
+}
+
+body.dark-mode .menu-dots-btn:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: white;
+}
+
+body.dark-mode .post-dropdown {
+    background-color: #2c2c2c !important;
+    border-color: #444 !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .menu-item {
+    color: #e0e0e0;
+    border-bottom: 1px solid #333;
+}
+
+body.dark-mode .menu-item:hover {
+    background-color: #383838;
+    color: #fff;
+}
+.notification-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-right: 15px; /* Space between Bell and User Profile */
+}
+
+/* The Bell Button */
+#NotifBtn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    position: relative;
+    padding: 5px;
+    transition: transform 0.2s;
+}
+
+#NotifBtn:hover {
+    transform: scale(1.1);
+}
+
+/* The Red Badge */
+#NotifBadge {
+    display: none; /* Hidden by JS if 0 */
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #fa3737; /* UE Red */
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* The Dropdown Menu */
+.notif-dropdown {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 50px; /* Push it down below header */
+    left: -10px; /* Align slightly to right */
+    width: 320px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    border: 1px solid #eee;
+    z-index: 2000; /* Sit on top of everything */
+    overflow: hidden;
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* Header inside dropdown */
+.notif-header-row {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    color: #333;
+}
+
+.mark-read-btn {
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.mark-read-btn:hover { text-decoration: underline; }
+
+/* The List */
+#NotifList {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+/* Individual Items */
+.notif-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f1f1;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notif-item:hover { background-color: #f9f9f9; }
+
+/* Unread vs Read Styles */
+.notif-item.unread {
+    background-color: #fff5f5; /* Light Red tint */
+    border-left: 4px solid #fa3737;
+}
+
+.notif-item.read {
+    background-color: white;
+    opacity: 0.8;
+}
+
+/* Text Styling */
+.notif-sender { font-weight: bold; font-size: 0.9rem; color: #333; }
+.notif-message { font-size: 0.85rem; color: #555; margin-top: 2px; }
+.notif-time { font-size: 0.7rem; color: #999; margin-top: 5px; text-align: right; }
+.empty-notif { padding: 20px; text-align: center; color: #888; font-style: italic; }
+
+/* DARK MODE COMPATIBILITY */
+body.dark-mode .notif-dropdown { background: #1e1e1e; border-color: #333; }
+body.dark-mode .notif-header-row { background: #2c2c2c; border-bottom: 1px solid #444; color: #e0e0e0; }
+body.dark-mode .notif-item { border-bottom: 1px solid #333; }
+body.dark-mode .notif-item:hover { background: #333; }
+body.dark-mode .notif-item.unread { background: #3a1515; border-left-color: #fa3737; }
+body.dark-mode .notif-item.read { background: #1e1e1e; }
+body.dark-mode .notif-sender { color: #fff; }
+body.dark-mode .notif-message { color: #ccc; }
+/* =========================================
+   PROFILE DROPDOWN STYLES
+   ========================================= */
+.profile-dropdown {
+    display: none; 
+    position: absolute;
+    
+    /* POSITIONING: GO RIGHT */
+    top: 55px;   /* Push down below the header */
+    left: 0;     /* Align Left Edge of menu with Left Edge of image */
+    right: auto; /* Stop it from pulling to the left */
+    
+    /* SIZING */
+    width: 200px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    border: 1px solid #eee;
+    z-index: 9999;
+    overflow: hidden;
+    text-align: left;
+}
+
+.dropdown-user-info {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-user-info strong {
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.dropdown-user-info span {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+/* Menu Items */
+.dropdown-item {
+    display: block;
+    padding: 12px 15px;
+    color: #333;
+    text-decoration: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f9f9f9;
+    transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f0f0;
+    color: #fa3737; /* UE Red hover */
+}
+
+/* Logout Button Specifics */
+.dropdown-item.logout {
+    color: #dc3545;
+    font-weight: bold;
+}
+.dropdown-item.logout:hover {
+    background-color: #fff0f0;
+}
+
+hr {
+    margin: 0;
+    border: none;
+    border-top: 1px solid #eee;
+}
+
+/* DARK MODE SUPPORT */
+body.dark-mode .profile-dropdown {
+    background: #1e1e1e;
+    border-color: #333;
+}
+body.dark-mode .dropdown-user-info {
+    background: #2c2c2c;
+    border-bottom: 1px solid #444;
+}
+body.dark-mode .dropdown-user-info strong { color: white; }
+body.dark-mode .dropdown-user-info span { color: #bbb; }
+body.dark-mode .dropdown-item {
+    color: #ddd;
+    border-bottom: 1px solid #333;
+}
+body.dark-mode .dropdown-item:hover {
+    background: #333;
+    color: white;
+}
+.header-profile-wrapper {
+    position: relative;
+    display: flex; /* Ensures content aligns nicely */
+    align-items: center;
+    flex-shrink: 0; /* PREVENTS SQUASHING (Fixes Oval) */
+}
+
+#HeaderProfilePic {
+    width: 45px;       /* Fixed Width */
+    height: 45px;      /* Fixed Height (Same as width) */
+    border-radius: 50%;
+    object-fit: cover; /* Ensures image doesn't stretch inside the circle */
+    border: 2px solid white;
+    cursor: pointer;
+    flex-shrink: 0;    /* Extra safety against squashing */
+    box-sizing: border-box; /* Includes border in the 45px size */
+    aspect-ratio: 1 / 1; /* Modern browser fix for aspect ratio */
+}
+/* Comment Avatar */
+.comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+    flex-shrink: 0;
+}
+
+/* Chat Avatar */
+.chat-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    border: 1px solid #eee;
+}
+
+.message-row {
+    display: flex;
+    align-items: flex-end; /* Align avatar with bottom of message bubble */
+    margin-bottom: 10px;
+}   
+/* AVATAR PREVIEW MODAL */
+#AvatarPreviewModal .modal-content {
+    animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.tags-container { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+    margin-top: 10px;
+}
+
+.filter-tag {
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: #555;
+    transition: all 0.2s;
+}
+
+.filter-tag:hover { background: #e0e0e0; }
+
+.filter-tag.selected {
+    background: #fa3737;
+    color: white;
+    border-color: #fa3737;
+    box-shadow: 0 2px 5px rgba(250, 55, 55, 0.3);
+}
+
+/* =========================================
+   MODAL FOOTER & BUTTONS
+   ========================================= */
+.modal-footer {
+    padding: 15px 20px;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end; /* Aligns Save button to the right */
+    gap: 10px;
+}
+
+/* Renamed from .apply-btn to match your Feed HTML */
+.save-prefs-btn {
+    background: #fa3737;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.save-prefs-btn:hover {
+    background: #d62f2f;
+}
+
+.save-prefs-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Optional: If you use a 'Clear' or 'Cancel' button in the future */
+.clear-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.9rem;
+}
+
+/* =========================================
+   DARK MODE SUPPORT
+   ========================================= */
+body.dark-mode .modal-content { background-color: #1e1e1e; color: #fff; }
+body.dark-mode .modal-header { border-bottom-color: #333; }
+body.dark-mode .modal-header h3 { color: #fff; }
+
+/* Tags in Dark Mode */
+body.dark-mode .filter-tag { 
+    background: #333; 
+    border-color: #444; 
+    color: #ccc; 
+}
+body.dark-mode .filter-tag:hover { background: #444; }
+body.dark-mode .filter-tag.selected { 
+    background: #fa3737; 
+    color: white; 
+}
+
+/* Footer in Dark Mode */
+body.dark-mode .modal-footer { 
+    background: #2a2a2a; 
+    border-top-color: #333; 
+}
+
+/* Button in Dark Mode */
+body.dark-mode .save-prefs-btn {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+/* Dark Mode Support for Modal */
+body.dark-mode .modal-content { background-color: #1e1e1e; color: #fff; }
+body.dark-mode .modal-header { border-bottom-color: #333; }
+body.dark-mode .modal-header h3 { color: #fff; }
+body.dark-mode .radio-group label { color: #ccc; }
+body.dark-mode .filter-tag { background: #333; border-color: #444; color: #ccc; }
+body.dark-mode .filter-tag.selected { background: #fa3737; color: white; }
+body.dark-mode .modal-footer { background: #2a2a2a; border-top-color: #333; }
+/* =========================================
+   GLOBAL MODAL STYLES (Fixed & Consolidated)
+   ========================================= */
+
+/* 1. The Dark Overlay Background */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 9999; /* Sit on top of EVERYTHING */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Dim background */
+    backdrop-filter: blur(4px);           /* Glass effect */
+    animation: fadeIn 0.3s ease-out;      /* Fade in animation */
+}
+
+/* 2. The White Box (Content) */
+.modal-content {
+    background-color: #ffffff;
+    margin: 8vh auto; /* 8% from top, centered horizontally */
+    width: 450px;     /* Fixed width */
+    max-width: 90%;   /* Responsive width */
+    border-radius: 12px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy pop */
+}
+
+/* 3. Header */
+.modal-header {
+    padding: 15px 20px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+/* Close 'X' Button */
+.close-modal {
+    font-size: 24px;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+}
+.close-modal:hover { color: #fa3737; }
+
+/* 4. Body & Tags */
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* The Interest Pills */
+.filter-tag {
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: #555;
+    transition: all 0.2s;
+}
+
+.filter-tag:hover {
+    background: #e0e0e0;
+}
+
+.filter-tag.selected {
+    background: #fa3737;
+    color: white;
+    border-color: #fa3737;
+    box-shadow: 0 4px 10px rgba(250, 55, 55, 0.3);
+}
+
+/* 5. Footer & Save Button */
+.modal-footer {
+    padding: 15px 20px;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end; /* Align button to right */
+}
+
+.save-prefs-btn {
+    background: #fa3737;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.save-prefs-btn:hover {
+    background: #d62f2f;
+}
+
+.save-prefs-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* =========================================
+   DARK MODE SUPPORT
+   ========================================= */
+body.dark-mode .modal-content {
+    background-color: #1e1e1e;
+    color: #fff;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer {
+    background-color: #252525;
+    border-color: #333;
+}
+
+body.dark-mode .modal-header h3 { color: #fff; }
+
+body.dark-mode .filter-tag {
+    background: #333;
+    border-color: #444;
+    color: #ccc;
+}
+
+body.dark-mode .filter-tag:hover { background: #444; }
+
+body.dark-mode .filter-tag.selected {
+    background: #fa3737;
+    color: white;
+}
+
+/* =========================================
+   ANIMATIONS
+   ========================================= */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+#HamburgerBtn {
+    display: none; /* Desktop: Hidden */
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.8rem;
+    cursor: pointer;
+    margin-right: 15px;
+    padding: 5px;
+}
+
+/* 2. Sidebar Overlay (The dark background) */
+#SidebarOverlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 998; /* Below Sidebar, Above Content */
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+#SidebarOverlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS (Max-Width 900px)
+   ========================================= */
+
+@media (max-width: 900px) {
+    
+    /* 1. Show Hamburger */
+    #HamburgerBtn {
+        display: block;
+    }
+
+    /* 2. Show Overlay when active */
+    #SidebarOverlay {
+        display: block;
+    }
+
+    /* 3. Transform Sidebar into "Drawer" */
+    #MainSideBar {
+        position: fixed;
+        top: var(--header-h); /* Start below header */
+        left: 0;
+        bottom: 0;
+        width: 260px; /* Drawer width */
+        height: calc(100vh - var(--header-h));
+        
+        background: var(--sidebar-bg);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        
+        transform: translateX(-100%); /* HIDE IT off-screen left */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 999;
+        
+        /* Reset flex styles from previous code */
+        display: block !important; 
+        flex-wrap: nowrap !important;
+        border-right: 1px solid #eee;
+        overflow-y: auto;
+    }
+
+    /* 4. OPEN STATE */
+    #MainSideBar.open {
+        transform: translateX(0); /* Slide IN */
+    }
+
+    /* 5. Adjust Header Elements */
+    #HomeHeader {
+        justify-content: flex-start; /* Align items to left */
+    }
+    
+    #homebutton {
+        margin-right: auto; /* Push user profile to far right */
+        font-size: 1rem;
+        margin-left: 10px;
+    }
+
+    /* 6. Fix Sidebar Items Layout */
+    .SidebarItem {
+        display: block; /* Stack vertically again */
+        margin: 5px 10px;
+        font-size: 1rem;
+    }
+    
+    /* 7. Hide Name on mobile header to save space */
+    #Name { display: none; }
+    
+    /* 8. Fix Dark Mode Background for Mobile Drawer */
+    body.dark-mode #MainSideBar {
+        background: #1e1e1e;
+        border-right: 1px solid #333;
+    }
+}.SidebarItem {
+    display: flex;             /* Align Icon and Text horizontally */
+    align-items: center;       /* Center vertically */
+    padding: 12px 18px;        /* More breathing room */
+    margin: 4px 10px;          /* Separation between items */
+    color: #4b5563;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+/* The Icon Itself */
+.sidebar-icon {
+    font-size: 1.3rem;         /* Icon size */
+    margin-right: 14px;        /* Space between Icon and Text */
+    min-width: 24px;           /* Ensures alignment even if icon widths vary */
+    text-align: center;
+    color: #888;               /* Default gray color */
+    transition: color 0.2s;
+}
+
+/* Hover State */
+.SidebarItem:hover {
+    background-color: #fff0f0; /* Light Red Tint */
+    color: #fa3737;            /* Text turns Red */
+}
+
+.SidebarItem:hover .sidebar-icon {
+    color: #fa3737;            /* Icon turns Red */
+    transform: translateX(2px); /* Subtle nudge */
+}
+
+/* Active State (You can add logic to add .active class to current page) */
+.SidebarItem.active {
+    background-color: #fff0f0;
+    color: #fa3737;
+    font-weight: 600;
+}
+.SidebarItem.active .sidebar-icon {
+    color: #fa3737;
+}
+
+/* DARK MODE SUPPORT */
+body.dark-mode .sidebar-icon { color: #aaa; }
+body.dark-mode .SidebarItem:hover {
+    background-color: #333;
+    color: white;
+}
+body.dark-mode .SidebarItem:hover .sidebar-icon {
+    color: white;
+}
+/* =========================================
+   POST ICON STYLES (Boxicons)
+   ========================================= */
+
+/* 1. Action Buttons (Like, Comment, Share) */
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px; /* Spacing between Icon and Number/Text */
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #555; /* Default Text/Icon Color */
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.action-btn i {
+    font-size: 1.4rem; /* Make icons slightly larger than text */
+    line-height: 1;
+}
+
+.action-btn:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+/* 2. Dropdown Menu Items (Hide, Report, Delete) */
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between Icon and Text */
+    padding: 12px 15px;
+    font-size: 0.9rem;
+    color: #444;
+    cursor: pointer;
+    border-bottom: 1px solid #f9f9f9;
+    transition: background 0.1s;
+}
+
+.menu-item i {
+    font-size: 1.2rem;
+    color: #888; /* Icon is slightly lighter than text */
+}
+
+.menu-item:hover i {
+    color: #fa3737; /* Icon turns red on hover */
+}
+
+/* 3. Three Dots Button */
+.menu-dots-btn {
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+.menu-dots-btn i {
+    font-size: 1.5rem;
+}
+
+/* 4. Comment Send Button */
+.comment-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%; /* Circle shape */
+}
+
+.comment-btn i {
+    font-size: 1.2rem;
+    margin-left: 2px; /* Visual fix for send icon alignment */
+}
+
+/* DARK MODE FIXES */
+body.dark-mode .action-btn { color: #aaa; }
+body.dark-mode .action-btn:hover { background-color: #333; color: white; }
+body.dark-mode .menu-item i { color: #aaa; }
+body.dark-mode .menu-item:hover i { color: white; }
+@keyframes heartPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); } /* Grow big */
+    100% { transform: scale(1); }  /* Snap back */
+}
+
+.animate-pop {
+    animation: heartPop 0.3s ease-out;
+}
+/* =========================================
+   "NO CLUB" WELCOME CARD
+   ========================================= */
+
+.no-club-card {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 500px;
+    margin: 40px auto; /* Centers it horizontally */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+    display: flex;       /* Flex allows us to stack items nicely */
+    flex-direction: column;
+    align-items: center;
+}
+
+.no-club-icon {
+    width: 80px;
+    height: 80px;
+    background-color: #fff5f5; /* Light Red tint */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.no-club-icon i {
+    font-size: 3rem;
+    color: #fa3737; /* UE Red */
+}
+
+.no-club-card h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin: 0 0 10px 0;
+}
+
+.no-club-card p {
+    color: #666;
+    margin: 0 0 25px 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.explore-btn {
+    background-color: #fa3737;
+    color: white;
+    padding: 12px 30px;
+    border-radius: 30px; /* Pill shape */
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 10px rgba(250, 55, 55, 0.3);
+}
+
+.explore-btn:hover {
+    background-color: #d62f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(250, 55, 55, 0.4);
+}
+
+/* DARK MODE SUPPORT */
+body.dark-mode .no-club-card {
+    background-color: #1e1e1e;
+    border-color: #333;
+}
+body.dark-mode .no-club-card h2 { color: white; }
+body.dark-mode .no-club-card p { color: #aaa; }
+body.dark-mode .no-club-icon { background-color: #2c2c2c; }
+#NotifBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    padding: 5px;
+    transition: transform 0.2s;
+    display: flex;       /* Centers the icon */
+    align-items: center;
+    justify-content: center;
+    color: white;        /* Icon Color (since header is red) */
+}
+
+#NotifBtn i {
+    font-size: 1.6rem;   /* Icon Size */
+}
+
+#NotifBtn:hover {
+    transform: scale(1.1);
+}
+
+/* The Red Badge (Positioned relative to the button) */
+#NotifBadge {
+    display: none;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background-color: white; /* White bg for contrast against Red Header */
+    color: #fa3737;          /* Red text */
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 1px 5px;
+    border-radius: 10px;
+    border: 1px solid #fa3737;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* DARK MODE SUPPORT */
+body.dark-mode #NotifBtn { color: #e0e0e0; }
+body.dark-mode #NotifBadge {
+    background-color: #fa3737;
+    color: white;
+    border: none;
+}
+#homebutton {
+    font-family: 'Montserrat', sans-serif; /* The new font */
+    font-weight: 800;    /* Extra Bold */
+    font-size: 1.4rem;   /* Slightly larger */
+    color: white;
+    text-decoration: none;
+    letter-spacing: 0.5px; /* Slight spacing for readability */
+    text-transform: uppercase; /* Makes it look like a proper logo */
+    
+    /* Optional: Add a subtle text shadow for depth */
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease;
+}
+
+#homebutton:hover {
+    transform: scale(1.02); /* Subtle pop effect on hover */
+}
+.post-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700; /* Bold */
+    font-size: 1.3rem;
+    color: #1f2937;   /* Dark Grey (softer than pure black) */
+    margin: 10px 0 12px 0;
+    line-height: 1.3;
+}
+
+/* 2. Club Name (Matches Header Brand) */
+.club-name-link {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #111;
+}
+
+/* 3. Main Post Body (Readable Inter Font) */
+.post-content {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: #4b5563;   /* Comfortable reading grey */
+    line-height: 1.6; /* More breathing room between lines */
+    margin-bottom: 15px;
+}
+
+/* 4. Comments & Metadata */
+.comment-text, .post-date, .like-count, .subtext {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Update Comment Author Name */
+.comment-author {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* DARK MODE SUPPORT */
+body.dark-mode .post-title { color: #f3f4f6; }
+body.dark-mode .post-content { color: #d1d5db; }

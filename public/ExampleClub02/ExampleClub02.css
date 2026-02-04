@@ -1,8 +1,0 @@
-/* Copy of ExampleClubPage styles with slight tweaks for ExampleClub02 */
-#clubcover{ height: 240px; background-image: url(../ExampleClubPage/ExampleClubBgPic.jpg); background-size: cover; background-position: center; }
-#clubpfp{ width: 140px; height: 140px; border-radius: 50%; margin: -70px 20px 0 40px; background-image: url(../ExampleClubPage/ExamoleClubProfilePic.jpg); background-size: cover; border: 4px solid white; }
-#clubname{ font-size: 2rem; margin-left: 40px; margin-top: 8px; }
-#clubdescription{ max-width: 760px; margin: 8px 40px; color: #444; }
-#joinclubbutton{ margin-left: 40px; padding: 10px 18px; background: #0f63b3; color: white; border: none; border-radius: 6px; cursor: pointer; }
-
-@media (max-width: 480px){ #clubpfp{ margin-left: 20px; } #clubname{ font-size: 1.4rem; }}

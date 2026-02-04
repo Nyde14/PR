@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club Profile</title>
+    
+    <link rel="stylesheet" href="/public/ClubPortalFeed/ClubPortalFeed.css"> 
+    
+    <link rel="stylesheet" href="/public/ClubProfile/ClubProfile.css">
+</head>
+<body>
+
+<div id="HomeHeader">
+    <div id="UserProfile">
+        <div id="StatusBadge" class="status-badge">Checking...</div> 
+        <div id="ProfilePicture"></div>
+        <div id="Name">Name</div>
+    </div>
+    <a href="/ClubPortalFeed/ClubPortalFeed.html" id="homebutton">UE Club Portal</a>
+    <p id="SchoolYear">School Year 2025-2026</p>
+</div>  
+            <span id="SchoolYear">SY 2025-2026</span>
+            <div id="UserProfile">
+                <img src="profile.jpg" id="ProfilePicture" alt="Profile">
+                <span id="Name">Student Name</span>
+            </div>
+        </div>
+    </header>
+
+    <nav id="MainSideBar">
+        <ul id="MainSideBarList">
+            <li><a href="/ClubPortalFeed/ClubPortalFeed.html" class="SidebarItem">Home</a></li>
+            <li><a href="/ApplyClub/Clublist.html" class="SidebarItem active">Clubs</a></li> 
+            <li><a href="/public/ClubChat/ChatInbox.html" class="SidebarItem">Messages</a></li>
+            <li><a href="#" class="SidebarItem">Club Dashboard</a></li>
+            <li><a href="/Login/Login.html" class="SidebarItem">Log out</a></li>
+        </ul>
+    </nav>
+
+    <main id="MainContent">
+        
+        <div class="profile-header">
+            <div id="ClubBanner" class="banner-img"></div>
+            <div class="header-content">
+                <div id="ClubLogo" class="profile-logo"></div>
+                <div class="header-text">
+                    <h1 id="club-name">Loading Club...</h1>
+                    <span id="ClubCategory" class="badge">Category</span>
+                </div>
+                <button id="JoinButton" class="join-btn">Join Club</button>
+            </div>
+        </div>
+
+        <div class="profile-body">
+            <div class="info-card">
+                <h2>About Us</h2>
+                <p id="ClubDescription">Please wait while we load the club details...</p>
+                
+                <div class="stats-row">
+                    
+                    </div>
+                    <div class="stat">
+                        <span class="label">Members</span>
+                        <span id="MemberCount" class="value">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-section" style="margin-top: 30px;">
+    <h3 style="color: #333; border-bottom: 2px solid #fa3737; padding-bottom: 10px; margin-bottom: 20px;">
+        📢 Latest Announcements
+    </h3>
+    
+    <div id="ClubPostsContainer">
+        <p style="color: #666; font-style: italic;">Loading announcements...</p>
+    </div>
+</div>
+        </div>
+
+    </main>
+
+    <script src="/public/Clubprofile/ClubProfile.js"></script>
+    <script src="/Global.js"></script>
+</body>
+</html>

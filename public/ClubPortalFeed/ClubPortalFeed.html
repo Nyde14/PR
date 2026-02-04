@@ -1,36 +1,57 @@
 <!DOCTYPE html> 
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <link rel="stylesheet" href="ClubPortalFeed.css">
-    <title>Club Portal</title>
+    <title>Club Portal Feed</title>
 </head>
 <body>
+    <div id="HomeHeader">
+        <div id="UserProfile">
+            <div id="ProfilePicture"></div> <div id="Name">Loading...</div>
+        </div>
+        
+        <a href="/ClubPortalFeed/ClubPortalFeed.html" id="homebutton">UE Club Portal</a>
+        
+        <div class="header-right">
+            <p id="SchoolYear">SY 2025-2026</p>
+        </div>
+    </div>
+
     <div id="MainSideBar">
-        <ul id = "MainSideBarList">
-            <li><a href="" class="SidebarItem">Home</a></li>
-            <li><a href="" class="SidebarItem">Clubs</a></li>
-            <li><a href="" class="SidebarItem">Messages</a></li>
+        <ul id="MainSideBarList">
+            <li><a href="/ClubPortalFeed/ClubPortalFeed.html" class="SidebarItem active">Home</a></li>
+            <li><a href="/ApplyClub/Clublist.html" class="SidebarItem">Clubs</a></li>
+            <li><a href="/public/ClubChat/ChatInbox.html" class="SidebarItem">Messages</a></li>
+            <li><a href="/TeacherDashboard/ClubAdviserDashboard.html" class="SidebarItem">Club Dashboard</a></li>
             <li><a href="/Login/Login.html" class="SidebarItem">Log out</a></li>
-         
         </ul>
     </div>
-    <div id="HomeHeader">
-        <a href="" id="homebutton">UE Club Portal</a>
-        <p id="SchoolYear">School Year 2025-2026</p>
-        <div id="UserProfile">
-            <div id="ProfilePicture"></div>
-            <div id="Name">Name</div>
-        </div>
-        </div> <!-- close HomeHeader -->
 
-    <main id="MainContent" class="empty-state">
-        <h1 id="noclub">You haven't joined a club yet</h1>
-        <a id="exploreclubsbutton" class="button" href="../ApplyClub/Clublist.html">Explore Clubs</a>
+    <main id="MainContent">
+        
+        <div id="NoClubState" class="no-club-card">
+    <div class="no-club-icon">
+        <i class='bx bx-group'></i>
+    </div>
+    <h2>You haven't joined a club yet</h2>
+    <p>Discover communities, join events, and make new friends at UE.</p>
+    <a href="/ApplyClub/Clublist.html" class="explore-btn">
+        Explore Clubs <i class='bx bx-right-arrow-alt'></i>
+    </a>
+</div>
+
+        <div class="feed-wrapper">
+            <h2 style="color: #333; margin-bottom: 20px; padding-left: 5px;">Latest Announcements</h2>
+            <div class="feed-container" id="FeedContainer">
+                <p style="text-align:center; color:#666;">Loading posts...</p>
+            </div>
+        </div>
+
     </main>
 
-<script src="ClubPortalFeed.js"></script>
+    <script src="ClubPortalFeed.js"></script>
+    <script src="/Global.js"></script>
 </body>
 </html>

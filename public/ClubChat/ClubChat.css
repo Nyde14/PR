@@ -1,0 +1,608 @@
+/* =========================================
+   1. MAIN LAYOUT & WRAPPER
+   ========================================= */
+
+/* Adjust MainContent to fit next to Sidebar (250px) and Header (80px) */
+#MainContent {
+    margin-left: 250px;
+    margin-top: 80px;
+    padding: 20px;
+    height: calc(100vh - 80px);
+    box-sizing: border-box;
+    overflow: hidden; /* Prevents double scrollbars */
+    display: flex;
+    justify-content: center; /* Centers the chat box if it has max-width */
+}
+
+/* Responsive Fix for Mobile */
+@media (max-width: 900px) {
+    #MainContent { margin-left: 0; }
+}
+
+/* =========================================
+   2. CHAT CONTAINER
+   ========================================= */
+
+.chat-container {
+    width: 100%;
+    max-width: 1000px; /* Optional: Stops it from getting too wide on huge screens */
+    height: 100%;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    position: relative; /* Needed for Drag Overlay */
+    border: 1px solid #ddd;
+}
+
+/* Header */
+
+
+/* Message Area (Scrollable) */
+.message-area {
+    flex: 1 1 auto;
+    padding: 20px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Input Area (Sticky Bottom) */
+.input-area {
+    flex: 0 0 auto;
+    padding: 15px;
+    background: white;
+    border-top: 1px solid #ddd;
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* =========================================
+   3. MESSAGE BUBBLES
+   ========================================= */
+.message-bubble {
+    width: auto;             /* Let it grow naturally */
+    min-width: 60px;         /* Prevents super tiny bubbles for "Hi" or "Ok" */
+    max-width: 100%;     
+    border-radius: 18px; /* Don't overflow the screen */
+    
+    padding: 12px 18px;      /* Generous padding makes it look bigger & cleaner */
+    display: block;          /* Standard box behavior */
+    
+}
+
+/* 2. Alignment Logic for the Wrapper */
+/* "Me": Align text bubble to the right */
+.message-row.me .msg-content-wrapper {
+    align-items: flex-end !important;
+}
+
+/* "Others": Align text bubble to the left */
+.message-row.others .msg-content-wrapper {
+    align-items: flex-start !important;
+}
+
+/* 3. Ensure the wrapper itself doesn't stretch */
+.msg-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 75%;          /* Maximum width of the bubble container */
+    width: auto;             
+}
+
+/* My messages (Right) */
+.message-bubble.me {
+    background: #fa3737;
+    color: white;
+    border-bottom-right-radius: 2px;
+    text-align: left; /* Keep text readable even if right-aligned */
+}
+/* My messages (Right) */
+.message-bubble.me {
+    align-self: flex-end;
+    background: #fa3737;
+    color: white;
+    border-bottom-right-radius: 2px;
+}
+
+/* Others' messages (Left) */
+.message-bubble.others {
+    background: #fff;
+    color: #333;
+    border: 1px solid #e5e7eb;
+    border-bottom-left-radius: 2px;
+    text-align: left;
+}
+
+/* Deleted Message Style */
+.message-bubble.deleted {
+    background: #f0f0f0 !important;
+    border: 1px dashed #ccc;
+    color: #888;
+    font-style: italic;
+    
+    /* FIX: Shrink the bubble */
+    padding: 5px 10px;   /* Smaller padding */
+    min-width: auto;     /* Remove the 48px minimum width constraint */
+    width: auto;         /* Allow it to be as small as the text */
+    font-size: 0.85rem;  /* Slightly smaller text */
+    display: inline-block;
+}
+
+/* Sender Name (Group Chat) */
+.sender-name {
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+    font-weight: bold;
+    opacity: 0.9;
+    color: #555;
+}
+
+/* =========================================
+   4. DELETE BUTTON (The Fix)
+   ========================================= */
+
+
+
+/* =========================================
+   5. INPUTS & MEDIA
+   ========================================= */
+
+#MessageInput {
+    flex: 1;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 25px;
+    outline: none;
+    font-size: 1rem;
+    transition: border 0.2s;
+}
+#MessageInput:focus {
+    border-color: #fa3737;
+}
+
+#SendBtn {
+    background: #fa3737;
+    color: white;
+    border: none;
+    padding: 0 25px;
+    height: 42px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+#SendBtn:hover { background: #d62f2f; }
+/* Paperclip / Attach Button */
+#AttachBtn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    padding: 0 10px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s;
+}
+#AttachBtn:hover { color: #fa3737; }
+
+/* Images/Videos inside chat */
+.chat-media {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: block;
+    cursor: pointer;
+    object-fit: cover;
+}
+
+/* =========================================
+   6. DRAG & DROP OVERLAY
+   ========================================= */
+
+.drag-overlay {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    border: 4px dashed #fa3737;
+    box-sizing: border-box;
+}
+
+/* Only show overlay if parent has class 'drag-active' */
+/* (Requires JS to toggle parent class, or simply toggle this display directly) */
+.chat-container.drag-active .drag-overlay {
+    display: flex;
+}
+
+.drag-content {
+    text-align: center;
+    color: #fa3737;
+    font-weight: bold;
+    font-size: 1.5rem;
+    pointer-events: none;
+}
+/* Report Button (Small & Subtle) */
+.msg-report-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-left: 5px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.message-bubble:hover .msg-report-btn {
+    opacity: 1; /* Only show clearly when hovering the message */
+}
+
+.msg-report-btn:hover {
+    color: #fa3737; /* Red on hover */
+}
+
+/* Highlight Animation for Reported Messages */
+.highlight-message {
+    animation: flashHighlight 2s ease-out;
+    border: 2px solid #fa3737; /* Red border to mark it */
+    box-shadow: 0 0 15px rgba(250, 55, 55, 0.4);
+}
+
+@keyframes flashHighlight {
+    0% { background-color: #ffe6e6; transform: scale(1.02); }
+    50% { background-color: #ffe6e6; transform: scale(1.02); }
+    100% { background-color: inherit; transform: scale(1); }
+}
+.club-chat-container {
+    width: 100%;
+    max-width: 1000px; /* Optional: Stops it from getting too wide on huge screens */
+    height: 100%;      /* Fill the parent #MainContent */
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    
+    display: flex;
+    flex-direction: column; /* Stack: Header -> Messages -> Input */
+    
+    position: relative; /* Needed for Drag Overlay */
+    border: 1px solid #ddd;
+    overflow: hidden;   /* CRITICAL: Ensures content stays inside the rounded corners */
+}
+
+/* Header (Fixed Height) */
+.chat-header {
+    flex: 0 0 auto; /* Never grow, never shrink */
+    padding: 15px 20px;
+    background: #fa3737; /* UE Red */
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+    z-index: 10;
+}
+
+/* Message Area (Scrollable) */
+.message-area {
+    /* Note: In your HTML/JS, verify this ID is correct. 
+       Your HTML uses id="MessageArea". IDs don't use class selectors in CSS usually, 
+       but if you want to style it by ID, use #MessageArea. 
+       However, flex rules usually work best on classes. 
+       Let's add the ID selector here just in case. */
+    flex: 1 1 auto;  /* Grow to fill available space */
+    min-height: 0;   /* CRITICAL: Allows this flex item to shrink so scrollbar works */
+    
+    padding: 20px;
+    overflow-y: auto; /* Scrollbar appears here */
+    background: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#MessageArea {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 20px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Input Area (Sticky Bottom) */
+.chat-input-area { /* Changed from .input-area to match your HTML class */
+    flex: 0 0 auto; /* Never grow, never shrink */
+    padding: 15px;
+    background: white;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    z-index: 10;
+}
+.club-chat-container.drag-active .drag-overlay {
+    display: flex;
+}
+.message-row {
+    width: 100%;
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.message-row.me {
+    justify-content: flex-end; /* Push to right */
+}
+
+.message-row.others {
+    justify-content: flex-start; /* Push to left */
+}
+
+/* New Wrapper to handle max-width safely */
+.msg-content-wrapper {
+    max-width: 75%;       /* This replaces the inline style */
+    display: flex;
+    flex-direction: column;
+}
+.attach-btn {
+    display: flex;             /* Makes it a proper box */
+    align-items: center;       /* Centers the icon vertically */
+    justify-content: center;   /* Centers the icon horizontally */
+    width: 40px;               /* Fixed width */
+    height: 40px;              /* Fixed height */
+    border-radius: 50%;        /* Circular button */
+    cursor: pointer;
+    font-size: 1.4rem;         /* Icon size */
+    color: #666;
+    transition: all 0.2s ease;
+    
+    /* Optional: Light hover background */
+    background-color: transparent; 
+}
+.attach-btn:hover { 
+    color: #fa3737; 
+    background-color: #f0f0f0; 
+}
+#FilePreview {
+    display: none; /* <--- CRITICAL: Hides it until JS shows it */
+    background: #f0f0f0;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #ddd;
+    color: #333;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* =========================================
+   FILE PREVIEW (Visual Update)
+   ========================================= */
+
+#FilePreview {
+    display: none;
+    background: #fff;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    animation: slideUp 0.2s ease-out;
+    align-items: center;
+    gap: 15px;
+}
+
+/* The container for the Image/Video thumbnail */
+#PreviewContainer {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* Prevents squashing */
+    border: 1px solid #ddd;
+}
+
+/* Style for the actual image/video element */
+.preview-media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Crops it nicely into a square */
+    display: block;
+}
+
+/* Info Text next to preview */
+.preview-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+#FileName {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-type-label {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+/* Remove Button */
+.remove-preview-btn {
+    background: none;
+    border: none;
+    color: #fa3737;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    transition: transform 0.2s;
+}
+.remove-preview-btn:hover { transform: scale(1.2); }
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* Prevent 'Me' messages from stretching */
+.message-row.me .msg-content-wrapper {
+    align-items: flex-end; 
+}
+
+/* Prevent 'Others' messages from stretching */
+.message-row.others .msg-content-wrapper {
+    align-items: flex-start;
+}
+
+/* Ensure the wrapper doesn't force width */
+.msg-content-wrapper {
+    width: auto; /* Let content dictate width */
+}
+.message-bubble {
+    /* 1. ANCHOR for the Delete Button (Critical Fix) */
+    position: relative; 
+
+    /* 2. Shape & Size */
+    width: auto;
+    min-width: 60px;
+    max-width: 100%;
+    border-radius: 18px;
+    padding: 12px 18px;
+    display: block;
+}
+.file-attachment-card {
+    display: flex;
+    align-items: center;
+    background: #f8f9fa; /* Light grey background */
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 10px 15px;
+    margin-bottom: 8px;
+    text-decoration: none; /* Remove underline */
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    max-width: 280px;
+    gap: 12px;
+}
+
+/* Hover Effect */
+.file-attachment-card:hover {
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: #fa3737; /* Highlight border on hover */
+}
+
+/* 1. The Paper Icon */
+.file-icon-box {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    background: #eee;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* 2. Text Details */
+.file-details {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+}
+
+.file-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Truncates long names like "report_final_v2..." */
+}
+
+.file-action {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 2px;
+}
+
+/* 3. The Download Arrow */
+.download-icon {
+    font-size: 1.1rem;
+    color: #fa3737;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.file-attachment-card:hover .download-icon {
+    opacity: 1;
+}
+
+/* --- Dark Mode Support --- */
+body.dark-mode .file-attachment-card {
+    background: #2c2c2c;
+    border-color: #444;
+}
+body.dark-mode .file-name { color: #fff; }
+body.dark-mode .file-icon-box { background: #444; }
+.delete-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 26px;
+    height: 26px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    
+    /* HIDDEN BY DEFAULT */
+    display: none;
+    
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #fa3737;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    z-index: 100; /* Ensure it sits on top of images */
+    transition: transform 0.1s;
+}
+
+.delete-btn:hover {
+    background: #fa3737;
+    color: white;
+    transform: scale(1.1);
+    border-color: #fa3737;
+}
+
+/* FIX: Show button when hovering the WRAPPER (Text OR Image) */
+.msg-content-wrapper:hover .delete-btn {
+    display: flex !important;
+}

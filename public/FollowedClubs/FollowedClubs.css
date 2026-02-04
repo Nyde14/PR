@@ -1,0 +1,121 @@
+/* Layout */
+#MainContent {
+    margin-left: 240px;
+    margin-top: 80px;
+    padding: 20px;
+    max-width: 1000px;
+}
+
+/* Header Card */
+.header-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.header-card h2 { margin: 0 0 5px 0; color: #333; }
+.header-card p { margin: 0; color: #666; }
+
+/* Grid Layout */
+.clubs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+/* Club Card */
+.club-card {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 15px;
+}
+
+.club-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-color: #ddd;
+}
+
+/* Card Images */
+.card-banner {
+    width: 100%;
+    height: 80px;
+    background-color: #fa3737;
+    background-size: cover;
+    background-position: center;
+}
+
+.card-logo {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 4px solid white;
+    background-color: #fff;
+    background-size: cover;
+    background-position: center;
+    margin-top: -35px; /* Pull up into banner */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Card Text */
+.card-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin: 10px 0 5px 0;
+    padding: 0 10px;
+    color: #333;
+}
+
+.card-category {
+    font-size: 0.8rem;
+    color: #888;
+    background: #f4f4f4;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+/* Buttons */
+.card-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.visit-btn, .unfollow-btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.visit-btn {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.unfollow-btn {
+    background-color: white;
+    color: #fa3737;
+    border: 1px solid #fa3737;
+}
+
+.unfollow-btn:hover {
+    background-color: #fa3737;
+    color: white;
+}
+
+@media (max-width: 900px) {
+    #MainContent { margin-left: 0; }
+}

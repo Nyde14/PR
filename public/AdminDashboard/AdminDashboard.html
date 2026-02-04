@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="../ClubPortalFeed/ClubPortalFeed.css">
+    <link rel="stylesheet" href="AdminDashboard.css">
+</head>
+<body>
+    <nav id="MainSideBar">
+        <ul id="MainSideBarList">
+            </ul>
+    </nav>
+
+    <div id="HomeHeader">
+        <div id="UserProfile">
+            <div id="StatusBadge" class="status-badge" style="background: black;">Admin</div>
+            <div id="Name">Loading...</div>
+        </div>
+        <a href="../ClubPortalFeed/ClubPortalFeed.html" id="homebutton">UE Club Portal</a>
+        <p id="SchoolYear">Admin Control Panel</p>
+    </div>
+
+    <main id="MainContent" class="dashboard-layout">
+        <div class="dashboard-header">
+            <h1>Admin Dashboard</h1>
+            <p>Manage users and review incoming reports.</p>
+        </div>
+
+        <div class="tabs-container">
+            <button id="TabUsers" class="tab-btn active" onclick="switchTab('users')">User Management</button>
+            <button id="TabReports" class="tab-btn" onclick="switchTab('reports')">Reports</button>
+        </div>
+
+        <div id="UsersSection" class="table-card">
+            <div class="table-actions">
+                <input type="text" id="SearchInput" placeholder="Search user..." onkeyup="filterUsers()">
+                <select id="RoleFilter" onchange="filterUsers()">
+                    <option value="all">All Roles</option>
+                    <option value="Student">Students</option>
+                    <option value="Teacher">Advisers</option>
+                </select>
+            </div>
+
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Club</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="UserTableBody">
+                    <tr><td colspan="6" style="text-align:center;">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="ReportsSection" class="table-card" style="display:none;">
+            <div class="table-actions" style="justify-content: space-between; align-items: center;">
+                <h3 style="margin:0; color:#555;">Incoming Reports</h3>
+                <button onclick="loadReports()" class="btn-cancel" style="font-size:0.9rem;">Refresh List</button>
+            </div>
+
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Reporter</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="ReportsTableBody">
+                    <tr><td colspan="5" style="text-align:center;">Loading reports...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="RestrictModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="closeRestrictModal()">&times;</span>
+            <h3 style="color: #fa3737; margin-top: 0;">Restrict User</h3>
+            
+            <p>Target: <strong id="RestrictTargetName">...</strong></p>
+
+            <label style="display:block; margin-top:15px; font-weight:bold;">Duration</label>
+            <select id="RestrictDuration" class="modal-input">
+                <option value="3">3 Days</option>
+                <option value="7">1 Week</option>
+                <option value="30">1 Month</option>
+                <option value="permanent">Permanent (Indefinite)</option>
+            </select>
+
+            <label style="display:block; margin-top:15px; font-weight:bold;">Reason</label>
+            <textarea id="RestrictReason" class="modal-input" rows="3" placeholder="Violation of community guidelines..."></textarea>
+
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="closeRestrictModal()" class="btn-cancel">Cancel</button>
+                <button onclick="submitRestriction()" class="btn-confirm">Confirm Restriction</button>
+            </div>
+        </div>
+    </div>
+<div id="MessageModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeMessageModal()">&times;</span>
+            <h3 style="margin-top: 0; color: #333;">Reported Message</h3>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin: 15px 0;">
+                <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                    <strong id="MsgSender">Sender Name</strong> • <span id="MsgContext">Context</span>
+                </div>
+                <div id="MsgContent" style="font-size: 1.1rem; color: #333; line-height: 1.5; white-space: pre-wrap;">...</div>
+                <div id="MsgMediaContainer" style="margin-top: 15px; display: none;"></div>
+                <div id="MsgTime" style="font-size: 0.8rem; color: #999; margin-top: 10px; text-align: right;">...</div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                <button id="BtnDeleteMessage" class="btn-confirm" style="background-color: #dc3545;">🗑️ Delete Message</button>
+                <button onclick="closeMessageModal()" class="btn-cancel">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/Global.js"></script>
+    <script src="AdminDashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+/* Improved, responsive Club Portal UI */
+:root{
+    --primary: #fa3737;
+    --sidebar-bg: #f8fbff;
+    --muted: #6b7280;
+    --header-h: 64px;
+    --sidebar-w: 240px;
+}
+
+*{ box-sizing: border-box; }
+
+/* Header */
+#HomeHeader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background-color: var(--primary);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+#homebutton {
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-decoration: none;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#SchoolYear {
+    color: white;
+    font-size: 0.9rem;
+}
+
+#UserProfile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#ProfilePicture {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid white;
+    object-fit: cover;
+    background-color: #ddd; /* Fallback color */
+}
+
+#Name {
+    color: white;
+    font-size: 0.9rem;
+}
+/* Sidebar */
+#MainSideBar{
+    position: fixed;
+    top: calc(var(--header-h));
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    padding: 20px 12px;
+    border-right: 1px solid #e6e6e6;
+    overflow-y: auto;
+}
+
+#MainSideBarList{ list-style: none; padding: 0; margin: 0; }
+
+.SidebarItem{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.05rem;
+    display: block;
+    text-decoration: none;
+    padding: 10px 14px;
+    margin: 6px 8px;
+    color: #374151;
+    border-radius: 6px;
+    transition: background-color 180ms ease, transform 120ms ease, color 180ms ease;
+}
+
+.SidebarItem:hover{
+    background-color: rgba(15,99,179,0.08);
+    color: #0f63b3;
+    transform: translateX(4px);
+}
+
+/* Main content helpers */
+/* Center key messages and keep them away from sidebar on wide screens */
+/* Empty state: center call-to-action on the main content area */
+#MainContent.empty-state{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--header-h));
+    padding: 24px;
+    text-align: center;
+    gap: 20px;
+}
+
+#noclub{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 48px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+/* Make the CTA an anchor styled like a button for accessibility */
+#exploreclubsbutton{
+    display: inline-block;
+    padding: 12px 28px;
+    font-size: 1.25rem;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    min-width: 220px;
+}
+#exploreclubsbutton.button{ line-height: 1; }
+#exploreclubsbutton:focus,
+#exploreclubsbutton:active,
+#exploreclubsbutton:hover{ opacity: 0.95; transform: translateY(-2px); transition: all 160ms ease; }
+
+/* Layout offset to avoid sidebar overlap on wide screens */
+@media (min-width: 901px){
+    #MainContent.empty-state{ margin-left: var(--sidebar-w); }
+    #noclub{ font-size: 48px; }
+}
+
+@media (max-width: 900px){
+    /* When sidebar becomes horizontal, center normally */
+    #MainContent.empty-state{ margin-left: 0; min-height: calc(100vh - var(--header-h) - 40px); }
+    #noclub{ font-size: 36px; }
+    #exploreclubsbutton{ width: 90%; max-width: 420px; }
+}
+
+@media (max-width: 480px){
+    #noclub{ font-size: 28px; }
+    #exploreclubsbutton{ font-size: 1rem; padding: 10px 18px; height: 52px; }
+}
+
+/* Tablet and smaller: convert sidebar to a horizontal bar */
+@media (max-width: 900px){
+    #MainSideBar{
+        position: relative;
+        width: 100%;
+        height: auto;
+        display: flex;
+        flex-wrap: wrap;
+        padding: 8px;
+        border-right: none;
+        border-bottom: 1px solid #e6e6e6;
+    }
+
+    .SidebarItem{ display: inline-block; margin: 6px 10px; }
+
+    #noclub{
+        margin-top: 40px;
+        font-size: 36px;
+        margin-left: 16px;
+        text-align: center;
+    }
+
+    #exploreclubsbutton{ width: 90%; max-width: 420px; margin-left: auto; margin-right: auto; }
+
+    #Name{ display: none; }
+}
+
+/* Small phones */
+@media (max-width: 480px){
+    #HomeHeader{ height: 56px; }
+    :root{ --header-h: 56px; }
+    #noclub{ font-size: 28px; margin-top: 32px; }
+    .SidebarItem{ font-size: 0.95rem; padding: 8px 10px; }
+    #exploreclubsbutton{ font-size: 1rem; height: 52px; }
+    #ProfilePicture{ width: 34px; height: 34px; }
+}
+
+/* Small visual improvements */
+.SidebarItem.active{ background-color: rgba(15,99,179,0.12); color: #0f63b3; }
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-top: 5px;
+    font-family: inherit;
+    resize: vertical; /* Allows user to stretch the box */
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #fa3737;
+    background: #fff8f8;
+}
+
+label {
+    font-weight: bold;
+    color: #374151;
+    font-size: 0.9rem;
+}                                               
