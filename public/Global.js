@@ -102,59 +102,70 @@ async function loadUserHeader() {
     try {
         const res = await fetch('/api/auth/me');
         if (!res.ok) return;
-
-        const user = await res.json();
         
-        // 1. Update Name
+        const user = await res.json(); 
+
+        const isAdviser = user.usertype === 'Teacher' || user.usertype === 'Admin';
+        const clubLabel = isAdviser ? 'FACULTY ADVISER' : 'CLUB MEMBERSHIP';
+        const rowClass = isAdviser ? 'adviser-row' : 'member-row';
+        const roleIcon = isAdviser ? 'bx-briefcase-alt-2' : 'bx-user-check';
+        const roleTag = isAdviser ? `<span class="membership-tag tag-adviser">${isAdviser ? 'Adviser' : 'Staff'}</span>` : '<span class="membership-tag tag-member">Member</span>';
+        
         const nameEl = document.getElementById('Name');
         if (nameEl) nameEl.innerText = user.name;
         
-        // 2. Setup Profile Picture & Dropdown
         const profileContainer = document.getElementById('UserProfile');
         if (profileContainer) {
-            profileContainer.innerHTML = '';
-            
-            // Smart Fallback
-            const imgSrc = user.profilePicture 
-                ? user.profilePicture 
-                : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
+            const imgSrc = user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
 
-            // Inject Header HTML + The Hidden Modal Structure
             profileContainer.innerHTML = `
-                <div class="header-profile-wrapper" style="position: relative;">
+                <div class="header-profile-wrapper">
                     <img id="HeaderProfilePic" src="${imgSrc}" alt="Profile" 
-                         onclick="toggleProfileDropdown()"
+                         onclick="openFullProfileModal()"
                          style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid white;">
-
-                    <div id="ProfileDropdown" class="profile-dropdown">
-                        <div class="dropdown-user-info">
-                            <strong>${user.name}</strong>
-                            <span>${user.usertype}</span>
-                        </div>
-                        <hr>
-                        
-                        <label for="HeaderAvatarInput" class="dropdown-item">
-                            📷 Change Picture
-                        </label>
-                        <input type="file" id="HeaderAvatarInput" accept="image/*" style="display:none;" onchange="previewHeaderAvatar()">
-
-                        
-                        <a href="#" onclick="logout()" class="dropdown-item logout">🚪 Logout</a>
-                    </div>
                 </div>
 
-                <div id="AvatarPreviewModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
-                    <div class="modal-content" style="background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.3);">
-                        <h3 style="margin-top:0; color:#333;">Preview Profile Picture</h3>
-                        <p style="color:#666; font-size:0.9rem; margin-bottom:15px;">Does this look good?</p>
-                        
-                        <div style="width:150px; height:150px; margin:0 auto 20px auto; border-radius:50%; overflow:hidden; border:4px solid #fa3737;">
-                            <img id="CentralPreviewImg" src="" style="width:100%; height:100%; object-fit:cover;">
+                <div id="FullProfileModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center;">
+                    <div class="modal-content" style="background:white; border-radius:15px; width:95%; max-width:450px; overflow:hidden;">
+                        <div class="share-header" style="background:#fa3737; color:white; padding:15px; display:flex; justify-content:space-between;">
+                            <span style="font-weight:bold;">User Profile</span>
+                            <span onclick="closeFullProfileModal()" style="cursor:pointer; font-size:1.5rem;">&times;</span>
                         </div>
+                        
+                        <div class="profile-modal-body">
+                            <div class="profile-modal-avatar-container" onclick="document.getElementById('HiddenAvatarInput').click()">
+                                <img id="ModalProfileImg" src="${imgSrc}" class="profile-modal-avatar">
+                                <i class='bx bx-camera avatar-overlay-icon'></i>
+                            </div>
+                            <input type="file" id="HiddenAvatarInput" accept="image/*" style="display:none;" onchange="previewHeaderAvatar()">
 
-                        <div style="display:flex; justify-content:center; gap:15px;">
-                            <button onclick="cancelHeaderAvatar()" style="padding:10px 20px; border:none; background:#ccc; color:#333; border-radius:6px; cursor:pointer; font-weight:bold;">Cancel</button>
-                            <button id="SaveAvatarBtn" onclick="saveHeaderAvatar()" style="padding:10px 20px; border:none; background:#fa3737; color:white; border-radius:6px; cursor:pointer; font-weight:bold;">Save & Update</button>
+                            <h2 style="margin:0;">${user.name}</h2>
+                            <p style="color:#666; font-size:0.9rem; margin-bottom:10px;">@${user.usertype.toLowerCase()}</p>
+
+                            <div class="user-badge-container">
+                                ${user.usertype === 'Admin' ? '<span class="role-badge badge-admin">Administrator</span>' : ''}
+                                ${user.usertype === 'Teacher' ? '<span class="role-badge badge-adviser">Club Adviser</span>' : ''}
+                                <span class="role-badge badge-member">University Member</span>
+                            </div>
+
+                            <div style="text-align:left; padding: 0 20px;">
+                                <label style="font-size:0.8rem; font-weight:bold; color:#888;">BIO</label>
+                                <textarea id="UserProfileBio" rows="3" placeholder="Tell us about yourself..." style="width:100%; margin-top:5px; padding:10px; border:1px solid #ddd; border-radius:8px;">${user.bio || ''}</textarea>
+                            </div>
+
+                            <div class="club-membership-list ${rowClass}" style="margin:15px 20px; padding:10px; border-radius:8px; text-align:left; background:#f9f9f9;">
+                                <label style="font-size:0.8rem; font-weight:bold; color:#888;">${clubLabel}</label>
+                                <p style="margin:5px 0 0 0; font-weight:600; color:#333; display:flex; align-items:center;">
+                                    <i class='bx ${roleIcon}' style="color:#fa3737; margin-right:8px;"></i> 
+                                    ${(user.club && user.club !== 'none') ? user.club : 'No Active Affiliation'}
+                                    ${(user.club && user.club !== 'none') ? roleTag : ''}
+                                </p>
+                            </div>
+
+                            <div style="margin:20px; display:flex; gap:10px;">
+                                <button onclick="saveProfileChanges()" style="flex:1; padding:12px; background:#fa3737; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Save Profile</button>
+                                <button onclick="logout()" style="padding:12px; background:#eee; color:#333; border:none; border-radius:8px; cursor:pointer;"><i class='bx bx-log-out'></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -707,3 +718,60 @@ document.addEventListener('click', (e) => {
         document.head.appendChild(link);
     }
 })();
+window.openFullProfileModal = function() {
+    const modal = document.getElementById('FullProfileModal');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeFullProfileModal = function() {
+    const modal = document.getElementById('FullProfileModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.saveProfileChanges = async function() {
+    const bio = document.getElementById('UserProfileBio').value;
+    const btn = event.target;
+    const originalText = btn.innerText;
+
+    try {
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+
+        const response = await fetch('/api/users/profile-update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bio })
+        });
+
+        if (response.ok) {
+            btn.innerText = "✅ Saved!";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                closeFullProfileModal();
+            }, 1500);
+        } else {
+            throw new Error("Update failed");
+        }
+    } catch (e) {
+        alert("Error saving profile details.");
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
+
+// Update previewHeaderAvatar to target the new Modal image ID
+window.previewHeaderAvatar = function() {
+    const input = document.getElementById('HiddenAvatarInput');
+    const file = input.files[0];
+    if (!file) return;
+
+    selectedAvatarFile = file;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Open the existing preview modal logic we built earlier
+        document.getElementById('CentralPreviewImg').src = e.target.result;
+        document.getElementById('AvatarPreviewModal').style.display = 'flex'; 
+    };
+    reader.readAsDataURL(file);
+};

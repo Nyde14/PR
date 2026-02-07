@@ -157,9 +157,10 @@ app.get('/api/auth/me', async (req, res) => {
             name: userdata.name,
             usertype: userdata.usertype,
             club: userdata.club,
+            bio: userdata.bio || "", // <--- ADD THIS LINE
             hiddenPosts: userdata.hiddenPosts || [],
             following: userdata.following || [],
-            profilePicture: userdata.profilePicture // <--- ADD THIS LINE
+            profilePicture: userdata.profilePicture
         });
     } catch (error) {
         console.error("Auth Me Error:", error);
