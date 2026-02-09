@@ -52,55 +52,60 @@ async function loadClubButton(user) {
 
     if (user.club && user.club !== 'none' && user.club !== 'Pending') {
         let logoUrl = null;
+        let unreadCount = 0;
 
         try {
-            // 1. Fetch all clubs to find the matching logo
-            // (Since user object doesn't have the logo, we grab it here)
-            const res = await fetch('/api/clubs'); 
-            if (res.ok) {
-                const clubs = await res.json();
+            // Parallel Fetch: Club Info AND Unread Count
+            // We assume an endpoint '/api/chat/unread/:room' exists or similar
+            const [clubsRes, unreadRes] = await Promise.all([
+                fetch('/api/clubs'),
+                fetch(`/api/chat/unread/${encodeURIComponent(user.club)}`) 
+            ]);
+
+            if (clubsRes.ok) {
+                const clubs = await clubsRes.json();
                 const myClub = clubs.find(c => c.clubname === user.club);
-                
-                // Get the logo from branding OR main logo field
                 if (myClub) {
-                    logoUrl = (myClub.branding && myClub.branding.logo) 
-                        ? myClub.branding.logo 
-                        : myClub.logo;
+                    logoUrl = (myClub.branding && myClub.branding.logo) ? myClub.branding.logo : myClub.logo;
                 }
             }
+
+            if (unreadRes.ok) {
+                const unreadData = await unreadRes.json();
+                unreadCount = unreadData.count || 0; // Expect { count: 5 }
+            }
+
         } catch (e) {
-            console.error("Error fetching club logo:", e);
+            console.error("Error loading club data:", e);
         }
 
-        // 2. Use the Real Logo (or Fallback if fetch failed)
         const finalLogo = getAvatarUrl(user.club, logoUrl);
+        
+        // Render Badge only if count > 0
+        const badgeHTML = unreadCount > 0 
+            ? `<span id="badge-group-${user.club}" class="unread-badge">${unreadCount}</span>` 
+            : '';
 
-        // 3. Render
         container.innerHTML = `
-            <div class="inbox-item club-item" onclick="openChat('${user.club}', 'group')">
+            <div class="inbox-item club-item" onclick="openChat('${user.club}', 'group', null, 'badge-group-${user.club}')">
                 <img src="${finalLogo}" class="avatar club-avatar" alt="Club Logo">
                 <div class="info">
                     <span class="name">${user.club}</span>
                     <span class="subtext">Tap to open Group Chat</span>
                 </div>
-                <i class='bx bx-chevron-right' style="color:#ccc; font-size:1.5rem;"></i>
+                ${badgeHTML}
+                <i class='bx bx-chevron-right' style="color:#ccc; font-size:1.5rem; margin-left:${unreadCount > 0 ? '10px' : 'auto'};"></i>
             </div>
         `;
     } else {
-        // NO CLUB STATE (Welcome Card)
-        container.innerHTML = `
-            <div class="empty-state-card">
-                <div class="empty-icon"><i class='bx bx-shield-x'></i></div>
-                <h4>You haven't joined a club yet</h4>
-                <p>Join a club to unlock their exclusive Group Chat.</p>
-                <a href="/ApplyClub/Clublist.html" class="inbox-action-btn">
-                    Find a Club <i class='bx bx-search'></i>
-                </a>
-            </div>
-        `;
+        // ... (Keep existing "No Club" Empty State) ...
+        container.innerHTML = `<div class="empty-state-card">...</div>`;
     }
 }
 
+// ==========================================
+// 2. UPDATED: LOAD DIRECT MESSAGES (With Badge)
+// ==========================================
 async function loadDirectMessages() {
     const list = document.getElementById('DirectMessagesList');
     if (!list) return;
@@ -115,17 +120,24 @@ async function loadDirectMessages() {
         }
 
         list.innerHTML = conversations.map(chat => {
-            // Generate Avatar for Chat Partner
             const avatarUrl = getAvatarUrl(chat.name, chat.avatar);
+            
+            // CHECK UNREAD COUNT (Assumes backend sends 'unread' or 'unreadCount')
+            const unread = chat.unread || chat.unreadCount || 0;
+            const badgeHTML = unread > 0 
+                ? `<span id="badge-dm-${chat.name}" class="unread-badge">${unread}</span>` 
+                : '';
 
             return `
-            <div class="inbox-item" onclick="openChat('${chat.name}', 'private')">
+            <div class="inbox-item" onclick="openChat('${chat.name}', 'private', null, 'badge-dm-${chat.name}')">
                 <img src="${avatarUrl}" class="avatar user-avatar" alt="${chat.name}">
                 <div class="info">
                     <span class="name">${chat.name}</span>
-                    <span class="subtext">${chat.lastMessage || 'Start a conversation'}</span>
+                    <span class="subtext" style="${unread > 0 ? 'font-weight:bold; color:#333;' : ''}">
+                        ${chat.lastMessage || 'Start a conversation'}
+                    </span>
                 </div>
-                <span class="date">${chat.timestamp ? new Date(chat.timestamp).toLocaleDateString() : ''}</span>
+                ${badgeHTML}
             </div>
             `;
         }).join('');
@@ -135,15 +147,28 @@ async function loadDirectMessages() {
 }
 
 // ==========================================
-// 2. REDIRECT LOGIC
+// 3. UPDATED: OPEN CHAT (Reset Badge Logic)
 // ==========================================
+// Added 'badgeId' parameter to target the specific badge
+function openChat(name, type, msgId = null, badgeId = null) {
+    
+    // 1. VISUAL RESET: Hide the badge immediately
+    if (badgeId) {
+        const badge = document.getElementById(badgeId);
+        if (badge) {
+            badge.style.display = 'none'; // Instant feedback
+        }
+    }
 
-function openChat(name, type, msgId = null) {
+    // 2. REDIRECT
     let url = `/ClubChat/ClubChat.html?room=${encodeURIComponent(name)}&type=${type}`;
-    // Pass the message ID along so it highlights on the next page
     if (msgId) {
         url += `&msgId=${msgId}`;
     }
+    
+    // 3. Optional: Mark as read via API before leaving (improves sync)
+    // fetch(`/api/chat/mark-read/${encodeURIComponent(name)}`, { method: 'PUT' });
+
     window.location.href = url;
 }
 

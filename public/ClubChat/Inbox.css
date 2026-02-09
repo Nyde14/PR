@@ -213,6 +213,39 @@ h3 {
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
+/* =========================================
+   DARK MODE SUPPORT FOR INBOX
+   ========================================= */
+body.dark-mode .inbox-container {
+    background: #1e1e1e !important;
+    color: #e0e0e0 !important;
+    border-color: #333 !important;
+}
+
+body.dark-mode .inbox-item {
+    background: #1e1e1e !important;
+    border-bottom: 1px solid #333 !important;
+    color: #ddd !important;
+}
+
+body.dark-mode .inbox-item:hover {
+    background: #2a2a2a !important;
+}
+
+body.dark-mode .club-item {
+    background: #3a1515 !important;
+    border: 1px solid #5c1e1e !important;
+}
+
+body.dark-mode .avatar { background-color: #333 !important; }
+body.dark-mode .club-avatar { background: #5c1e1e !important; }
+body.dark-mode .user-avatar { background: #444 !important; }
+
+body.dark-mode .name { color: #fff !important; }
+body.dark-mode .subtext { color: #bbb !important; }
+body.dark-mode .date { color: #999 !important; }
+
 /* Report Button (Small & Subtle) */
 .msg-report-btn {
     background: none;
@@ -329,4 +362,30 @@ h3 {
 
 .user-avatar {
     border: 1px solid #ddd;
+}
+.unread-badge {
+    background: #fa3737;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 4px 8px; /* Pill shape */
+    border-radius: 12px;
+    margin-left: auto; /* Pushes badge to the far right */
+    min-width: 20px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(250, 55, 55, 0.3);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Animation for new badges */
+@keyframes popIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+
+/* Dark Mode Support for Badge */
+body.dark-mode .unread-badge {
+    background: #fa3737;
+    color: white;
+    box-shadow: none;
 }

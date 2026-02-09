@@ -62,34 +62,49 @@ router.post('/send-otp', async (req, res) => {
 // ==========================================
 router.post('/register', async (req, res) => {
     try {
-        // We ONLY take name, email, password, and OTP
-        const { name, email, password, otp } = req.body;
+        // We add usertype, club, and skipVerification to the destructuring
+        const { name, email, password, otp, usertype, club, skipVerification } = req.body;
 
-        // A. Verify OTP
-        const validOtp = await Otp.findOne({ email, otp });
-        if (!validOtp) {
-            return res.status(400).json({ message: "Invalid or expired verification code." });
+        // --- A. CONDITIONAL OTP VERIFICATION ---
+        // If skipVerification is NOT true, we enforce the OTP check.
+        if (!skipVerification) {
+            const validOtp = await Otp.findOne({ email, otp });
+            if (!validOtp) {
+                return res.status(400).json({ message: "Invalid or expired verification code." });
+            }
+        } else {
+            // SECURITY CHECK: Ensure the person making this request is an Admin
+            const requester = await getRequester(req);
+            if (!requester || requester.usertype !== 'Admin') {
+                return res.status(403).json({ message: "Unauthorized: Only Admins can bypass verification." });
+            }
         }
 
-        // B. Double Check Duplicate (Security Best Practice)
+        // B. Double Check Duplicate
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(409).json({ message: "User already exists." });
         }
 
-        // C. Create User (No course/year/id)
+        // C. Create User
         const hashedPassword = await bcrypt.hash(password, 10);
         
         const newUser = new User({
             name,
             email,
             password: hashedPassword,
-            usertype: 'Student', // Default
-            club: "none"
+            // Use provided usertype/club (from Admin form) or default to Student/none
+            usertype: usertype || 'Student', 
+            club: club || "none",
+            isVerified: true // Set to true immediately
         });
 
         await newUser.save();
-        await Otp.deleteMany({ email }); // Cleanup
+        
+        // Cleanup OTP if it was a standard registration
+        if (!skipVerification) {
+            await Otp.deleteMany({ email });
+        }
 
         res.status(201).json({ message: "User registered successfully" });
 
@@ -108,90 +123,72 @@ router.post('/login', async (req, res) => {
         
         // 1. Find User
         const user = await User.findOne({ email });
-        
-        // Safety check: User must exist
         if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
-        // ==================================================
-        // A. CHECK RESTRICTION STATUS (Your Original Logic)
-        // ==================================================
+        // --- A. CHECK RESTRICTION STATUS ---
         if(user.isRestricted) {
             const now = new Date();
-
-            // A. Check if Ban is Still Active
-            // (Logic: If no end date exists, it's Permanent. OR if end date is in the future.)
             if (!user.restrictionEnds || user.restrictionEnds > now) {
-                
                 return res.status(403).json({ 
-                    message: "Account Restricted", // Generic title for the logger
-                    isRestricted: true,            // CRITICAL: Tells Frontend to Redirect
+                    message: "Account Restricted",
+                    isRestricted: true,
                     reason: user.restrictionReason || "Violation of rules",
-                    date: user.restrictionEnds || "Indefinite" // Frontend handles "Indefinite" as Permanent
+                    date: user.restrictionEnds || "Indefinite"
                 });
             } 
-
-            // B. If we get here, the Ban has EXPIRED -> Auto-Lift it
+            // Ban Expired -> Auto-Lift
             user.isRestricted = false;
             user.restrictionReason = undefined;
             user.restrictionEnds = undefined;
             await user.save();
-            // Code continues below to log them in...
         }
 
-        // ==================================================
-        // B. CHECK PASSWORD (With Auto-Hash Migration)
-        // ==================================================
-        
-        // 1. Try comparing as a Hash (Standard Secure Login)
+        // --- B. CHECK PASSWORD (With Auto-Hash Migration) ---
         let isMatch = await bcrypt.compare(password, user.password);
 
-        // 2. If Hash failed, check if it's Plain Text (Migration Logic)
         if (!isMatch) {
             if (user.password === password) {
-                console.log(`⚠️ Migrating user ${user.email} from plain text to hash...`);
-                
-                // It matched as plain text! Fix it immediately.
+                console.log(`⚠️ Migrating user ${user.email} to hash...`);
                 const salt = await bcrypt.genSalt(10);
                 const hashedPassword = await bcrypt.hash(password, salt);
-                
-                // Update Database
                 user.password = hashedPassword;
                 await user.save();
-                
-                // Allow login to proceed
                 isMatch = true; 
             }
         }
 
-        // 3. Final Verdict
-        if (!isMatch) {
-            return res.status(400).json({ message: "Invalid email or password" });
-        }
+        if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
 
-        // ==================================================
-        // C. LOGIN SUCCESS
-        // ==================================================
+        // --- C. LOGIN SUCCESS (Persistence Fix) ---
+        // We ensure 'clubPosition' is fetched from the DB and put in the token
         const token = jwt.sign(
-            { userId: user._id, role: user.usertype, name: user.name },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+    { 
+        userId: user._id, 
+        role: user.usertype, 
+        name: user.name,
+        clubPosition: user.clubPosition || 'Member' // Sync token
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+);
 
-        if (req.session) {
-            req.session.token = token;
-        }
+if (req.session) {
+    req.session.token = token;
+}
 
-        res.json({
-            message: "Login successful",
-            token,
-            user: {
-                name: user.name,
-                email: user.email,
-                usertype: user.usertype,
-                club: user.club
-            },
-            redirectUrl: '/ClubPortalFeed/ClubPortalFeed.html'
-        });
+res.json({
+    message: "Login successful",
+    token,
+    user: {
+        name: user.name,
+        email: user.email,
+        usertype: user.usertype,
+        club: user.club,
+        // MUST BE INCLUDED HERE
+        clubPosition: user.clubPosition || 'Member' 
+    },
+    redirectUrl: '/ClubPortalFeed/ClubPortalFeed.html'
+});
 
     } catch (error) {
         console.error("Login Error:", error);
@@ -357,5 +354,12 @@ router.post('/reset-password', async (req, res) => {
         res.status(500).json({ message: "Error resetting password" });
     }
 });
-
+async function getRequester(req) {
+    const token = req.session?.token || req.headers['authorization']?.split(' ')[1];
+    if (!token) return null;
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return await User.findById(decoded.userId);
+    } catch (e) { return null; }
+}
 module.exports = router;

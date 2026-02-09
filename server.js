@@ -30,7 +30,7 @@ connectDB();
 // --- MIDDLEWARE CONFIGURATION ---
 app.use(cors({
     origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
@@ -148,6 +148,8 @@ app.get('/api/auth/me', async (req, res) => {
         if (!token) return res.status(401).json({ message: "not logged in" });
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // CRITICAL: Fetching fresh data from MongoDB on every refresh
         const userdata = await User.findById(decoded.userId); 
 
         if (!userdata) return res.status(404).json({ message: "user not found" });
@@ -157,7 +159,9 @@ app.get('/api/auth/me', async (req, res) => {
             name: userdata.name,
             usertype: userdata.usertype,
             club: userdata.club,
-            bio: userdata.bio || "", // <--- ADD THIS LINE
+            bio: userdata.bio || "", 
+            // ENSURE THIS FIELD IS RETURNED
+            clubPosition: userdata.clubPosition || 'Member', 
             hiddenPosts: userdata.hiddenPosts || [],
             following: userdata.following || [],
             profilePicture: userdata.profilePicture
@@ -354,6 +358,7 @@ app.post('/api/chat/send', upload.single('media'), async (req, res) => {
             recipient: recipient || null, 
             sender: user.name,
             clubrole: (user.usertype === 'Teacher' || user.usertype === 'Admin') ? 'Adviser' : 'Student',
+            officerRole: user.clubPosition || 'Member', 
             content: content || "",
             mediaUrl,
             mediaType
@@ -517,9 +522,31 @@ app.get('/api/chat/:clubname', async (req, res) => {
 
 app.get('/api/clubs', async (req, res) => {
   try {
-    const clubs = await Club.find(); 
+    const clubs = await Club.aggregate([
+        {
+            $lookup: {
+                from: "users",
+                localField: "clubname",
+                foreignField: "club",
+                as: "memberList"
+            }
+        },
+        {
+            $project: {
+                clubname: 1,
+                adviser: 1,
+                branding: 1, 
+                logo: 1, 
+                // Use category as-is, fallback to "Organization" if missing
+                category: { $ifNull: ["$category", "Organization"] },
+                urlSlug: 1, 
+                memberCount: { $size: "$memberList" } 
+            }
+        }
+    ]);
     res.json(clubs);
   } catch (e) {
+    console.error("Error fetching clubs:", e);
     res.status(500).json({ message: 'Error fetching clubs' });
   }
 });
@@ -540,7 +567,10 @@ app.get('/api/clubs/members', async (req, res) => {
         const { clubname } = req.query; 
         if (!clubname) return res.status(400).json({ message: "Club name is required" });
 
-        const members = await User.find({ club: clubname }).select('name email isRestricted restrictionEnds restrictionReason usertype'); 
+        // THE FIX: Add 'clubPosition' to the select list
+        const members = await User.find({ club: clubname })
+            .select('name email isRestricted restrictionEnds restrictionReason usertype clubPosition'); 
+        
         res.json(members);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -550,10 +580,23 @@ app.get('/api/clubs/members', async (req, res) => {
 app.get('/api/clubs/:slug', async (req, res) => {
   try {
     const slug = req.params.slug; 
-    const club = await Club.findOne({ urlSlug: slug });
+    const club = await Club.findOne({ urlSlug: slug }); // findOne retrieves the full schema
+    
     if (!club) return res.status(404).json({ message: "Club not found" });
-    res.json(club);
+
+    const count = await User.countDocuments({ club: club.clubname });
+    
+    const clubData = club.toObject();
+    clubData.memberCount = count; // Ensure camelCase
+    
+    // Ensure category has a value (fallback to "Organization")
+    if (!clubData.category) {
+        clubData.category = "Organization";
+    }
+
+    res.json(clubData);
   } catch (error) {
+    console.error("Error fetching club:", error);
     res.status(500).json({ message: "Server Error" });
   }
 });
@@ -572,17 +615,38 @@ app.patch('/api/clubs/update-description', async (req, res) => {
     }
 });
 
-app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), async (req, res) => {
-    try {
-        const { clubname } = req.body; 
-        const updateData = {};
-        if (req.files['logo']) updateData['branding.logo'] = `/uploads/${req.files['logo'][0].filename}`;
-        if (req.files['banner']) updateData['branding.banner'] = `/uploads/${req.files['banner'][0].filename}`;
+// server.js - Updated Patch Route
 
-        const updatedClub = await Club.findOneAndUpdate({ clubname: clubname }, { $set: updateData }, { new: true });
-        res.json({ message: "Images uploaded", club: updatedClub });
+app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount: 1 }]), async (req, res) => {
+    try {
+        const { clubname, adviser, category } = req.body; 
+        const updateData = {};
+        
+        // 1. Handle Logo
+        if (req.files && req.files['logo']) {
+            updateData['branding.logo'] = `/uploads/${req.files['logo'][0].filename}`;
+        }
+        
+        // 2. Handle Adviser
+        if (adviser) updateData['adviser'] = adviser;
+
+        // 3. Handle Category as a simple string
+        if (category) {
+            updateData['category'] = category;
+        }
+
+        const updatedClub = await Club.findOneAndUpdate(
+            { clubname: clubname }, 
+            { $set: updateData }, 
+            { new: true }
+        );
+
+        if (!updatedClub) return res.status(404).json({ message: "Club not found" });
+        
+        res.json({ message: "Updated successfully", club: updatedClub });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Update Branding Error:", error);
+        res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 });
 
@@ -666,7 +730,142 @@ app.delete('/api/clubs/remove-member', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+app.patch('/api/chat/document/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // 'approved' or 'rejected'
+        const token = req.headers['authorization']?.split(' ')[1];
+        
+        if (!token) return res.status(401).json({ message: "Unauthorized" });
 
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+
+        // Security Check: Only Admins can approve/reject
+        if (user.usertype !== 'Admin') {
+            return res.status(403).json({ message: "Only Admins can perform this action." });
+        }
+
+        const msg = await Message.findByIdAndUpdate(
+            id, 
+            { approvalStatus: status }, 
+            { new: true }
+        );
+
+        res.json({ success: true, message: `Document ${status}`, data: msg });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+app.delete('/api/clubs/delete/:id', async (req, res) => {
+    try {
+        const clubId = req.params.id;
+
+        // 1. Authorization Check
+        const token = req.session.token || req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const adminUser = await User.findById(decoded.userId);
+        
+        if (!adminUser || adminUser.usertype !== 'Admin') {
+            return res.status(403).json({ message: "Only Admins can delete organizations." });
+        }
+
+        // 2. Execute Delete
+        const deletedClub = await Club.findByIdAndDelete(clubId);
+
+        if (!deletedClub) {
+            return res.status(404).json({ message: "Club not found." });
+        }
+
+        res.json({ message: "Club deleted successfully" });
+    } catch (error) {
+        console.error("Delete Club Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+}); 
+app.get('/api/reports/:id/view', async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ message: "Report not found" });
+
+        // 1. HANDLE POST REPORTS
+        if (report.targetType === 'Post') {
+            const post = await Post.findById(report.targetId);
+            if (!post) return res.json({ type: 'Deleted', message: 'The reported post has already been removed.' });
+            
+            return res.json({
+                type: 'Post',
+                url: `/ClubProfile/ClubProfile.html?slug=${post.clubSlug}&postId=${post._id}`
+            });
+        }
+
+        // 2. HANDLE MESSAGE REPORTS
+        if (report.targetType === 'Message') {
+            const msg = await Message.findById(report.targetId);
+            if (!msg || msg.isDeleted) return res.json({ type: 'Deleted', message: 'This message has already been deleted.' });
+
+            return res.json({
+                type: 'Message',
+                data: {
+                    messageId: msg._id,
+                    sender: msg.sender,
+                    content: msg.content,
+                    timestamp: msg.timestamp,
+                    mediaUrl: msg.mediaUrl,
+                    mediaType: msg.mediaType,
+                    context: msg.clubname ? `Group: ${msg.clubname}` : 'Private DM'
+                }
+            });
+        }
+
+        // 3. HANDLE COMMENT & REPLY REPORTS
+        if (report.targetType === 'Comment' || report.targetType === 'Reply') {
+            // Split the composite ID (Format: PostID|CommentID|ReplyID)
+            const [postId, commentId, replyId] = report.targetId.split('|');
+            
+            const post = await Post.findById(postId);
+            if (!post) return res.json({ type: 'Deleted', message: 'The parent post was deleted.' });
+
+            // Find specific comment within the post's sub-document array
+            const comment = post.comments.id(commentId);
+            if (!comment) return res.json({ type: 'Deleted', message: 'The comment was deleted.' });
+
+            let reviewData = {
+                postId: post._id,
+                commentId: comment._id,
+                postTitle: post.title,
+                author: comment.author,
+                content: comment.content,
+                timestamp: comment.timestamp
+            };
+
+            // If it's a Reply, drill down one more level
+            if (report.targetType === 'Reply' && replyId) {
+                const reply = comment.replies.id(replyId);
+                if (!reply) return res.json({ type: 'Deleted', message: 'The reply was deleted.' });
+                
+                // Update review data with reply specifics
+                reviewData.replyId = reply._id;
+                reviewData.author = reply.author;
+                reviewData.content = reply.content;
+                reviewData.timestamp = reply.timestamp;
+            }
+
+            return res.json({
+                type: report.targetType,
+                data: reviewData
+            });
+        }
+
+        res.status(400).json({ message: "Unknown report type" });
+
+    } catch (error) {
+        console.error("View Report Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
 // ============================================
 // 5. HTML PAGE ROUTES
 // ============================================
@@ -699,7 +898,6 @@ app.get('/ClubChat/ClubChat.html', ensureAuthenticatedHtml, (req, res) => {
 // Logger
 
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running at: http://localhost:${PORT}`);
+app.listen(3000, '0.0.0.0', () => {
+  console.log('Server is running on port 3000');
 });

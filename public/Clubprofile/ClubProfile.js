@@ -52,6 +52,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 // 1. DATA LOADING
 // ==========================================
 
+// ClubProfile.js - FULL UPDATED FUNCTION
+
 async function fetchClubDetails(slug, user) {
     try {
         const response = await fetch(`/api/clubs/${slug}`);
@@ -59,23 +61,37 @@ async function fetchClubDetails(slug, user) {
 
         const data = await response.json();
         
+        // 1. SET NAMES & CATEGORIES
         setText('club-name', data.clubname); 
-        setText('ClubCategory', data.category || "Club");
-        setText('ClubDescription', data.description || data.fullDescription || "No description available.");
-        setText('MemberCount', data.membercount || 0);
-
-        const rawLogo = (data.branding && data.branding.logo) ? data.branding.logo : data.logo;
-const rawBanner = (data.branding && data.branding.banner) ? data.branding.banner : data.banner;
-        const logoUrl = fixPath(rawLogo, '/uploads/default_pfp.png');
-const bannerUrl = fixPath(rawBanner, '/uploads/default_banner.jpg');
-        const logoDiv = document.getElementById('ClubLogo');
-const bannerDiv = document.getElementById('ClubBanner');
-
-        // Helper to fix paths
-
-
-        // Fallbacks set to 'default_pfp.png' since we know that file exists
         
+        // Handle category display - could be string or array, default to Organization
+        let displayCategory = 'Organization';
+        if (data.category) {
+            if (Array.isArray(data.category) && data.category.length > 0) {
+                displayCategory = data.category[0]; // Take first element if array
+            } else if (typeof data.category === 'string' && data.category.trim() !== '') {
+                displayCategory = data.category; // Use directly if string
+            }
+        }
+        setText('ClubCategory', displayCategory);
+
+        // 2. SET DESCRIPTIONS & STATS
+        setText('ClubDescription', data.description || data.fullDescription || "No description available.");
+        
+        // Use memberCount (Matching server aggregation)
+        setText('MemberCount', data.memberCount || 0);
+
+        // 3. HANDLE IMAGES
+        // Check branding object first, then fallback to top-level fields
+        const rawLogo = (data.branding && data.branding.logo) ? data.branding.logo : data.logo;
+        const rawBanner = (data.branding && data.branding.banner) ? data.branding.banner : data.banner;
+        
+        const logoUrl = fixPath(rawLogo, '/uploads/default_pfp.png');
+        const bannerUrl = fixPath(rawBanner, '/uploads/default_banner.jpg');
+        
+        const logoDiv = document.getElementById('ClubLogo');
+        const bannerDiv = document.getElementById('ClubBanner');
+
         if (logoDiv) {
             logoDiv.style.backgroundImage = `url('${logoUrl}')`;
             logoDiv.style.backgroundSize = 'cover';
@@ -88,15 +104,16 @@ const bannerDiv = document.getElementById('ClubBanner');
             bannerDiv.style.backgroundPosition = 'center';
         }
 
+        // 4. UPDATE BUTTONS & FEED
         updateButtonState(user, data.clubname);
         loadClubPosts(data.clubname);
 
     } catch (error) {
         console.error("Error loading details:", error);
         setText('club-name', "Club Not Found");
+        setText('ClubCategory', "N/A");
     }
 }
-
 async function loadClubPosts(clubName) {
     const container = document.getElementById('ClubPostsContainer');
     if (!container) return;
@@ -233,35 +250,59 @@ function createPostCard(post, currentUser) {
     const isAdmin = currentUser && currentUser.usertype === 'Admin';
     const date = new Date(post.timestamp).toLocaleDateString();
 
-    // --- FIX: USE DEFAULT PFP IF LOGO MISSING ---
-    // This points to '/uploads/default_pfp.png' because you confirmed that file works.
     const logoUrl = fixPath(post.clubLogo, '/uploads/default_pfp.png');
-const fallbackImage = '/uploads/default_pfp.png';
-
+    const fallbackImage = '/uploads/default_pfp.png';
     const profileLink = post.clubSlug ? `/ClubProfile/ClubProfile.html?slug=${post.clubSlug}` : '#';
     const isLiked = post.isLiked;
     const heartColor = isLiked ? "#fa3737" : "none"; 
     const comments = post.comments || [];
     const postLink = `${window.location.origin}/ClubProfile/ClubProfile.html?slug=${post.clubSlug}&postId=${post._id}`;
 
-    // Comments HTML
+    // --- COMMENTS HTML WITH AVATARS ---
     const commentsHTML = comments.map(c => {
         const isMyComment = c.author === currentUserName;
-        const deleteBtn = isMyComment ? `<button class="delete-comment-btn" onclick="deleteComment('${post._id}', '${c._id}')">Delete</button>` : '';
+        const avatarUrl = c.userProfile || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.author)}&background=random&color=fff&size=64`;
+        
+        const deleteBtn = isMyComment ? 
+            `<button class="delete-comment-btn" onclick="deleteComment('${post._id}', '${c._id}')" style="color:red; background:none; border:none; cursor:pointer; font-size:0.7rem; margin-left:10px;">Delete</button>` 
+            : '';
+        
         const replies = c.replies || [];
-        const repliesHTML = replies.map(r => `<div class="reply-item"><span class="comment-author" style="font-size:0.8rem;">${r.author}:</span> ${r.content}</div>`).join('');
+        const repliesHTML = replies.map(r => {
+             const rAvatar = r.userProfile || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.author)}&background=random&color=fff&size=64`;
+             return `
+             <div class="reply-item" style="display:flex; align-items:flex-start; margin-top:8px; gap:8px;">
+                <img src="${rAvatar}" 
+     onclick="viewUserProfile('${r.author}')" 
+     style="width:24px; height:24px; border-radius:50%; object-fit:cover; flex-shrink:0; cursor:pointer;">
+                <div>
+                    <span class="comment-author" style="font-weight:bold; font-size:0.85rem;">${r.author}:</span> 
+                    <span style="font-size:0.9rem;">${r.content}</span>
+                </div>
+             </div>`;
+        }).join('');
         
         return `
-        <div class="comment-item" id="comment-${c._id}">
-            <div class="comment-header">
-                <span class="comment-author">${c.author}:</span> ${deleteBtn}
-                <button class="reply-btn" onclick="toggleReplyInput('${c._id}')">Reply</button>
+           <div class="comment-item" id="comment-${c._id}" style="display:flex; gap:10px; margin-bottom:15px;">
+    <img src="${avatarUrl}" onclick="viewUserProfile('${c.author}')" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer;">
+    <div style="flex:1;">
+        <div class="comment-bubble"> <div class="comment-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="comment-author">${c.author}</span>
+                ${deleteBtn}
             </div>
-            <div class="comment-text" style="white-space: pre-wrap;">${c.content}</div>
-            <div class="replies-list">${repliesHTML}</div>
-            <div id="reply-input-${c._id}" class="reply-input-container" style="display:none;">
-                <input type="text" class="reply-input" placeholder="Reply..." id="input-reply-${c._id}">
-                <button onclick="submitReply('${post._id}', '${c._id}')" class="comment-btn">Post</button>
+            <div class="comment-text">${c.content}</div>
+        </div>
+                
+                <div style="margin-top:2px; margin-left:12px; font-size:0.8rem;">
+                    <button class="reply-btn" onclick="toggleReplyInput('${c._id}')" style="background:none; border:none; color:#666; font-weight:bold; cursor:pointer;">Reply</button>
+                </div>
+
+                <div class="replies-list" style="margin-left:10px;">${repliesHTML}</div>
+                
+                <div id="reply-input-${c._id}" class="reply-input-container" style="display:none; margin-top:10px;">
+                    <input type="text" class="reply-input" placeholder="Reply..." id="input-reply-${c._id}">
+                    <button onclick="submitReply('${post._id}', '${c._id}')" class="comment-btn">Post</button>
+                </div>
             </div>
         </div>`;
     }).join('');

@@ -44,11 +44,21 @@ function renderClubs(clubs) {
 
     clubs.forEach(club => {
         // Fallback for missing images
-        const logo = (club.branding && club.branding.logo) ? club.branding.logo : '../assets/default_logo.png';
+        const logo = (club.branding && club.branding.logo) ? club.branding.logo : '/uploads/default_pfp.png';
         const banner = (club.branding && club.branding.banner) ? `url('${club.branding.banner}')` : '#fa3737';
         
         // Handle Banner: It can be a URL or a Color
         const bannerStyle = banner.startsWith('url') ? `background-image: ${banner};` : `background-color: ${banner};`;
+        
+        // Handle category - could be string or array, default to Organization
+        let categoryDisplay = 'Organization';
+        if (club.category) {
+            if (typeof club.category === 'string' && club.category.trim() !== '') {
+                categoryDisplay = club.category;
+            } else if (Array.isArray(club.category) && club.category.length > 0) {
+                categoryDisplay = club.category[0];
+            }
+        }
 
         const card = document.createElement('div');
         card.className = 'club-card';
@@ -59,7 +69,7 @@ function renderClubs(clubs) {
             <div class="card-logo" style="background-image: url('${logo}');"></div>
             
             <div class="card-name">${club.clubname}</div>
-            <div class="card-category">${club.category || 'Organization'}</div>
+            <div class="card-category">${categoryDisplay}</div>
             
             <div class="card-actions">
                 <span class="visit-btn" style="background:#fa3737; color:white;">View Club</span>
@@ -73,10 +83,20 @@ function filterClubs() {
     const term = document.getElementById('ClubSearchInput').value.toLowerCase();
     
     // Filter the global array based on Name or Category
-    const filtered = allClubs.filter(club => 
-        club.clubname.toLowerCase().includes(term) || 
-        (club.category && club.category.toLowerCase().includes(term))
-    );
+    const filtered = allClubs.filter(club => {
+        const clubNameMatch = club.clubname.toLowerCase().includes(term);
+        
+        let categoryMatch = false;
+        if (club.category) {
+            if (typeof club.category === 'string') {
+                categoryMatch = club.category.toLowerCase().includes(term);
+            } else if (Array.isArray(club.category)) {
+                categoryMatch = club.category.some(c => c.toLowerCase().includes(term));
+            }
+        }
+        
+        return clubNameMatch || categoryMatch;
+    });
 
     renderClubs(filtered);
 }
@@ -190,7 +210,7 @@ function clearFilters() {
 }
 
 function applyFilters() {
-    // 1. Get Sort Value
+    // 1. Get current sort and search values
     const sortRadios = document.getElementsByName('sortOrder');
     for (const radio of sortRadios) {
         if (radio.checked) {
@@ -198,25 +218,31 @@ function applyFilters() {
             break;
         }
     }
+    const searchTerm = document.getElementById('ClubSearchInput').value.toLowerCase();
 
-    // 2. Start with ALL clubs (make a copy)
-    let filtered = [...allClubs];
+    // 2. Filter logic
+    let filtered = allClubs.filter(club => {
+        const matchesSearch = club.clubname.toLowerCase().includes(searchTerm);
+        
+        // Filter by category (handle both string and array)
+        let matchesTags = activeTags.size === 0;
+        if (activeTags.size > 0 && club.category) {
+            if (typeof club.category === 'string') {
+                matchesTags = activeTags.has(club.category);
+            } else if (Array.isArray(club.category)) {
+                matchesTags = club.category.some(t => activeTags.has(t));
+            }
+        }
+            
+        return matchesSearch && matchesTags;
+    });
 
-    // 3. Apply Tag Filter
-    if (activeTags.size > 0) {
-        filtered = filtered.filter(club => {
-            // Check if club.category matches any of the active tags
-            if (!club.category) return false;
-            return activeTags.has(club.category);
-        });
-    }
-
-    // 4. Apply Sort
+    // 3. Sorting logic using memberCount
     filtered.sort((a, b) => {
         const nameA = a.clubname.toLowerCase();
         const nameB = b.clubname.toLowerCase();
-        const membersA = a.membercount || 0;
-        const membersB = b.membercount || 0;
+        const membersA = a.memberCount || 0; // CamelCase match
+        const membersB = b.memberCount || 0;
 
         switch (activeSort) {
             case 'az': return nameA.localeCompare(nameB);
@@ -227,17 +253,11 @@ function applyFilters() {
         }
     });
 
-    // 5. Apply Search Term (Keep existing search logic too)
-    const searchTerm = document.getElementById('ClubSearchInput').value.toLowerCase();
-    if (searchTerm) {
-        filtered = filtered.filter(club => 
-            club.clubname.toLowerCase().includes(searchTerm)
-        );
-    }
-
-    // 6. Render & Close
     renderClubs(filtered);
-    closeFilterModal();
+    
+    // Close modal if it exists on the page
+    const modal = document.getElementById('FilterModal');
+    if (modal) modal.style.display = 'none';
 }
 
 // Override the old filterClubs function so the search bar uses the new pipeline

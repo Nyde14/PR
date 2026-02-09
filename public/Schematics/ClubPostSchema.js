@@ -1,28 +1,33 @@
 const mongoose = require('mongoose');
 
 const clubPostSchema = new mongoose.Schema({
+    author: { type: String, required: true },
+    authorProfile: String,
+    clubname: { type: String, required: true },
     title: { type: String, required: true },
     content: { type: String, required: true },
-    author: { type: String, required: true },
-    clubname: { type: String, required: true },
-    mediaUrl: { type: String }, 
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    visibility: { type: String, enum: ['public', 'club-only'], default: 'public' },
+    mediaUrl: { type: String },
+    mediaType: { type: String, default: 'none' }, // 'image', 'video', 'none'
     timestamp: { type: Date, default: Date.now },
-    
-    // --- UPDATED COMMENT SECTION ---
-    comments: [{
-        author: String,
-        userAvatar: { type: String }, // <--- ADD THIS LINE
-        content: String,
-        timestamp: { type: Date, default: Date.now },
-        replies: [{
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    comments: [
+        {
             author: String,
-            userAvatar: { type: String }, // <--- ADD THIS TOO (Optional for replies)
+            userProfile: String, // Cache avatar for speed
             content: String,
-            timestamp: { type: Date, default: Date.now }
-        }]
-    }]
+            timestamp: { type: Date, default: Date.now },
+            replies: [{
+                author: String,
+                userProfile: String,
+                content: String,
+                timestamp: { type: Date, default: Date.now }
+            }]
+        }
+    ],
+    visibility: { type: String, default: 'public' },
+    
+    // --- NEW FIELD FOR ADMIN ANNOUNCEMENTS ---
+    isGlobal: { type: Boolean, default: false } 
 });
 
 module.exports = mongoose.model('ClubPost', clubPostSchema);

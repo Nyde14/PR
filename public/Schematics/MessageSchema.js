@@ -15,6 +15,12 @@ const MessageSchema = new mongoose.Schema({
     mediaUrl: { type: String, default: null },
     mediaType: { type: String, enum: ['image', 'video', 'none'], default: 'none' },
     
+    approvalStatus: { 
+        type: String, 
+        enum: ['pending', 'approved', 'rejected'], 
+        default: 'pending' 
+    },  
+
     isDeleted: { type: Boolean, default: false },
     deletedBy: { type: String, default: null },
     deletedAt: { type: Date, default: null },

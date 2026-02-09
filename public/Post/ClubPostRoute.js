@@ -32,23 +32,33 @@ const getUser = async (req) => {
 
 router.post('/create', upload.single('media'), async (req, res) => {
     try {
-        // --- A. AUTHENTICATION ---
         const token = req.session?.token || req.headers['authorization']?.split(' ')[1];
         if (!token) return res.status(401).json({ message: "Unauthorized" });
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.userId);
         
-        if (user.usertype !== 'Teacher' && user.usertype !== 'Admin') {
+        // --- 1. ADMIN CHECK ---
+        const isGlobal = req.body.isGlobal === 'true' && user.usertype === 'Admin';
+        
+        // If it's a regular post, enforce Adviser check
+        if (!isGlobal && user.usertype !== 'Teacher' && user.usertype !== 'Admin') {
             return res.status(403).json({ message: "Only advisers can post." });
         }
 
-        // --- B. DATA PREPARATION ---
+        // --- 2. CREATE POST ---
         const { title, content, visibility } = req.body; 
-        const targetClubName = req.body.clubname || user.club; 
+        
+        // If Global, force name to "UE Admin" or "University Announcement"
+        const targetClubName = isGlobal ? 'UE University Admin' : (req.body.clubname || user.club); 
 
         let mediaUrl = "";
-        if (req.file) mediaUrl = `/uploads/${req.file.filename}`;
+        let mediaType = 'none'; // Detect type
+        if (req.file) {
+            mediaUrl = `/uploads/${req.file.filename}`;
+            if (req.file.mimetype.startsWith('image/')) mediaType = 'image';
+            else if (req.file.mimetype.startsWith('video/')) mediaType = 'video';
+        }
 
         const newPost = new ClubPost({
             title,
@@ -56,56 +66,47 @@ router.post('/create', upload.single('media'), async (req, res) => {
             author: user.name,
             clubname: targetClubName, 
             mediaUrl,
-            visibility: visibility || 'public'
+            mediaType,
+            visibility: visibility || 'public',
+            isGlobal: isGlobal // Save the flag
         });
 
-        // --- C. SAVE POST ---
         await newPost.save();
 
-        // --- D. NOTIFICATION LOGIC (REVISED & ROBUST) ---
-        // Instead of checking the Club's list, we find Users who follow this club.
-        
-        // 1. Find MEMBERS: Users where club == targetClubName
-        const members = await User.find({ club: targetClubName }).select('name');
+        // --- 3. NOTIFICATION LOGIC ---
+        let recipients = [];
 
-        // 2. Find FOLLOWERS: Users where following array contains targetClubName
-        const followers = await User.find({ following: targetClubName }).select('name');
-
-        // 3. Combine Lists
-        const allRecipients = [...members, ...followers];
-
-        // 4. Extract Names & Remove Duplicates (and exclude the sender!)
-        const uniqueNames = [...new Set(allRecipients.map(u => u.name))]
-            .filter(name => name !== user.name); // Don't notify the person who posted
-
-        // 5. Create Alerts
-        const alerts = uniqueNames.map(name => ({
-            recipient: name, 
-            sender: targetClubName, 
-            type: 'info',
-            message: `📢 New announcement from ${targetClubName}: ${title}`,
-            link: `/ClubPortalFeed/ClubPortalFeed.html`,
-            timestamp: new Date()
-        }));
-
-        // 6. Send them
-        if (alerts.length > 0) {
-            await Notification.insertMany(alerts);
-            console.log(`✅ Sent ${alerts.length} notifications for ${targetClubName}`);
+        if (isGlobal) {
+            // GLOBAL: Notify EVERYONE
+            const allUsers = await User.find({}).select('name');
+            recipients = allUsers.map(u => u.name).filter(name => name !== user.name);
         } else {
-            console.log(`⚠️ Post created, but no followers/members found for ${targetClubName}`);
+            // REGULAR: Notify Followers & Members
+            const members = await User.find({ club: targetClubName }).select('name');
+            const followers = await User.find({ following: targetClubName }).select('name');
+            recipients = [...new Set([...members, ...followers].map(u => u.name))]
+                .filter(name => name !== user.name);
+        }
+
+        if (recipients.length > 0) {
+            const alerts = recipients.map(name => ({
+                recipient: name, 
+                sender: targetClubName, 
+                type: isGlobal ? 'alert' : 'info', // 'alert' can be styled red in notif list
+                message: isGlobal ? `🚨 GLOBAL ANNOUNCEMENT: ${title}` : `📢 New post from ${targetClubName}`,
+                link: `/ClubPortalFeed/ClubPortalFeed.html?postId=${newPost._id}`,
+                timestamp: new Date()
+            }));
+            await Notification.insertMany(alerts);
         }
 
         res.json({ message: "Post created!" });
 
     } catch (error) {
         console.error("Create Post Error:", error);
-        if (!res.headersSent) {
-            res.status(500).json({ error: error.message });
-        }
+        res.status(500).json({ error: error.message });
     }
 });
-
 router.get('/feed', async (req, res) => {
     try {
         const user = await getUser(req);
@@ -129,8 +130,8 @@ router.get('/feed', async (req, res) => {
 
         // 3. Fetch All Posts (filtered by hidden)
         const allPosts = await ClubPost.aggregate([
-            { $match: { _id: { $nin: hiddenIds.map(id => new mongoose.Types.ObjectId(id)) } } }, 
-            { $sort: { timestamp: -1 } },
+    { $match: { _id: { $nin: hiddenIds.map(id => new mongoose.Types.ObjectId(id)) } } },
+            { $sort: { isGlobal: -1, timestamp: -1 } },
             {
                 $lookup: {
                     from: "Clubs",
@@ -145,6 +146,8 @@ router.get('/feed', async (req, res) => {
             {
                 $project: {
                     title: 1, content: 1, mediaUrl: 1, mediaType: 1, timestamp: 1, 
+                    author: 1,
+        authorProfile: 1,   
                     clubname: 1, author: 1, likes: 1, comments: 1, visibility: 1,
                     clubLogo: "$clubInfo.branding.logo",
                     clubSlug: "$clubInfo.urlSlug",

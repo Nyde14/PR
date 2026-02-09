@@ -23,14 +23,20 @@
     </div>
 
     <main id="MainContent" class="dashboard-layout">
-        <div class="dashboard-header">
+    <div class="dashboard-header">
+        <div class="header-text">
             <h1>Admin Dashboard</h1>
             <p>Manage users and review incoming reports.</p>
         </div>
-
+        <button class="btn-broadcast" onclick="openAnnouncementModal()">
+            <i class='bx bx-broadcast'></i> Global Announcement
+        </button>
+    </div>
         <div class="tabs-container">
+            <button id="TabCreate" class="tab-btn" onclick="switchTab('create')">Create Account</button>
             <button id="TabUsers" class="tab-btn active" onclick="switchTab('users')">User Management</button>
             <button id="TabReports" class="tab-btn" onclick="switchTab('reports')">Reports</button>
+            <button id="TabClubs" class="tab-btn" onclick="switchTab('clubs')">Club Management</button>
         </div>
 
         <div id="UsersSection" class="table-card">
@@ -81,7 +87,110 @@
                 </tbody>
             </table>
         </div>
+        <div id="CreateSection" class="table-card" style="display:none; max-width: 600px; margin: 0 auto;">
+    <h3 style="margin-top:0; color:#333;">Create New Account</h3>
+    <p style="color:#666; font-size:0.9rem; margin-bottom:20px;">Manually register Faculty Advisers or fellow Administrators.</p>
+
+    <form id="CreateUserForm" onsubmit="handleCreateUser(event)">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label class="form-label">Full Name</label>
+                <input type="text" id="NewName" class="modal-input" required placeholder="e.g. Dr. John Doe">
+            </div>
+            <div>
+                <label class="form-label">UE Email</label>
+                <input type="email" id="NewEmail" class="modal-input" required placeholder="e.g. john.doe@ue.edu.ph">
+            </div>
+        </div>
+
+        <label class="form-label">Password</label>
+        <input type="password" id="NewPassword" class="modal-input" required placeholder="Min. 6 characters">
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label class="form-label">Role</label>
+                <select id="NewRole" class="modal-input" onchange="toggleClubSelect()">
+                    <option value="Teacher">Faculty Adviser</option>
+                    <option value="Admin">Administrator</option>
+                </select>
+            </div>
+            <div id="ClubSelectContainer">
+                <label class="form-label">Assign to Club</label>
+                <select id="NewClub" class="modal-input">
+                    <option value="none">-- Select Club --</option>
+                    </select>
+            </div>
+        </div>
+
+
+        <button type="submit" class="btn-confirm" style="width:100%; padding:12px; margin-top:10px; font-weight:bold;">
+            <i class='bx bx-user-plus'></i> Create Account
+        </button>
+    </form>
+</div>
+<div id="ClubsSection" class="table-card" style="display:none;">
+    <div class="table-actions" style="justify-content: space-between;">
+        <h3 style="margin:0;">Manage Organizations</h3>
+        <button onclick="openClubModal()" class="btn-broadcast" style="padding: 8px 15px;">
+            <i class='bx bx-plus-circle'></i> Add New Club
+        </button>
+    </div>
+
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Logo</th>
+                <th>Club Name</th>
+                <th>Assigned Adviser</th>
+                <th>Members</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="ClubTableBody">
+            <tr><td colspan="5" style="text-align:center;">Loading clubs...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div id="ClubEditModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeClubModal()">&times;</span>
+        <h3 id="ClubModalTitle" style="color: #fa3737; margin-top: 0;">Add New Club</h3>
+        
+        <label class="form-label">Club Logo</label>
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+            <img id="ClubModalPreview" src="/uploads/default_pfp.png" 
+                 style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #eee;">
+            <input type="file" id="EditClubLogo" class="modal-input" style="margin:0;" 
+                   accept="image/*" onchange="previewClubLogo(this)">
+        </div>
+
+        <label class="form-label">Club Name</label>
+        <input type="text" id="EditClubName" class="modal-input" placeholder="e.g. Computer Students Society">
+
+        <label class="form-label" style="margin-top:15px;">Club Categories (Tags)</label>
+<div id="EditClubTags" class="tags-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px;">
+    <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Academic')">Academic</button>
+    <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Sports')">Sports</button>
+    <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Social')">Social</button>
+    <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Arts')">Arts</button>
+    <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Performance')">Performance</button>
+    <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Tech')">Tech</button>
+</div>
+
+        <label class="form-label">Assign Adviser</label>
+        <select id="EditClubAdviser" class="modal-input">
+            <option value="none">-- Select Faculty/Admin --</option>
+        </select>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeClubModal()" class="btn-cancel">Cancel</button>
+            <button id="BtnSaveClub" onclick="saveClubData()" class="btn-confirm">Save Changes</button>
+        </div>
+    </div>
+</div>
     </main>
+    
 
     <div id="RestrictModal" class="modal">
         <div class="modal-content" style="max-width: 400px;">
@@ -127,6 +236,54 @@
             </div>
         </div>
     </div>
+
+
+<div id="AnnouncementModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close" onclick="closeAnnouncementModal()">&times;</span>
+        <h3 style="color: #fa3737; margin-top: 0;">📢 Global Announcement</h3>
+        <p style="font-size:0.9rem; color:#666;">This post will appear at the top of everyone's feed and trigger a notification.</p>
+
+        <label style="display:block; margin-top:15px; font-weight:bold;">Title</label>
+        <input type="text" id="AnnounceTitle" class="modal-input" placeholder="e.g. Classes Suspended">
+
+        <label style="display:block; margin-top:15px; font-weight:bold;">Message</label>
+        <textarea id="AnnounceContent" class="modal-input" rows="5" placeholder="Enter details..."></textarea>
+        
+        <label style="display:block; margin-top:15px; font-weight:bold;">Attach Image (Optional)</label>
+        <input type="file" id="AnnounceMedia" class="modal-input">
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeAnnouncementModal()" class="btn-cancel">Cancel</button>
+            <button onclick="submitAnnouncement()" class="btn-confirm">🚀 Post Globally</button>
+        </div>
+    </div>
+</div>
+<div id="ReviewModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close" onclick="closeReviewModal()">&times;</span>
+        <h3 id="ReviewTitle" style="color: #fa3737; margin-top: 0;">Reported Item</h3>
+        
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin: 15px 0;">
+            <div style="font-size: 0.85rem; color: #888; margin-bottom: 8px;">
+                <strong id="ReviewAuthor" style="color:#333;">Author</strong> • <span id="ReviewDate">Date</span>
+            </div>
+            
+            <div id="ReviewContent" style="font-size: 1.1rem; color: #333; line-height: 1.5; margin-bottom: 15px;">
+                ...
+            </div>
+            
+            <div style="font-size: 0.85rem; color: #666; border-top: 1px solid #eee; padding-top: 8px;">
+                Context: <span id="ReviewContext" style="font-style:italic;">...</span>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+            <button id="BtnReviewDelete" class="btn-confirm" style="background-color: #dc3545;">🗑️ Delete Content</button>
+            <button onclick="closeReviewModal()" class="btn-cancel">Close</button>
+        </div>
+    </div>
+</div>
 
     <script src="/Global.js"></script>
     <script src="AdminDashboard.js"></script>

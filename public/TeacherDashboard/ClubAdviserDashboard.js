@@ -11,14 +11,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         const liveData = await response.json();
         currentAdviserName = liveData.name; 
 
-        // Validate User Type
-        const type = liveData.usertype;
-        if (type !== 'Admin' && type !== 'Teacher') {
-            alert("Access Denied.");
-            window.location.href = "/Login/Login.html";
+        // --- THE FIX: Define variables BEFORE using them ---
+        const type = liveData.usertype; // Get 'Admin' or 'Teacher'
+        const role = liveData.clubPosition || 'Member'; // Get 'President', 'VP', etc.
+
+        // Now validate these values
+        const isOfficer = role === 'President' || role === 'Vice President';
+        const isStaff = type === 'Admin' || type === 'Teacher';
+
+        // Validate Access
+        if (!isStaff && !isOfficer) {
+            alert("Access Denied. Only Advisers, Presidents, and VPs can view this dashboard.");
+            window.location.href = "/ClubPortalFeed/ClubPortalFeed.html";
             return;
         }
 
+        // Proceed with loading club data
         if (liveData.club && liveData.club !== "none" && liveData.club !== "") {
             document.getElementById('DisplayClubName').innerText = liveData.club;
             document.getElementById('AdviserWelcome').innerText = `Managing ${liveData.club}`;
@@ -27,11 +35,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             fetchPendingApplications(liveData.club); 
             fetchClubMembers(liveData.club); 
         } else {
-            document.getElementById('ApplicationsList').innerHTML = 
-                "<tr><td colspan='4'>No club assigned to this Adviser account.</td></tr>";
+            const appList = document.getElementById('ApplicationsList');
+            if (appList) {
+                appList.innerHTML = "<tr><td colspan='4'>No club assigned to this account.</td></tr>";
+            }
         }
     } catch (error) {
         console.error("Dashboard Auth Error:", error);
+        // Optional: Redirect to login if unauthorized
     }
     setupClubLogoUploader();
 });
@@ -44,47 +55,82 @@ async function fetchClubMembers(clubName) {
     try {
         const response = await fetch(`/api/clubs/members?clubname=${encodeURIComponent(clubName)}`);
         const members = await response.json();
-
         const container = document.getElementById('MemberList');
         container.innerHTML = "";
 
-        if (!Array.isArray(members) || members.length === 0) {
-            container.innerHTML = "<tr><td colspan='4'>No members found.</td></tr>";
-            return;
-        }
+        // Re-check current user's role for security
+        const authRes = await fetch('/api/auth/me');
+        const currentUser = await authRes.json();
+        const isStaff = currentUser.usertype === 'Admin' || currentUser.usertype === 'Teacher';
+
+        const roleOptions = ['Member', 'Active Member', 'PIO', 'Auditor', 'Treasurer', 'Secretary', 'Vice President', 'President'];
 
         members.forEach(member => {
-            if (member.name === currentAdviserName) return; // Exclude self
+            // 1. Skip the Adviser themselves in the list
+            if (member.name === currentAdviserName) return; 
 
-            const row = document.createElement('tr');
+            const currentRole = member.clubPosition || 'Member';
             const isBanned = member.isRestricted;
 
-            // Status Badge
+            // 2. Security: Only Teachers/Admins can change roles. 
+            // Presidents and VPs can see the list but cannot change roles.
+            const isDisabled = !isStaff ? 'disabled' : '';
+            
+            const roleSelect = `
+                <select onchange="window.updateMemberRole('${member._id}', this.value)" 
+                        class="role-dropdown-styled" ${isDisabled}>
+                    ${roleOptions.map(r => `<option value="${r}" ${r === currentRole ? 'selected' : ''}>${r}</option>`).join('')}
+                </select>`;
+
             const statusBadge = isBanned 
-                ? `<span class="value-badge" style="background:#ffe6e6; color:red; font-weight:bold;">Restricted</span>`
-                : `<span class="value-badge" style="background:#e6ffe6; color:green;">Active</span>`;
+                ? `<span class="status-badge" style="background:#dc3545;">Restricted</span>`
+                : `<span class="status-badge green">Active</span>`;
 
-            // Action Button
-            // Note: We use window.unrestrictUser and window.openRestrictModal here
-            const actionBtn = isBanned
-                ? `<button onclick="window.unrestrictUser('${member._id}', '${member.name}')" class="btn-approve" style="background:#28a745; margin-right:5px;">Unrestrict</button>`
-                : `<button onclick="window.openRestrictModal('${member._id}', '${member.name}')" class="btn-reject" style="background:#ffc107; color:black; margin-right:5px;">Restrict</button>`;
-
+            const row = document.createElement('tr');
             row.innerHTML = `
                 <td><strong>${member.name}</strong></td>
-                <td>${member.email || 'No email provided'}</td>
-                <td>${statusBadge}</td>
-                <td style="display:flex; align-items:center;">
-                    ${actionBtn}
-                    <button class="btn-reject" onclick="window.removeMember('${member.name}')">Remove</button>
+                <td>${member.email || 'N/A'}</td>
+                <td>${roleSelect}</td> <td>${statusBadge}</td>
+                <td>
+                    <div style="display:flex; gap:5px;">
+                        ${isStaff ? `
+                            <button class="btn-approve" onclick="window.unrestrictUser('${member._id}', '${member.name}')" style="${!isBanned ? 'display:none' : ''}">Unrestrict</button>
+                            <button class="btn-reject" onclick="window.openRestrictModal('${member._id}', '${member.name}')" style="${isBanned ? 'display:none' : ''}">Restrict</button>
+                        ` : ''}
+                        <button class="btn-reject" onclick="window.removeMember('${member.name}')">Remove</button>
+                    </div>
                 </td>
             `;
             container.appendChild(row);
         });
-    } catch (error) {
-        console.error("Error fetching members:", error);
-    }
+    } catch (error) { console.error("Error loading members:", error); }
 }
+
+// Global function to update role via API
+window.updateMemberRole = async function(userId, newRole) {
+    if(!confirm(`Change role to ${newRole}?`)) return;
+    
+    try {
+        const res = await fetch('/api/users/assign-role', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, newRole })
+        });
+
+        if(res.ok) {
+            alert("✅ Role updated successfully!");
+            // Refresh the list immediately to confirm the DB has the new role
+            const clubName = document.getElementById('DisplayClubName').innerText;
+            fetchClubMembers(clubName);
+        } else {
+            const err = await res.json();
+            alert("❌ Failed: " + err.message);
+        }
+    } catch(e) { 
+        console.error(e); 
+        alert("Network error updating role.");
+    }
+};
 
 // --- RESTRICTION MODAL LOGIC (Attached to Window) ---
 

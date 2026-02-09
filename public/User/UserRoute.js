@@ -10,6 +10,21 @@ const fs = require('fs');
 require('dotenv').config();
 
 // Helper
+const ensureAuthenticated = (req, res, next) => {
+    // Check for token in session (for HTML loads) or headers (for API calls)
+    const token = req.session.token || req.headers['authorization']?.split(' ')[1];
+
+    if (!token) return res.status(401).json({ message: "Please log in." });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded; // This makes req.user.userId available in your routes
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "Session expired." });
+    }
+};
+
 const getRequester = async (req) => {
     const token = req.session?.token || req.headers['authorization']?.split(' ')[1];
     if (!token) return null;
@@ -332,5 +347,56 @@ router.put('/interests', async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+router.put('/profile-update', ensureAuthenticated, async (req, res) => {
+    try {
+        const { bio } = req.body;
+        // Use the ID from our new middleware
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.userId, 
+            { bio: bio }, 
+            { new: true } // This ensures you get the LATEST bio back
+        );
 
+        if (!updatedUser) return res.status(404).json({ message: "User not found" });
+        res.status(200).json({ message: "Bio updated!", bio: updatedUser.bio });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/public-profile/:name', ensureAuthenticated, async (req, res) => {
+    try {
+        // We MUST include 'clubPosition' here to avoid the "Member" reset
+        const user = await User.findOne({ name: req.params.name })
+            .select('name usertype club bio profilePicture clubPosition'); 
+        
+        if (!user) return res.status(404).json({ message: "User not found" });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+});
+router.put('/assign-role', ensureAuthenticated, async (req, res) => {
+    try {
+        const { userId, newRole } = req.body;
+        const requesterId = req.user.userId;
+
+        // 1. Verify Requester is Adviser or Admin
+        const requester = await User.findById(requesterId);
+        if (requester.usertype !== 'Teacher' && requester.usertype !== 'Admin') {
+            return res.status(403).json({ message: "Only Advisers can assign roles." });
+        }
+
+        // 2. Update Target User
+        const updatedUser = await User.findByIdAndUpdate(
+            userId, 
+            { clubPosition: newRole }, 
+            { new: true }
+        );
+
+        res.json({ success: true, message: `Role updated to ${newRole}`, user: updatedUser });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 module.exports = router;

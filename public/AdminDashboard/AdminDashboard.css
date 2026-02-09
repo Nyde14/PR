@@ -273,3 +273,246 @@ body {
 .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
 .close:hover { color: black; }
 .modal-input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+body {
+    background-color: #f4f6f9;
+    font-family: 'Inter', sans-serif; /* Professional base font */
+}
+
+h1, h2, h3, .tab-btn {
+    font-family: 'Montserrat', sans-serif; /* Bold heading font */
+}
+
+/* Fix Header Layout: Use a single container for title and button */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.header-text h1 {
+    color: #333;
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.header-text p {
+    margin: 5px 0 0 0;
+    color: #666;
+}
+
+/* Style the Broadcast Button */
+.btn-broadcast {
+    background: #fa3737;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.2s, background 0.2s;
+    box-shadow: 0 4px 12px rgba(250, 55, 55, 0.2);
+}
+
+.btn-broadcast:hover {
+    background: #d62f2f;
+    transform: translateY(-2px);
+}
+body.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+body.dark-mode .dashboard-header h1 { color: #fff; }
+body.dark-mode .dashboard-header p { color: #bbb; }
+
+/* Table Cards and Tabs */
+body.dark-mode .table-card {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .tab-btn {
+    background: #2c2c2c;
+    color: #aaa;
+}
+
+body.dark-mode .tab-btn.active {
+    background: #1e1e1e;
+    color: #fa3737;
+}
+
+/* Admin Table in Dark Mode */
+body.dark-mode .admin-table th {
+    background-color: #252525;
+    color: #ddd;
+    border-bottom: 1px solid #444;
+}
+
+body.dark-mode .admin-table td {
+    border-bottom: 1px solid #333;
+    color: #ccc;
+}
+
+body.dark-mode #SearchInput, 
+body.dark-mode #RoleFilter,
+body.dark-mode .modal-input {
+    background: #2c2c2c;
+    border-color: #444;
+    color: #fff;
+}
+
+/* Modal Dark Mode */
+body.dark-mode .modal-content {
+    background-color: #1e1e1e;
+    border-color: #444;
+    color: #fff;
+}
+.form-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #444;
+    margin-bottom: 5px;
+}
+
+/* Enhancing input focus for the form */
+#CreateSection .modal-input:focus {
+    border-color: #fa3737;
+    box-shadow: 0 0 5px rgba(250, 55, 55, 0.2);
+    outline: none;
+}
+
+#CreateSection {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.tabs-container {
+    display: flex;
+    gap: 8px; /* Balanced spacing between tabs */
+    margin-bottom: 0; 
+    border-bottom: none;
+    overflow-x: auto; /* Handles mobile/small screens */
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    padding: 12px 20px;
+    background: #e9ecef;
+    border: none;
+    border-radius: 8px 8px 0 0; /* Traditional tab look */
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap; /* Prevents text wrapping */
+}
+
+.tab-btn:hover {
+    background: #dee2e6;
+    color: #333;
+}
+
+.tab-btn.active {
+    background: white;
+    color: #fa3737; /* UE Red brand color */
+    box-shadow: 0 -3px 0 #fa3737 inset; /* Bottom underline for active state */
+    position: relative;
+    z-index: 2;
+}
+
+/* TABLE CARD - Visual connection to the tabs */
+.table-card {
+    background: white;
+    padding: 25px;
+    border-radius: 0 12px 12px 12px; /* Sharp top-left to meet the active tab */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+    animation: fadeIn 0.3s ease-out;
+}
+#ClubTableBody img {
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+}
+
+.badge-active {
+    background: #e6ffe6;
+    color: #28a745;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+/* Ensure the modal labels are clear */
+.form-label {
+    display: block;
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 5px;
+    margin-top: 15px;
+}
+
+/* Create Section Form Layout */
+#CreateSection form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Dark Mode Support for new sections */
+body.dark-mode .tab-btn {
+    background: #2a2a2a;
+    color: #aaa;
+}
+
+body.dark-mode .tab-btn.active {
+    background: #1e1e1e;
+    color: #fa3737;
+    box-shadow: 0 -3px 0 #fa3737 inset;
+}
+.filter-tag {
+    padding: 6px 14px;
+    background: #f0f2f5;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    color: #555;
+}
+
+.filter-tag:hover {
+    background: #e4e6e9;
+}
+
+.filter-tag.selected {
+    background: #fa3737; /* UE Red */
+    color: white;
+    border-color: #fa3737;
+    font-weight: bold;
+}
+.badge-pending {
+    background: #fff3cd; /* Light Yellow */
+    color: #856404;
+}
+
+.badge-resolved {
+    background: #d4edda; /* Light Green */
+    color: #155724;
+}
+
+.badge-dismissed {
+    background: #e2e3e5; /* Light Gray */
+    color: #383d41;
+}

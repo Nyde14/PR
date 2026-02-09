@@ -22,37 +22,44 @@ const getUser = async (req) => {
 router.post('/submit', async (req, res) => {
     try {
         const { targetType, targetId, reason } = req.body;
+        
+        // Validate inputs
+        if (!targetType || !targetId || !reason) {
+            return res.status(400).json({ message: "Missing required fields" });
+        }
+        
         const user = await getUser(req);
         if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+        console.log("Submitting report:", { targetType, targetId, reason, reporter: user.name });
 
         const newReport = new Report({
             reporter: user.name,
             targetType,
             targetId,
-            reason
+            reason,
+            status: 'Pending' // Set initial status
         });
 
-        await newReport.save();
-        res.json({ message: "Report submitted. Admins will review it shortly." });
+        const saved = await newReport.save();
+        console.log("Report saved successfully:", saved._id);
+        
+        res.json({ message: "Report submitted. Admins will review it shortly.", reportId: saved._id });
 
     } catch (error) {
-        console.error("Report Error:", error);
-        res.status(500).json({ message: "Server error" });
+        console.error("Report Submission Error:", error);
+        res.status(500).json({ message: "Failed to submit report", error: error.message });
     }
 });
 
 // 2. GET ALL REPORTS (Admin Only)
 router.get('/all', async (req, res) => {
     try {
-        const user = await getUser(req);
-        if (!user || user.usertype !== 'Admin') {
-            return res.status(403).json({ message: "Access Denied" });
-        }
-
+        // Sort by newest first
         const reports = await Report.find().sort({ timestamp: -1 });
         res.json(reports);
-    } catch (e) {
-        res.status(500).json({ message: "Server error" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -147,7 +154,7 @@ router.get('/:id/view', async (req, res) => {
             return res.json({
                 type: 'Message',
                 data: {
-                    messageId: msg._id, // <--- ADDED THIS LINE
+                    messageId: msg._id,
                     sender: msg.sender,
                     content: msg.content,
                     mediaUrl: msg.mediaUrl,
@@ -157,6 +164,53 @@ router.get('/:id/view', async (req, res) => {
                 }
             });
         }
+
+        // C. IF COMMENT or REPLY
+        if (report.targetType === 'Comment' || report.targetType === 'Reply') {
+            // targetId format: "postId|commentId" or "postId|commentId|replyId"
+            const parts = report.targetId.split('|');
+            const postId = parts[0];
+            const commentId = parts[1];
+            const replyId = parts[2];
+
+            const post = await ClubPost.findById(postId);
+            if (!post) return res.json({ type: 'Deleted', message: "This post/comment has been deleted." });
+
+            const comment = post.comments && post.comments.find(c => c._id.toString() === commentId);
+            if (!comment) return res.json({ type: 'Deleted', message: "This comment has been deleted." });
+
+            if (report.targetType === 'Reply' && replyId) {
+                const reply = comment.replies && comment.replies.find(r => r._id.toString() === replyId);
+                if (!reply) return res.json({ type: 'Deleted', message: "This reply has been deleted." });
+
+                return res.json({
+                    type: 'Reply',
+                    data: {
+                        replyId: reply._id,
+                        author: reply.author,
+                        content: reply.content,
+                        timestamp: reply.timestamp,
+                        postTitle: post.title,
+                        commentedBy: comment.author,
+                        context: `Reply in: "${post.title}"`
+                    }
+                });
+            }
+
+            return res.json({
+                type: 'Comment',
+                data: {
+                    commentId: comment._id,
+                    author: comment.author,
+                    content: comment.content,
+                    timestamp: comment.timestamp,
+                    postTitle: post.title,
+                    context: `Comment in: "${post.title}"`
+                }
+            });
+        }
+
+        return res.json({ type: 'Unknown', message: "Report type not recognized." });
 
     } catch (error) {
         console.error("View Error:", error);

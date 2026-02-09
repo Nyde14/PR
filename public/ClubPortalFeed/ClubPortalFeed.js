@@ -19,6 +19,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             const noClubCard = document.getElementById('NoClubState');
             if (noClubCard) noClubCard.style.display = 'none';
         }
+        const urlParams = new URLSearchParams(window.location.search);
+const announceId = urlParams.get('announceId');
+        if (announceId) {
+    // Wait for feed to load, then trigger the global modal
+    setTimeout(() => {
+        if (currentGlobalPost && currentGlobalPost._id === announceId) {
+            openGlobalModal();
+        }
+    }, 1000);
+}
 
     } catch (e) {
         console.error('Auth Check Failed:', e);
@@ -31,46 +41,85 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ==========================================
 // MAIN FEED LOGIC
 // ==========================================
-
+let currentGlobalPost = null;
 async function loadFeed() {
-    const container = document.getElementById('FeedContainer');
+    const mainContainer = document.getElementById('FeedContainer');
+    const globalZone = document.getElementById('GlobalAnnouncementZone');
     
     try {
-        // STEP 1: Get the REAL User (Source of Truth)
-        let currentUser = null; 
-        try {
-            const authRes = await fetch('/api/auth/me');
-            if (authRes.ok) {
-                currentUser = await authRes.json(); 
-            }
-        } catch (err) {
-            console.warn("Could not fetch user info");
-        }
+        const authRes = await fetch('/api/auth/me');
+        const currentUser = authRes.ok ? await authRes.json() : null;
 
-        // STEP 2: Fetch Posts
         const response = await fetch('/api/posts/feed');
         const posts = await response.json();
 
-        container.innerHTML = "";
+        mainContainer.innerHTML = "";
+        globalZone.style.display = "none";
 
-        if (!posts || posts.length === 0) {
-            container.innerHTML = "<p style='text-align:center; margin-top:20px; color:#666;'>No announcements yet.</p>";
-            return;
+        // 1. Handle Global Post (Top Zone)
+        const globalPost = posts.find(p => p.isGlobal === true);
+        if (globalPost) {
+            currentGlobalPost = globalPost;
+            document.getElementById('GlobalTitlePreview').innerText = globalPost.title;
+            document.getElementById('GlobalSnippet').innerText = globalPost.content.substring(0, 100) + "...";
+            globalZone.style.display = "block"; 
         }
 
-        // STEP 3: Create Cards
-        posts.forEach(post => {
-            container.appendChild(createPostCard(post, currentUser));
+        // 2. Render Regular Feed (Filtered)
+        posts.filter(p => !p.isGlobal).forEach(post => {
+            const card = createPostCard(post, currentUser);
+            
+            // THE CRITICAL CHECK: Only append if card is NOT null
+            if (card) {
+                mainContainer.appendChild(card);
+            }
         });
         
-        // STEP 4: Check for Highlight (Run after posts are added)
         checkSharedPost();
-
-    } catch (error) {
-        console.error("Error loading feed:", error);
-        container.innerHTML = "<p>Error loading posts.</p>";
-    }
+    } catch (error) { console.error("Feed Error:", error); }
 }
+// --- NEW: Global Modal Logic ---
+
+function openGlobalModal() {
+    if (!currentGlobalPost) return;
+
+    // 1. Populate Modal Data
+    document.getElementById('ModalGlobalTitle').innerText = currentGlobalPost.title;
+    document.getElementById('ModalGlobalContent').innerText = currentGlobalPost.content;
+    document.getElementById('ModalGlobalDate').innerText = new Date(currentGlobalPost.timestamp).toLocaleString();
+
+    // 2. Handle Media
+    const mediaContainer = document.getElementById('ModalGlobalMedia');
+    mediaContainer.innerHTML = "";
+    if (currentGlobalPost.mediaUrl) {
+        if (currentGlobalPost.mediaType === 'video') {
+             mediaContainer.innerHTML = `<video src="${currentGlobalPost.mediaUrl}" controls style="width:100%; border-radius:8px;"></video>`;
+        } else {
+             mediaContainer.innerHTML = `<img src="${currentGlobalPost.mediaUrl}" style="width:100%; border-radius:8px;">`;
+        }
+    }
+
+    // 3. Setup Share Button
+    document.getElementById('ModalGlobalShareBtn').onclick = () => 
+        openShareModal(currentGlobalPost._id, currentGlobalPost.title);
+
+    // 4. Show Modal
+    const modal = document.getElementById('GlobalPostModal');
+    modal.style.display = 'flex';
+    
+    // Add animation class
+    modal.querySelector('.modal-content').classList.add('pop-in');
+}
+
+function closeGlobalModal() {
+    document.getElementById('GlobalPostModal').style.display = 'none';
+}
+
+// Close when clicking outside
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('GlobalPostModal');
+    if (e.target === modal) closeGlobalModal();
+});
 
 // ==========================================
 // CARD GENERATOR
@@ -80,125 +129,135 @@ function createPostCard(post, currentUser) {
     const isAdmin = currentUser && currentUser.usertype === 'Admin';
     const date = new Date(post.timestamp).toLocaleDateString();
 
-    // Fallbacks
-    const logoUrl = post.clubLogo || '/uploads/default_pfp.png';
+    // 1. FILTER: Prevent Global posts from rendering as regular cards
+    if (post.isGlobal === true) return null; 
+
+    // 2. Initialize card element
+    const card = document.createElement('div');
+    card.className = 'post-card';
+    card.id = `post-${post._id}`;
+
+    // --- 3. DYNAMIC PROFILE & LOGO LOGIC ---
+    const clubLogo = post.clubLogo || '/uploads/default_pfp.png';
     const fallbackImage = '/uploads/default_pfp.png';
+    
+    // Priority Logic for Author Profile Picture
+    let authorPfp;
+    if (post.author === currentUserName && currentUser.profilePicture) {
+        authorPfp = currentUser.profilePicture;
+    } else {
+        authorPfp = (post.authorProfile && post.authorProfile.trim() !== "") 
+            ? post.authorProfile 
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=random&color=fff`;
+    }
+
     const profileLink = post.clubSlug ? `/ClubProfile/ClubProfile.html?slug=${post.clubSlug}` : '#';
     const isLiked = post.isLiked;
-    
-    // Icon Logic
     const heartIconClass = isLiked ? "bx bxs-heart" : "bx bx-heart"; 
     const heartColor = isLiked ? "#fa3737" : "currentColor"; 
-    
     const comments = post.comments || [];
 
-    // 1. Generate Comments HTML
+    // --- 4. COMMENT LIST GENERATION (The "Lost" 40 lines) ---
     const commentsHTML = comments.map(c => {
-        const isMyComment = c.author === currentUserName;
-        const deleteBtn = isMyComment ? 
-            `<button class="delete-comment-btn" onclick="deleteComment('${post._id}', '${c._id}')" title="Delete">
-                <i class='bx bx-trash'></i>
-             </button>` : '';
-             
-        const replies = c.replies || [];
-        const repliesHTML = replies.map(r => `
-            <div class="reply-item">
-                <span class="comment-author" style="font-size:0.8rem;">${r.author}:</span> ${r.content}
-            </div>`).join('');
+    const isMyComment = c.author === currentUserName;
+    const avatarUrl = c.userProfile || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.author)}&background=random&color=fff&size=64`;
+    
+    // Action Buttons: Delete (if mine) OR Report (if not mine)
+    const actionBtn = isMyComment 
+        ? `<button class="action-link delete-btn" onclick="deleteComment('${post._id}', '${c._id}')" title="Delete"><i class='bx bx-trash'></i></button>` 
+        : `<button class="action-link report-btn" onclick="reportContent('Comment', '${post._id}|${c._id}')" title="Report"><i class='bx bx-flag'></i></button>`;
+
+    const repliesHTML = (c.replies || []).map(r => {
+        const isMyReply = r.author === currentUserName;
+        // Construct ID as "PostID|CommentID|ReplyID" for the backend locator
+        const replyTargetId = `${post._id}|${c._id}|${r._id}`;
         
+        const replyAction = isMyReply
+             ? `` // Optional: Add delete reply logic here if desired
+             : `<button class="action-link report-btn" onclick="reportContent('Reply', '${replyTargetId}')" title="Report" style="font-size:0.7rem;"><i class='bx bx-flag'></i></button>`;
+
         return `
-        <div class="comment-item" id="comment-${c._id}">
-            <div class="comment-header">
-                <span class="comment-author">${c.author}:</span> 
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <button class="reply-btn" onclick="toggleReplyInput('${c._id}')">Reply</button>
-                    ${deleteBtn}
-                </div>
-            </div>
-            <div class="comment-text">${c.content}</div>
-            <div class="replies-list">${repliesHTML}</div>
-            <div id="reply-input-${c._id}" class="reply-input-container" style="display:none;">
-                <input type="text" class="reply-input" placeholder="Reply..." id="input-reply-${c._id}">
-                <button onclick="submitReply('${post._id}', '${c._id}')" class="comment-btn">Post</button>
+        <div class="reply-item">
+            <div style="display:flex; justify-content:space-between; width:100%;">
+                <span><span class="comment-author" style="font-size:0.8rem;">${r.author}:</span> ${r.content}</span>
+                ${replyAction}
             </div>
         </div>`;
     }).join('');
 
-    // 2. Action Menu (Report/Hide/Delete)
-    const actionMenu = `
-        <div class="post-menu-container" style="position:absolute; top:10px; right:10px;">
-            <button onclick="togglePostMenu('${post._id}')" class="menu-dots-btn" title="More Options">
-                <i class='bx bx-dots-vertical-rounded'></i>
-            </button>
-            <div id="post-menu-${post._id}" class="post-dropdown" style="display:none;">
-                <div onclick="hidePost('${post._id}')" class="menu-item">
-                    <i class='bx bx-hide'></i> Hide Post
+    return `
+    <div class="comment-item" id="comment-${c._id}" style="display:flex; gap:10px; margin-bottom:15px;">
+        <img src="${avatarUrl}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+        <div style="flex:1;">
+            <div class="comment-bubble"> 
+                <div class="comment-header">
+                    <span>${c.author}</span>
+                    <div class="comment-actions">${actionBtn}</div>
                 </div>
-                <div onclick="reportContent('Post', '${post._id}')" class="menu-item">
-                    <i class='bx bx-flag'></i> Report Post
-                </div>
-                ${isAdmin ? `
-                <div onclick="deletePost('${post._id}')" class="menu-item delete-item">
-                    <i class='bx bx-trash'></i> Delete (Admin)
-                </div>` : ''}
+                <div class="comment-text">${c.content}</div>
+            </div>
+            <div class="replies-list">${repliesHTML}</div>
+            <div style="margin-top:2px; margin-left:12px; font-size:0.8rem;">
+                <button class="reply-btn" onclick="toggleReplyInput('${c._id}')">Reply</button>
+            </div>
+            <div id="reply-input-${c._id}" class="reply-input-container" style="display:none;">
+                <input type="text" class="reply-input" placeholder="Reply..." id="input-reply-${c._id}">
+                <button onclick="submitReply('${post._id}', '${c._id}')" class="comment-btn">Post</button>
             </div>
         </div>
-    `;
-
-    const card = document.createElement('div');
-    card.className = 'post-card';
-    card.id = `post-${post._id}`;
-    
-    // 3. Main Card HTML
+    </div>`;
+}).join('');
+    // --- 5. ASSEMBLE CARD INNER HTML ---
     card.innerHTML = `
         <div class="post-header" style="position:relative;">
-            <a href="${profileLink}" class="header-left">
-                <img src="${logoUrl}" 
-                     class="club-avatar" 
-                     onerror="this.onerror=null; this.src='${fallbackImage}'" 
-                     style="width:40px; height:40px; border-radius:50%; margin-right:10px; object-fit:cover;">
+            <a href="${profileLink}" class="header-left" style="display:flex; align-items:center; text-decoration:none;">
+                <img src="${clubLogo}" class="club-avatar" onerror="this.onerror=null; this.src='${fallbackImage}'" style="width:45px; height:45px; border-radius:50%; margin-right:12px; border:1px solid #eee; object-fit:cover;">
                 <div class="header-info">
-                    <span class="club-name-link">${post.clubname}</span>
-                    <span class="post-date">${date} • ${post.author}</span>
+                    <span class="club-name-link" style="font-weight:bold; color:#333;">${post.clubname}</span>
+                    <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
+                        <img src="${authorPfp}" style="width:18px; height:18px; border-radius:50%; object-fit:cover;">
+                        <span class="post-author-name" style="font-size:0.8rem; color:#666;">${post.author} • ${date}</span>
+                    </div>
                 </div>
             </a>
-            ${actionMenu}
+            <div class="post-menu-container" style="position:absolute; top:10px; right:10px;">
+                <button onclick="togglePostMenu('${post._id}')" class="menu-dots-btn"><i class='bx bx-dots-vertical-rounded'></i></button>
+                <div id="post-menu-${post._id}" class="post-dropdown" style="display:none;">
+                    <div onclick="hidePost('${post._id}')" class="menu-item"><i class='bx bx-hide'></i> Hide</div>
+                    <div onclick="reportContent('Post', '${post._id}')" class="menu-item"><i class='bx bx-flag'></i> Report</div>
+                    ${isAdmin ? `<div onclick="deletePost('${post._id}')" class="menu-item delete-item"><i class='bx bx-trash'></i> Delete</div>` : ''}
+                </div>
+            </div>
         </div>
-        
-        <h3 class="post-title">${post.title}</h3>
+
+        <h3 class="post-title" style="margin:12px 0;">${post.title}</h3>
         <div class="post-content">${post.content}</div>
-        ${post.mediaUrl ? `<img src="${post.mediaUrl}" class="post-image">` : ""}
-
-        <div class="post-actions">
+        
+        ${post.mediaUrl ? `<img src="${post.mediaUrl}" class="post-image" style="width:100%; border-radius:8px; margin:10px 0;">` : ""}
+        
+        <div class="post-actions" style="display:flex; gap:20px; padding-top:15px; border-top:1px solid #eee; margin-top:10px;">
             <button class="action-btn" onclick="toggleLike('${post._id}', this)">
-                <i class='${heartIconClass}' style="color:${heartColor}; font-size:1.3rem;"></i>
-                <span class="like-count" style="margin-left:5px;">${post.likesCount}</span>
+                <i class='${heartIconClass}' style="color:${heartColor};"></i> <span>${post.likesCount}</span>
             </button>
-            
             <button class="action-btn" onclick="toggleComments('${post._id}')">
-                <i class='bx bx-message-rounded-dots' style="font-size:1.3rem;"></i> 
-                <span style="margin-left:5px;">${comments.length}</span>
+                <i class='bx bx-message-rounded-dots'></i> ${comments.length}
             </button>
-            
-            <button class="action-btn" onclick="openShareModal('${post._id}', '${post.title.replace(/'/g, "\\'")}')" title="Share">
-                <i class='bx bx-share-alt' style="font-size:1.3rem;"></i>
-                <span style="margin-left:5px;">Share</span>
+            <button class="action-btn" onclick="openShareModal('${post._id}', '${post.title.replace(/'/g, "\\'")}')">
+                <i class='bx bx-share-alt'></i> Share
             </button>
         </div>
 
-        <div id="comments-${post._id}" class="comments-section" style="display:none;">
-            <div id="list-${post._id}" style="max-height:300px; overflow-y:auto; margin-bottom:10px;">${commentsHTML}</div>
-            <div class="comment-input-area">
+        <div id="comments-${post._id}" class="comments-section" style="display:none; padding-top:15px;">
+            <div id="list-${post._id}" style="max-height:300px; overflow-y:auto;">${commentsHTML}</div>
+            <div class="comment-input-area" style="display:flex; gap:10px; margin-top:10px;">
                 <textarea id="input-${post._id}" class="comment-input" rows="1" placeholder="Write a comment..."></textarea>
-                <button onclick="submitComment('${post._id}')" class="comment-btn">
-                    <i class='bx bx-send'></i>
-                </button>
+                <button onclick="submitComment('${post._id}')" class="comment-btn"><i class='bx bx-send'></i></button>
             </div>
         </div>
     `;
+
     return card;
 }
-
 // ==========================================
 // INTERACTIVE FUNCTIONS (Likes, Comments, Sharing)
 // ==========================================
@@ -371,26 +430,40 @@ function sharePost(postId) {
 function checkSharedPost() {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedId = urlParams.get('postId');
+    
+    if (!sharedId) return;
 
-    if (sharedId) {
-        // Wait slightly for DOM to settle
-        setTimeout(() => {
-            const postElement = document.getElementById(`post-${sharedId}`);
-            if (postElement) {
-                // 1. Scroll
-                postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // 2. Highlight
-                postElement.classList.add('highlight-post');
-                // 3. Cleanup URL
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, document.title, newUrl);
-                // 4. Cleanup Class
-                setTimeout(() => {
-                    postElement.classList.remove('highlight-post');
-                }, 3000);
-            }
-        }, 500); 
-    }
+    // Use a small timeout to ensure all posts have finished rendering
+    setTimeout(() => {
+        let targetElement = null;
+
+        // 1. Check if the shared ID belongs to the Global Announcement
+        if (currentGlobalPost && currentGlobalPost._id === sharedId) {
+            targetElement = document.getElementById('GlobalAnnouncementZone');
+            // If global, we also trigger the modal for better visibility
+            openGlobalModal();
+        } else {
+            // 2. Otherwise, look for the regular post card
+            targetElement = document.getElementById(`post-${sharedId}`);
+        }
+
+        if (targetElement) {
+            // Smoothly scroll the post into the center of the screen
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Apply the visual highlight class
+            targetElement.classList.add('highlight-active');
+
+            // 3. Clean up the URL: Remove the postId so it doesn't re-flash on refresh
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+
+            // Remove class after animation finishes to keep DOM clean
+            setTimeout(() => {
+                targetElement.classList.remove('highlight-active');
+            }, 3500);
+        }
+    }, 700); 
 }
 
 // ==========================================
@@ -432,13 +505,26 @@ async function reportContent(type, id) {
     const reason = prompt(`Why are you reporting this ${type}?`);
     if(!reason) return;
     try {
+        console.log("Reporting:", { type, id, reason });
+        
         const res = await fetch('/api/reports/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ targetType: type, targetId: id, reason })
         });
-        alert("Report submitted.");
-    } catch(e) { alert("Failed to submit report."); }
+        
+        const data = await res.json();
+        console.log("Report response:", data);
+        
+        if (res.ok) {
+            alert("✅ Report submitted successfully.");
+        } else {
+            alert("❌ Failed to submit report: " + data.message);
+        }
+    } catch(e) { 
+        console.error("Report error:", e);
+        alert("❌ Failed to submit report: " + e.message); 
+    }
 }
 function openShareModal(postId, title) {
     // Construct the link to share
@@ -638,4 +724,14 @@ async function executeShare(type, targetName, link, title) {
 
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => alert("Link copied!"));
+}
+function checkGlobalAnchor() {
+    if (window.location.hash === "#GlobalAnnouncementZone") {
+        const zone = document.getElementById('GlobalAnnouncementZone');
+        if (zone) {
+            zone.scrollIntoView({ behavior: 'smooth' });
+            // Optional: Add a subtle flash effect to the zone
+            zone.style.animation = "flashHighlight 2s ease-out";
+        }
+    }
 }

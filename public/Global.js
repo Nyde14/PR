@@ -5,7 +5,9 @@ document.addEventListener("DOMContentLoaded", () => {
     setupDarkMode(); // <--- Initialize Dark Mode
     setupMobileMenu();    
     checkNotifications();
-
+    injectFullProfileModal();   // For "My Settings"
+    injectPublicProfileModal(); // For "View Others"
+    
     setInterval(checkNotifications, 30000);
 });
 let selectedAvatarFile = null;
@@ -14,53 +16,79 @@ let globalInterests = new Set();
 // ==========================================
 // 1. SIDEBAR LOADER
 // ==========================================
-function loadSidebar() {
+async function loadSidebar() {
     const sidebarList = document.getElementById('MainSideBarList');
     if (!sidebarList) return;
 
-    // Standard Menu Items (Using Boxicons classes)
-    const menuItems = [
-        { name: "Home", link: "/ClubPortalFeed/ClubPortalFeed.html", icon: "bx bx-home-alt-2" },
-        { name: "Clubs", link: "/ApplyClub/Clublist.html", icon: "bx bx-shield-quarter" },
-        { name: "Messages", link: "/public/ClubChat/ChatInbox.html", icon: "bx bx-message-square-dots" },
-        { name: "Following", link: "/FollowedClubs/FollowedClubs.html", icon: "bx bx-star" },
-        { name: "Hidden Posts", link: "/HiddenPosts/HiddenPosts.html", icon: "bx bx-hide" },
-        // Role Based
-        { name: "Club Dashboard", link: "/TeacherDashboard/ClubAdviserDashboard.html", role: ['Teacher', 'Admin'], icon: "bx bxs-dashboard" },
-        { name: "Admin Panel", link: "/AdminDashboard/AdminDashboard.html", role: ['Admin'], icon: "bx bx-cog" },
-        // Actions
-        { name: "Customize Feed", link: "#", onclick: "openInterestModal()", icon: "bx bx-slider-alt" },
-        { name: "Logout", link: "#", onclick: "logout()", icon: "bx bx-log-out" }
-    ];
-
-    // 1. Generate Menu HTML
-    let html = menuItems.map(item => {
-        // (Optional: You can add role filtering logic here later)
+    try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) return;
+        const user = await res.json();
         
-        // Structure: Icon <i> + Name <span>
-        const content = `<i class='${item.icon} sidebar-icon'></i> <span class="sidebar-text">${item.name}</span>`;
+        const userRole = user.usertype;
+        // Check if the user is assigned to a real club (not none or pending)
+        const hasClubAssignment = user.club && user.club !== 'none' && user.club !== 'Pending';
+        // Staff members are Teachers or Admins
+        const isStaff = userRole === 'Teacher' || userRole === 'Admin';
 
-        if (item.onclick) {
-            return `<li><a href="#" onclick="${item.onclick}" class="SidebarItem">${content}</a></li>`;
-        }
-        return `<li><a href="${item.link}" class="SidebarItem">${content}</a></li>`;
-    }).join('');
+        const menuItems = [
+            { name: "Home", link: "/ClubPortalFeed/ClubPortalFeed.html", icon: "bx bx-home-alt-2" },
+            { name: "Clubs", link: "/ApplyClub/Clublist.html", icon: "bx bx-shield-quarter" },
+            { name: "Messages", link: "/public/ClubChat/ChatInbox.html", icon: "bx bx-message-square-dots" },
+            { name: "Following", link: "/FollowedClubs/FollowedClubs.html", icon: "bx bx-star" },
+            { name: "Hidden Posts", link: "/HiddenPosts/HiddenPosts.html", icon: "bx bx-hide" },
+            
+            // --- UPDATED CLUB DASHBOARD LOGIC ---
+            // Now appears if (Teacher OR Admin) AND they have a club assigned
+            { 
+                name: "Club Dashboard", 
+                link: "/TeacherDashboard/ClubAdviserDashboard.html", 
+                visible: (isStaff && hasClubAssignment), 
+                icon: "bx bxs-dashboard" 
+            },
+            
+            // Admin Panel remains strictly for the Admin role
+            { 
+                name: "Admin Panel", 
+                link: "/AdminDashboard/AdminDashboard.html", 
+                visible: (userRole === 'Admin'), 
+                icon: "bx bx-cog" 
+            },
+            
+            { name: "Customize Feed", link: "#", onclick: "openInterestModal()", icon: "bx bx-slider-alt" },
+            { name: "Logout", link: "#", onclick: "logout()", icon: "bx bx-log-out" }
+        ];
 
-    // 2. Add Dark Mode Switch (Update Icon here too)
-    html += `
-        <li style="margin-top: auto; padding-top: 20px; border-top: 1px solid #eee;">
-            <div class="theme-switch-wrapper" style="display:flex; align-items:center; padding-left:15px;">
-                <label class="theme-switch" for="checkbox">
-                    <input type="checkbox" id="checkbox">
-                    <span class="slider round"></span>
-                    <span class="slider-icon"></span>
-                </label>
-                <span id="ModeLabel" style="margin-left:15px; font-size:0.9rem; color:#666;">Light Mode</span>
-            </div>
-        </li>
-    `;
+        let html = menuItems
+            .filter(item => item.visible !== false) // Removes items where 'visible' condition failed
+            .map(item => {
+                const content = `<i class='${item.icon} sidebar-icon'></i> <span class="sidebar-text">${item.name}</span>`;
+                return item.onclick 
+                    ? `<li><a href="#" onclick="${item.onclick}" class="SidebarItem">${content}</a></li>`
+                    : `<li><a href="${item.link}" class="SidebarItem">${content}</a></li>`;
+            })
+            .join('');
 
-    sidebarList.innerHTML = html;
+        // Re-inject the standard bottom elements
+        html += `
+            <li style="margin-top: auto; padding-top: 20px; border-top: 1px solid #eee;">
+                <div class="theme-switch-wrapper" style="display:flex; align-items:center; padding-left:15px;">
+                    <label class="theme-switch" for="checkbox">
+                        <input type="checkbox" id="checkbox">
+                        <span class="slider round"></span>
+                        <span class="slider-icon"></span>
+                    </label>
+                    <span id="ModeLabel" style="margin-left:15px; font-size:0.9rem; color:#666;">Light Mode</span>
+                </div>
+            </li>
+        `;
+
+        sidebarList.innerHTML = html;
+        setupDarkMode(); // Re-attach listener to the newly created checkbox
+
+    } catch (e) {
+        console.error("Sidebar Loading Error:", e);
+    }
 }
 // ==========================================
 // 2. DARK MODE LOGIC
@@ -102,128 +130,79 @@ async function loadUserHeader() {
     try {
         const res = await fetch('/api/auth/me');
         if (!res.ok) return;
-        
         const user = await res.json(); 
 
-        const isAdviser = user.usertype === 'Teacher' || user.usertype === 'Admin';
-        const clubLabel = isAdviser ? 'FACULTY ADVISER' : 'CLUB MEMBERSHIP';
-        const rowClass = isAdviser ? 'adviser-row' : 'member-row';
-        const roleIcon = isAdviser ? 'bx-briefcase-alt-2' : 'bx-user-check';
-        const roleTag = isAdviser ? `<span class="membership-tag tag-adviser">${isAdviser ? 'Adviser' : 'Staff'}</span>` : '<span class="membership-tag tag-member">Member</span>';
-        
-        const nameEl = document.getElementById('Name');
-        if (nameEl) nameEl.innerText = user.name;
-        
         const profileContainer = document.getElementById('UserProfile');
         if (profileContainer) {
+            // Fix the gap: Use flex gap instead of margins
+            profileContainer.style.display = 'flex';
+            profileContainer.style.alignItems = 'center';
+            profileContainer.style.gap = '10px'; 
+            profileContainer.style.justifyContent = 'flex-end';
+
             const imgSrc = user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
+            const isAdviser = user.usertype === 'Teacher' || user.usertype === 'Admin';
+            const roleLabel = isAdviser ? 'FACULTY ADVISER' : (user.clubPosition || 'MEMBER').toUpperCase();
 
-            profileContainer.innerHTML = `
-                <div class="header-profile-wrapper">
-                    <img id="HeaderProfilePic" src="${imgSrc}" alt="Profile" 
-                         onclick="openFullProfileModal()"
-                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid white;">
-                </div>
+            // 1. Clear and Build Header
+            profileContainer.innerHTML = ''; 
 
-                <div id="FullProfileModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center;">
-                    <div class="modal-content" style="background:white; border-radius:15px; width:95%; max-width:450px; overflow:hidden;">
-                        <div class="share-header" style="background:#fa3737; color:white; padding:15px; display:flex; justify-content:space-between;">
-                            <span style="font-weight:bold;">User Profile</span>
-                            <span onclick="closeFullProfileModal()" style="cursor:pointer; font-size:1.5rem;">&times;</span>
-                        </div>
-                        
-                        <div class="profile-modal-body">
-                            <div class="profile-modal-avatar-container" onclick="document.getElementById('HiddenAvatarInput').click()">
-                                <img id="ModalProfileImg" src="${imgSrc}" class="profile-modal-avatar">
-                                <i class='bx bx-camera avatar-overlay-icon'></i>
-                            </div>
-                            <input type="file" id="HiddenAvatarInput" accept="image/*" style="display:none;" onchange="previewHeaderAvatar()">
+            // 2. Inject Bell first
+            createNotificationBell(profileContainer);
 
-                            <h2 style="margin:0;">${user.name}</h2>
-                            <p style="color:#666; font-size:0.9rem; margin-bottom:10px;">@${user.usertype.toLowerCase()}</p>
+            // 3. Inject Profile Picture (Added z-index to ensure clickability)
+            const profileWrapper = document.createElement('div');
+            profileWrapper.className = 'header-profile-wrapper';
+            profileWrapper.style.position = 'relative';
+            profileWrapper.style.zIndex = '10'; 
 
-                            <div class="user-badge-container">
-                                ${user.usertype === 'Admin' ? '<span class="role-badge badge-admin">Administrator</span>' : ''}
-                                ${user.usertype === 'Teacher' ? '<span class="role-badge badge-adviser">Club Adviser</span>' : ''}
-                                <span class="role-badge badge-member">University Member</span>
-                            </div>
-
-                            <div style="text-align:left; padding: 0 20px;">
-                                <label style="font-size:0.8rem; font-weight:bold; color:#888;">BIO</label>
-                                <textarea id="UserProfileBio" rows="3" placeholder="Tell us about yourself..." style="width:100%; margin-top:5px; padding:10px; border:1px solid #ddd; border-radius:8px;">${user.bio || ''}</textarea>
-                            </div>
-
-                            <div class="club-membership-list ${rowClass}" style="margin:15px 20px; padding:10px; border-radius:8px; text-align:left; background:#f9f9f9;">
-                                <label style="font-size:0.8rem; font-weight:bold; color:#888;">${clubLabel}</label>
-                                <p style="margin:5px 0 0 0; font-weight:600; color:#333; display:flex; align-items:center;">
-                                    <i class='bx ${roleIcon}' style="color:#fa3737; margin-right:8px;"></i> 
-                                    ${(user.club && user.club !== 'none') ? user.club : 'No Active Affiliation'}
-                                    ${(user.club && user.club !== 'none') ? roleTag : ''}
-                                </p>
-                            </div>
-
-                            <div style="margin:20px; display:flex; gap:10px;">
-                                <button onclick="saveProfileChanges()" style="flex:1; padding:12px; background:#fa3737; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Save Profile</button>
-                                <button onclick="logout()" style="padding:12px; background:#eee; color:#333; border:none; border-radius:8px; cursor:pointer;"><i class='bx bx-log-out'></i></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            profileWrapper.innerHTML = `
+                <img id="HeaderProfilePic" src="${imgSrc}" 
+                     onclick="window.openFullProfileModal()" 
+                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid white; display: block;">
             `;
-            createNotificationBell();
+            profileContainer.appendChild(profileWrapper);
+
+            // 4. Update Name and Fetch Notifications
+            const nameEl = document.getElementById('Name');
+            if (nameEl) nameEl.innerText = `${user.name} (${roleLabel})`;
+            
+            checkNotifications();
         }
-    } catch (e) {
-        console.error("Header Error:", e);
-    }
+    } catch (e) { console.error("Header Error:", e); }
 }
+
+function createNotificationBell(container) {
+    if (document.getElementById('NotifBtn')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'notification-wrapper';
+    // Removed large margin-right to fix the gap
+    wrapper.style.display = "flex";
+    wrapper.style.alignItems = "center";
+    
+    wrapper.innerHTML = `
+        <button id="NotifBtn" onclick="toggleNotifDropdown()">
+            <i class='bx bx-bell'></i> <span id="NotifBadge" style="display:none;">0</span>
+        </button>
+        <div id="NotifDropdown" class="notif-dropdown" style="display:none;">
+            <div class="notif-header-row">
+                <span>Notifications</span>
+                <button onclick="markAllRead()" class="mark-read-btn">Mark all read</button>
+            </div>
+            <div id="NotifList"><p class="empty-notif">Loading...</p></div>
+        </div>`;
+
+    container.appendChild(wrapper);
+}
+
 function logout() {
     // Clear session/token
     fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
         window.location.href = "/Login/Login.html";
     });
 }
-function createNotificationBell() {
-    // 1. Target the User Profile container
-    const profileContainer = document.getElementById('UserProfile');
-    
-    // Safety check: If profile doesn't exist, try header (Fallback)
-    if (!profileContainer) {
-        const header = document.getElementById('HomeHeader');
-        if(header) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'notification-wrapper';
-            wrapper.innerHTML = getBellHTML();
-            header.appendChild(wrapper);
-        }
-        return; 
-    }
 
-    // 2. Create the Wrapper
-    const wrapper = document.createElement('div');
-    wrapper.className = 'notification-wrapper';
-    wrapper.style.display = "flex";       
-    wrapper.style.alignItems = "center";  
-    wrapper.style.marginRight = "15px";   
-    
-    wrapper.innerHTML = `
-        <button id="NotifBtn" onclick="toggleNotifDropdown()">
-            <i class='bx bx-bell'></i> <span id="NotifBadge">0</span>
-        </button>
-        
-        <div id="NotifDropdown" class="notif-dropdown">
-            <div class="notif-header-row">
-                <span>Notifications</span>
-                <button onclick="markAllRead()" class="mark-read-btn">Mark all read</button>
-            </div>
-            <div id="NotifList">
-                <p class="empty-notif">Loading...</p>
-            </div>
-        </div>
-    `;
-
-    // 3. INJECT
-    profileContainer.insertBefore(wrapper, profileContainer.firstChild);
-}
 
 // Helper function
 function getBellHTML() {
@@ -236,16 +215,6 @@ function getBellHTML() {
     `;
 }
 
-// Helper to keep code clean
-function getBellHTML() {
-    return `
-        <button id="NotifBtn" onclick="toggleNotifDropdown()">
-            🔔
-            <span id="NotifBadge">0</span>
-        </button>
-        <div id="NotifDropdown" class="notif-dropdown">...</div>
-    `;
-}
 // --- B. FETCH & UPDATE LOGIC ---
 async function checkNotifications() {
     const listContainer = document.getElementById('NotifList');
@@ -637,6 +606,43 @@ window.saveUserInterests = async function() {
         btn.disabled = false;
     }
 };
+function injectPublicProfileModal() {
+    if (document.getElementById('PublicProfileModal')) return;
+
+    const modalHTML = `
+    <div id="PublicProfileModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:20000; justify-content:center; align-items:center;">
+        <div class="modal-content" style="background:white; border-radius:15px; width:95%; max-width:450px; overflow:hidden;">
+            <div class="share-header" style="background:#fa3737; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; font-size:1.1rem;">User Profile</span>
+                <span onclick="document.getElementById('PublicProfileModal').style.display='none'" style="cursor:pointer; font-size:1.5rem;">&times;</span>
+            </div>
+            
+            <div class="profile-modal-body" style="padding:20px; text-align:center;">
+                <div class="profile-modal-avatar-container" style="width:120px; height:120px; margin:0 auto 15px auto; position:relative;">
+                    <img id="PubModalImg" src="" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:4px solid #fa3737;">
+                </div>
+
+                <h2 id="PubModalName" style="margin:0; font-size:1.5rem; color:#333;"></h2>
+                <p id="PubModalHandle" style="color:#666; font-size:0.9rem; margin-bottom:15px;"></p>
+
+                <div id="PubModalBadges" class="user-badge-container" style="display:flex; justify-content:center; gap:8px; margin-bottom:20px;">
+                    </div>
+
+                <div style="text-align:left; padding: 0 10px;">
+                    <label style="font-size:0.8rem; font-weight:bold; color:#888; text-transform:uppercase;">BIO</label>
+                    <div id="PubModalBio" style="width:100%; margin-top:5px; padding:12px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9; color:#444; font-size:0.95rem; line-height:1.5; white-space: pre-wrap;"></div>
+                </div>
+
+                <div id="PubModalClubContainer" class="club-membership-list" style="margin:20px 10px 10px 10px; padding:12px; border-radius:8px; text-align:left; border-left:4px solid #666; background:#f9f9f9;">
+                    <label style="font-size:0.8rem; font-weight:bold; color:#888; text-transform:uppercase;">CLUB MEMBERSHIP</label>
+                    <p id="PubModalClubText" style="margin:5px 0 0 0; font-weight:600; color:#333; display:flex; align-items:center;">
+                        </p>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
 
 // Close modal if clicking outside
 window.onclick = function(event) {
@@ -718,9 +724,20 @@ document.addEventListener('click', (e) => {
         document.head.appendChild(link);
     }
 })();
-window.openFullProfileModal = function() {
+window.openFullProfileModal = async function() {
     const modal = document.getElementById('FullProfileModal');
-    if (modal) modal.style.display = 'flex';
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+
+    try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+            const user = await res.json();
+            document.getElementById('FullModalImg').src = user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
+            document.getElementById('UserProfileBio').value = user.bio || "";
+        }
+    } catch (e) { console.error("Profile Load Error:", e); }
 };
 
 window.closeFullProfileModal = function() {
@@ -729,7 +746,10 @@ window.closeFullProfileModal = function() {
 };
 
 window.saveProfileChanges = async function() {
-    const bio = document.getElementById('UserProfileBio').value;
+    const bioElement = document.getElementById('UserProfileBio');
+    if (!bioElement) return;
+
+    const bio = bioElement.value; // Get the latest text typed by user
     const btn = event.target;
     const originalText = btn.innerText;
 
@@ -740,21 +760,25 @@ window.saveProfileChanges = async function() {
         const response = await fetch('/api/users/profile-update', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bio })
+            body: JSON.stringify({ bio: bio }) // Ensure the key is "bio"
         });
 
         if (response.ok) {
+            const data = await response.json();
             btn.innerText = "✅ Saved!";
+            
+            // Optional: Alert the user or update a local variable
             setTimeout(() => {
                 btn.innerText = originalText;
                 btn.disabled = false;
-                closeFullProfileModal();
+                // closeFullProfileModal(); // Keep it open if you want them to see the success
             }, 1500);
         } else {
-            throw new Error("Update failed");
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Update failed");
         }
     } catch (e) {
-        alert("Error saving profile details.");
+        alert("Error saving: " + e.message);
         btn.innerText = originalText;
         btn.disabled = false;
     }
@@ -775,3 +799,178 @@ window.previewHeaderAvatar = function() {
     };
     reader.readAsDataURL(file);
 };
+
+
+// 2. Function to fetch and show any user's profile
+// Helper function to get role color (matches ClubChat.css styling)
+function getRoleColor(position) {
+    const roleColors = {
+        'President': { border: '#FFD700', bg: '#FFF8DC' },
+        'Vice President': { border: '#C0C0C0', bg: '#F5F5F5' },
+        'Secretary': { border: '#FF69B4', bg: '#FFE4E1' },
+        'Treasurer': { border: '#2ecc71', bg: '#E8F5E9' },
+        'Auditor': { border: '#9b59b6', bg: '#F3E5F5' },
+        'PIO': { border: '#e67e22', bg: '#FFF3E0' },
+        'Active Member': { border: '#00ced1', bg: '#E0F7FA' }
+    };
+    return roleColors[position] || { border: '#666', bg: '#f9f9f9' };
+}
+function injectFullProfileModal() {
+    // 1. Prevent duplicate injection
+    if (document.getElementById('FullProfileModal')) return;
+
+    const modalHTML = `
+    <div id="FullProfileModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:20000; justify-content:center; align-items:center; backdrop-filter: blur(4px);">
+        <div class="modal-content" style="background:white; border-radius:15px; width:95%; max-width:400px; overflow:hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            
+            <div class="share-header" style="background:#fa3737; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; font-family:'Montserrat', sans-serif;">My Profile Settings</span>
+                <span onclick="window.closeFullProfileModal()" style="cursor:pointer; font-size:1.8rem; line-height:1;">&times;</span>
+            </div>
+            
+            <div class="profile-modal-body" style="padding:25px; text-align:center;">
+                
+                <div class="profile-modal-avatar-container" 
+                     onclick="document.getElementById('HiddenAvatarInput').click()" 
+                     style="width:120px; height:120px; margin:0 auto 20px auto; position:relative; cursor:pointer; group;">
+                    
+                    <img id="FullModalImg" src="/uploads/default_pfp.png" 
+                         style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:4px solid #fa3737; transition: filter 0.3s;">
+                    
+                    <div class="avatar-edit-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0; transition: opacity 0.3s;">
+                        <i class='bx bx-camera' style="color:white; font-size:2rem;"></i>
+                    </div>
+                    
+                    <input type="file" id="HiddenAvatarInput" style="display:none;" accept="image/*" onchange="window.previewHeaderAvatar()">
+                </div>
+
+                <div style="text-align:left; margin-bottom:20px;">
+                    <label style="font-size:0.75rem; font-weight:800; color:#888; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">
+                        About Me
+                    </label>
+                    <textarea id="UserProfileBio" 
+                              placeholder="Tell the community about yourself..."
+                              style="width:100%; height:120px; padding:12px; border-radius:10px; border:1px solid #ddd; resize:none; font-family:'Inter', sans-serif; font-size:0.95rem; line-height:1.5; color:#333; outline:none; transition: border-color 0.2s;"></textarea>
+                </div>
+
+                <button onclick="window.saveProfileChanges(event)" 
+                        class="save-prefs-btn" 
+                        style="width:100%; background:#fa3737; color:white; border:none; padding:12px; border-radius:30px; font-weight:bold; font-family:'Montserrat', sans-serif; cursor:pointer; box-shadow: 0 4px 12px rgba(250, 55, 55, 0.2); transition: transform 0.2s;">
+                    Save Profile Changes
+                </button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Add CSS for the hover effect
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .profile-modal-avatar-container:hover .avatar-edit-overlay { opacity: 1 !important; }
+        .profile-modal-avatar-container:hover img { filter: brightness(80%); }
+        body.dark-mode #FullProfileModal .modal-content { background: #1e1e1e; border: 1px solid #333; }
+        body.dark-mode #UserProfileBio { background: #2c2c2c; border-color: #444; color: #fff; }
+    `;
+    document.head.appendChild(style);
+}
+
+window.viewUserProfile = async function(userName) {
+    injectPublicProfileModal(); 
+    const modal = document.getElementById('PublicProfileModal');
+    
+    try {
+        const res = await fetch(`/api/users/public-profile/${encodeURIComponent(userName)}`);
+        if (!res.ok) throw new Error("User not found");
+        
+        const user = await res.json();
+        const position = user.clubPosition || 'Member'; // Get officer role
+
+        // --- 1. SET BASIC INFO ---
+        document.getElementById('PubModalImg').src = user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
+        document.getElementById('PubModalName').innerText = user.name;
+        document.getElementById('PubModalHandle').innerText = `@${user.usertype.toLowerCase()}`;
+        document.getElementById('PubModalBio').innerText = user.bio || "No bio available.";
+
+        // --- 2. DYNAMIC BADGE LOGIC (Including Officers) ---
+        const badgeContainer = document.getElementById('PubModalBadges');
+        let badgesHTML = '';
+        
+        // Admin Badge
+        if (user.usertype === 'Admin') {
+            badgesHTML += '<span class="role-badge badge-admin" style="background:black; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">Administrator</span>';
+        } 
+        // Adviser Badge
+        else if (user.usertype === 'Teacher') {
+            badgesHTML += '<span class="role-badge badge-adviser" style="background:#fa3737; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">Faculty Adviser</span>';
+        } 
+        // Officer Badge (President, VP, etc.) - Use role colors
+        else if (position !== 'Member' && position !== 'Active Member') {
+            const roleColor = getRoleColor(position);
+            badgesHTML += `<span class="role-badge" style="background:${roleColor.border}; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"><i class='bx bxs-star'></i> ${position}</span>`;
+        }
+        // Active Member Badge (Cyan)
+        else if (position === 'Active Member') {
+            badgesHTML += `<span class="role-badge" style="background:#00ced1; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;"><i class='bx bxs-bolt'></i> ${position}</span>`;
+        }
+        // Standard Member Badge
+        else {
+            badgesHTML += '<span class="role-badge badge-member" style="background:#666; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">University Student</span>';
+        }
+        badgeContainer.innerHTML = badgesHTML;
+
+        // --- 3. CLUB MEMBERSHIP STYLING ---
+        const clubContainer = document.getElementById('PubModalClubContainer');
+        const clubText = document.getElementById('PubModalClubText');
+        const hasClub = user.club && user.club !== 'none' && user.club !== 'Pending';
+
+        if (hasClub) {
+            const isStaff = user.usertype === 'Teacher' || user.usertype === 'Admin';
+            let borderColor, bgColor, roleLabel, tagColor, icon;
+
+            if (isStaff) {
+                borderColor = "#fa3737";
+                bgColor = "#fff5f5";
+                roleLabel = 'Adviser';
+                tagColor = '#fa3737';
+                icon = 'bx-briefcase-alt-2';
+            } else if (position !== 'Member') {
+                // Use role-specific colors for officers
+                const roleColor = getRoleColor(position);
+                borderColor = roleColor.border;
+                bgColor = roleColor.bg;
+                roleLabel = position;
+                tagColor = roleColor.border;
+                icon = 'bx-user-check';
+            } else {
+                // Regular member
+                borderColor = "#666";
+                bgColor = "#f9f9f9";
+                roleLabel = 'Member';
+                tagColor = '#666';
+                icon = 'bx-user-check';
+            }
+
+            clubContainer.style.borderLeft = `4px solid ${borderColor}`;
+            clubContainer.style.background = bgColor;
+
+            clubText.innerHTML = `
+                <i class='bx ${icon}' style="color:${tagColor}; margin-right:8px; font-size:1.2rem;"></i> 
+                ${user.club}
+                <span style="background:${tagColor}; color:white; font-size:0.7rem; padding:2px 8px; border-radius:4px; margin-left:10px; vertical-align:middle;">${roleLabel}</span>
+            `;
+        } else {
+            clubContainer.style.borderLeft = "4px solid #ccc";
+            clubText.innerHTML = `<i class='bx bx-x-circle' style="color:#ccc; margin-right:8px; font-size:1.2rem;"></i> No Active Affiliation`;
+        }
+        
+        modal.style.display = 'flex';
+    } catch (e) {
+        console.error("Error showing profile:", e);
+    }
+};
+// Update DOMContentLoaded to include the injection
+document.addEventListener("DOMContentLoaded", () => {
+    // ... existing loads
+    injectPublicProfileModal();
+});

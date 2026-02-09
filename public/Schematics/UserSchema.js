@@ -7,6 +7,12 @@ const userSchema = new mongoose.Schema({
     usertype: { type: String, required: true, enum: ['Student', 'Teacher', 'Admin'] },
     club: { type: String, default: "none" },
     interests: { type: [String], default: [] },
+    bio: { type: String, default: "" },
+    clubPosition: { 
+        type: String, 
+        default: 'Member',
+        enum: ['Member', 'President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'PIO', 'Active Member'] 
+    },
     following: [{ type: String }], 
     hiddenPosts: [{ type: String }], 
     profilePicture: { type: String, default: "" }, 
