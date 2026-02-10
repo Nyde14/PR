@@ -83,13 +83,20 @@
 
                 <div class="input-group">
                     <label>Password</label>
-                    <input type="password" id="regPassword" placeholder="Minimum 6 characters" minlength="6" required>
+                    <input type="password" id="regPassword" placeholder="Minimum 6-7 characters" minlength="6" required>
                 </div>
 
                 <div class="input-group">
                     <label>Confirm Password</label>
                     <input type="password" id="regConfirmPassword" placeholder="Re-enter password" required>
                 </div>
+                <div class="input-group">
+    <label>Account type</label>
+    <select id="regRole" class="input-field" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:#fafafa;">
+        <option value="Student">Student</option>
+        <option value="Teacher">Teacher(non-adviser)</option>
+    </select>
+</div>
 
                 <button type="submit" class="register-btn">Sign Up</button>
                 

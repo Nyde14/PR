@@ -133,7 +133,7 @@ async function openClubModal(id = null, name = '', adviser = 'none') {
 
     // Populate adviser dropdown with both Teachers and Admins
     const select = document.getElementById('EditClubAdviser');
-    select.innerHTML = '<option value="none">-- Select Faculty/Admin --</option>';
+    select.innerHTML = '<option value="none">-- Select Moderator(Adviser)/Admin --</option>';
     
     const staff = allUsers.filter(u => u.usertype === 'Teacher' || u.usertype === 'Admin');
     staff.forEach(s => {
@@ -154,11 +154,17 @@ function closeClubModal() {
 
 // 4. Save Club Data
 async function saveClubData() {
+    if (!editingClubId) {
+        alert("❌ Error: No club selected for editing");
+        return;
+    }
+
     const clubName = document.getElementById('EditClubName').value;
     const adviser = document.getElementById('EditClubAdviser').value;
     const logoFile = document.getElementById('EditClubLogo').files[0];
 
     const formData = new FormData();
+    formData.append('clubId', editingClubId);
     formData.append('clubname', clubName);
     formData.append('adviser', adviser);
     
@@ -175,8 +181,14 @@ async function saveClubData() {
             alert("✅ Club updated!");
             closeClubModal();
             loadClubManagementList();
+        } else {
+            const error = await res.json();
+            alert(`❌ Error: ${error.message || 'Failed to update club'}`);
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e);
+        alert(`❌ Error: ${e.message}`);
+    }
 }
 
 // ==========================================
@@ -532,14 +544,24 @@ async function submitAnnouncement() {
     btn.disabled = true;
 
     try {
+        // 1. Fetch Current Admin Info to get their PFP
+        const authRes = await fetch('/api/auth/me');
+        if (!authRes.ok) throw new Error("Auth check failed");
+        const adminUser = await authRes.json();
+        
+        // Use their existing PFP or fallback to a generated avatar
+        const adminPfp = adminUser.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(adminUser.name)}&background=random`;
+
+        // 2. Prepare Data
         const formData = new FormData();
         formData.append('title', title);
         formData.append('content', content);
-        
-        // CRITICAL: Ensure this is saved correctly in the DB as isGlobal: true
-        formData.append('isGlobal', 'true'); 
-        
+        formData.append('isGlobal', 'true'); // Critical Flag
         formData.append('visibility', 'public');
+        
+        // SEND THE PFP AS 'authorProfile'
+        formData.append('authorProfile', adminPfp); 
+
         if (mediaFile) formData.append('media', mediaFile);
 
         const res = await fetch('/api/posts/create', {
@@ -548,11 +570,20 @@ async function submitAnnouncement() {
         });
 
         if (res.ok) {
-            alert("✅ Global Announcement Posted!");
+            alert("Global Announcement Posted!");
             closeAnnouncementModal();
-            // Refresh feed logic if you are on the feed page
+            // Optional: Reload feed if on the same page
+        } else {
+            const data = await res.json();
+            alert("Failed: " + data.message);
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e); 
+        alert("Error posting announcement.");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
 }
 function switchTab(tabName) {
     // 1. Reset Tabs & Sections
@@ -731,3 +762,79 @@ function toggleClubTag(btn, tag) {
         btn.classList.add('selected'); // Visual feedback: add red/active state
     }
 }
+
+// ==========================================
+// PROFILE SETTINGS
+// ==========================================
+let currentAdminUser = null;
+
+async function openProfileSettings() {
+    try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) throw new Error("Failed to load user");
+        
+        currentAdminUser = await res.json();
+        
+        // Populate modal
+        document.getElementById('AdminNameDisplay').innerText = currentAdminUser.name;
+        const previewImg = document.getElementById('ProfilePreview');
+        previewImg.src = currentAdminUser.profilePicture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentAdminUser.name) + '&background=fa3737&color=fff';
+        
+        // Show modal
+        document.getElementById('ProfileSettingsModal').style.display = 'flex';
+    } catch (error) {
+        console.error("Error opening profile settings:", error);
+        alert("Failed to load profile.");
+    }
+}
+
+function closeProfileSettings() {
+    document.getElementById('ProfileSettingsModal').style.display = 'none';
+}
+
+async function uploadProfilePicture() {
+    const fileInput = document.getElementById('ProfilePictureInput');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert("Please select an image.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', fileInput.files[0]);
+
+    try {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = 'Uploading...';
+
+        const res = await fetch('/api/users/upload-avatar', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!res.ok) throw new Error("Upload failed");
+        
+        const data = await res.json();
+        
+        // Update preview
+        document.getElementById('ProfilePreview').src = data.newUrl + '?t=' + Date.now();
+        
+        alert("✅ Profile picture updated! Your announcements will use this new picture.");
+        
+        // Close modal
+        closeProfileSettings();
+    } catch (error) {
+        console.error("Upload error:", error);
+        alert("❌ Failed to upload picture: " + error.message);
+    } finally {
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = 'Save Picture';
+    }
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('ProfileSettingsModal');
+    if (e.target === modal) closeProfileSettings();
+});

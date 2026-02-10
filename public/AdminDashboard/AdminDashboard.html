@@ -14,9 +14,12 @@
     </nav>
 
     <div id="HomeHeader">
-        <div id="UserProfile">
-            <div id="StatusBadge" class="status-badge" style="background: black;">Admin</div>
-            <div id="Name">Loading...</div>
+        <div id="UserProfile" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="StatusBadge" class="status-badge" style="background: black;">Admin</div>
+                <div id="Name">Loading...</div>
+            </div>
+            <button onclick="openProfileSettings()" class="btn-profile-settings" style="margin-top: 5px; background: none; border: none; color: #fa3737; cursor: pointer; text-decoration: underline; font-size: 0.85rem; padding: 0;">Edit Profile</button>
         </div>
         <a href="../ClubPortalFeed/ClubPortalFeed.html" id="homebutton">UE Club Portal</a>
         <p id="SchoolYear">Admin Control Panel</p>
@@ -89,7 +92,7 @@
         </div>
         <div id="CreateSection" class="table-card" style="display:none; max-width: 600px; margin: 0 auto;">
     <h3 style="margin-top:0; color:#333;">Create New Account</h3>
-    <p style="color:#666; font-size:0.9rem; margin-bottom:20px;">Manually register Faculty Advisers or fellow Administrators.</p>
+    <p style="color:#666; font-size:0.9rem; margin-bottom:20px;">Manually register Advisers or fellow Administrators.</p>
 
     <form id="CreateUserForm" onsubmit="handleCreateUser(event)">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -110,7 +113,7 @@
             <div>
                 <label class="form-label">Role</label>
                 <select id="NewRole" class="modal-input" onchange="toggleClubSelect()">
-                    <option value="Teacher">Faculty Adviser</option>
+                    <option value="Teacher">Adviser</option>
                     <option value="Admin">Administrator</option>
                 </select>
             </div>
@@ -281,6 +284,28 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
             <button id="BtnReviewDelete" class="btn-confirm" style="background-color: #dc3545;">🗑️ Delete Content</button>
             <button onclick="closeReviewModal()" class="btn-cancel">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Settings Modal -->
+<div id="ProfileSettingsModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <span class="close" onclick="closeProfileSettings()">&times;</span>
+        <h3 style="color: #fa3737; margin-top: 0;">Admin Profile Settings</h3>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <img id="ProfilePreview" src="" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #fa3737; margin-bottom: 15px;">
+            <div id="AdminNameDisplay" style="font-weight: bold; color: #333;"></div>
+        </div>
+
+        <label style="display: block; margin-top: 15px; font-weight: bold;">Upload Profile Picture</label>
+        <input type="file" id="ProfilePictureInput" class="modal-input" accept="image/*">
+        <small style="color: #888; display: block; margin-top: 5px;">This picture will be used in your global announcements.</small>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeProfileSettings()" class="btn-cancel">Cancel</button>
+            <button onclick="uploadProfilePicture()" class="btn-confirm">Save Picture</button>
         </div>
     </div>
 </div>

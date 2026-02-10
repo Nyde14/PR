@@ -42,9 +42,10 @@ document.getElementById('sendOtpBtn').addEventListener('click', async function()
 document.getElementById('RegisterForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    const role = document.getElementById('regRole').value; // Get the selected role
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
-    const otp = document.getElementById('regOtp').value.trim(); // NEW
+    const otp = document.getElementById('regOtp').value.trim();
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
 
@@ -66,13 +67,20 @@ document.getElementById('RegisterForm').addEventListener('submit', async functio
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, otp }) // Send OTP too
+            // Include 'usertype' in the body
+            body: JSON.stringify({ 
+                name, 
+                email, 
+                password, 
+                otp, 
+                usertype: role 
+            }) 
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            alert("Registration Successful!");
+            alert("Registration Successful! Please log in.");
             window.location.href = "/Login/Login.html";
         } else {
             alert(data.message);

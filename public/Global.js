@@ -614,10 +614,10 @@ function injectPublicProfileModal() {
         <div class="modal-content" style="background:white; border-radius:15px; width:95%; max-width:450px; overflow:hidden;">
             <div class="share-header" style="background:#fa3737; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-weight:bold; font-size:1.1rem;">User Profile</span>
-                <span onclick="document.getElementById('PublicProfileModal').style.display='none'" style="cursor:pointer; font-size:1.5rem;">&times;</span>
+                <span onclick="document.getElementById('PublicProfileModal').style.display='none'" style="cursor:pointer; font-size:1.5rem; color:white;">&times;</span>
             </div>
             
-            <div class="profile-modal-body" style="padding:20px; text-align:center;">
+            <div class="profile-modal-body" style="padding:20px; text-align:center; background:white;">
                 <div class="profile-modal-avatar-container" style="width:120px; height:120px; margin:0 auto 15px auto; position:relative;">
                     <img id="PubModalImg" src="" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:4px solid #fa3737;">
                 </div>
@@ -642,6 +642,46 @@ function injectPublicProfileModal() {
         </div>
     </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Add dark mode CSS
+    const style = document.createElement('style');
+    style.innerHTML = `
+        body.dark-mode #PublicProfileModal .modal-overlay { background: rgba(0, 0, 0, 0.8); }
+        body.dark-mode #PublicProfileModal .modal-content { 
+            background: #1e1e1e; 
+            border: 1px solid #333;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+        }
+        body.dark-mode #PublicProfileModal .share-header { 
+            background: #fa3737; 
+        }
+        body.dark-mode #PublicProfileModal .profile-modal-body {
+            background: #1e1e1e;
+        }
+        body.dark-mode #PublicProfileModal #PubModalName,
+        body.dark-mode #PublicProfileModal #PubModalBio {
+            color: #fff;
+        }
+        body.dark-mode #PublicProfileModal #PubModalHandle {
+            color: #aaa;
+        }
+        body.dark-mode #PublicProfileModal .profile-modal-body label {
+            color: #aaa;
+        }
+        body.dark-mode #PublicProfileModal #PubModalBio {
+            background: #2c2c2c;
+            border-color: #444;
+            color: #fff;
+        }
+        body.dark-mode #PublicProfileModal #PubModalClubContainer {
+            background: #2c2c2c !important;
+            border-left-color: #666 !important;
+        }
+        body.dark-mode #PublicProfileModal #PubModalClubText {
+            color: #fff;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // Close modal if clicking outside
@@ -736,6 +776,79 @@ window.openFullProfileModal = async function() {
             const user = await res.json();
             document.getElementById('FullModalImg').src = user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
             document.getElementById('UserProfileBio').value = user.bio || "";
+            const position = user.clubPosition || 'Member';
+
+            // --- POPULATE ROLE BADGES ---
+            const badgeContainer = document.getElementById('FullModalBadges');
+            let badgesHTML = '';
+            
+            // Admin Badge
+            if (user.usertype === 'Admin') {
+                badgesHTML += '<span class="role-badge badge-admin" style="background:black; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">Administrator</span>';
+            } 
+            // Adviser Badge
+            else if (user.usertype === 'Teacher') {
+                badgesHTML += '<span class="role-badge badge-adviser" style="background:#fa3737; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">Faculty Adviser</span>';
+            } 
+            // Officer Badge (President, VP, etc.) - Use role colors
+            else if (position !== 'Member' && position !== 'Active Member') {
+                const roleColor = getRoleColor(position);
+                badgesHTML += `<span class="role-badge" style="background:${roleColor.border}; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"><i class='bx bxs-star'></i> ${position}</span>`;
+            }
+            // Active Member Badge (Cyan)
+            else if (position === 'Active Member') {
+                badgesHTML += `<span class="role-badge" style="background:#00ced1; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;"><i class='bx bxs-bolt'></i> ${position}</span>`;
+            }
+            // Standard Member Badge
+            else {
+                badgesHTML += '<span class="role-badge badge-member" style="background:#666; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">University Student</span>';
+            }
+            badgeContainer.innerHTML = badgesHTML;
+
+            // --- POPULATE CLUB MEMBERSHIP ---
+            const clubContainer = document.getElementById('FullModalClubContainer');
+            const clubText = document.getElementById('FullModalClubText');
+            const hasClub = user.club && user.club !== 'none' && user.club !== 'Pending';
+
+            if (hasClub) {
+                const isStaff = user.usertype === 'Teacher' || user.usertype === 'Admin';
+                let borderColor, bgColor, roleLabel, tagColor, icon;
+
+                if (isStaff) {
+                    borderColor = "#fa3737";
+                    bgColor = "#fff5f5";
+                    roleLabel = 'Adviser';
+                    tagColor = '#fa3737';
+                    icon = 'bx-briefcase-alt-2';
+                } else if (position !== 'Member') {
+                    // Use role-specific colors for officers
+                    const roleColor = getRoleColor(position);
+                    borderColor = roleColor.border;
+                    bgColor = roleColor.bg;
+                    roleLabel = position;
+                    tagColor = roleColor.border;
+                    icon = 'bx-user-check';
+                } else {
+                    // Regular member
+                    borderColor = "#666";
+                    bgColor = "#f9f9f9";
+                    roleLabel = 'Member';
+                    tagColor = '#666';
+                    icon = 'bx-user-check';
+                }
+
+                clubContainer.style.borderLeft = `4px solid ${borderColor}`;
+                clubContainer.style.background = bgColor;
+
+                clubText.innerHTML = `
+                    <i class='bx ${icon}' style="color:${tagColor}; margin-right:8px; font-size:1.2rem;"></i> 
+                    ${user.club}
+                    <span style="background:${tagColor}; color:white; font-size:0.7rem; padding:2px 8px; border-radius:4px; margin-left:10px; vertical-align:middle;">${roleLabel}</span>
+                `;
+            } else {
+                clubContainer.style.borderLeft = "4px solid #ccc";
+                clubText.innerHTML = `<i class='bx bx-x-circle' style="color:#ccc; margin-right:8px; font-size:1.2rem;"></i> No Active Affiliation`;
+            }
         }
     } catch (e) { console.error("Profile Load Error:", e); }
 };
@@ -825,10 +938,10 @@ function injectFullProfileModal() {
             
             <div class="share-header" style="background:#fa3737; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-weight:bold; font-family:'Montserrat', sans-serif;">My Profile Settings</span>
-                <span onclick="window.closeFullProfileModal()" style="cursor:pointer; font-size:1.8rem; line-height:1;">&times;</span>
+                <span onclick="window.closeFullProfileModal()" style="cursor:pointer; font-size:1.8rem; line-height:1; color:white;">&times;</span>
             </div>
             
-            <div class="profile-modal-body" style="padding:25px; text-align:center;">
+            <div class="profile-modal-body" style="padding:25px; text-align:center; background:white;">
                 
                 <div class="profile-modal-avatar-container" 
                      onclick="document.getElementById('HiddenAvatarInput').click()" 
@@ -844,13 +957,22 @@ function injectFullProfileModal() {
                     <input type="file" id="HiddenAvatarInput" style="display:none;" accept="image/*" onchange="window.previewHeaderAvatar()">
                 </div>
 
+                <div id="FullModalBadges" class="user-badge-container" style="display:flex; justify-content:center; gap:8px; margin-bottom:20px;">
+                </div>
+
                 <div style="text-align:left; margin-bottom:20px;">
                     <label style="font-size:0.75rem; font-weight:800; color:#888; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">
                         About Me
                     </label>
                     <textarea id="UserProfileBio" 
                               placeholder="Tell the community about yourself..."
-                              style="width:100%; height:120px; padding:12px; border-radius:10px; border:1px solid #ddd; resize:none; font-family:'Inter', sans-serif; font-size:0.95rem; line-height:1.5; color:#333; outline:none; transition: border-color 0.2s;"></textarea>
+                              style="width:100%; height:120px; padding:12px; border-radius:10px; border:1px solid #ddd; resize:none; font-family:'Inter', sans-serif; font-size:0.95rem; line-height:1.5; color:#333; outline:none; transition: border-color 0.2s; background:white;"></textarea>
+                </div>
+
+                <div id="FullModalClubContainer" class="club-membership-list" style="margin:20px 0 20px 0; padding:12px; border-radius:8px; text-align:left; border-left:4px solid #666; background:#f9f9f9;">
+                    <label style="font-size:0.8rem; font-weight:bold; color:#888; text-transform:uppercase;">CLUB MEMBERSHIP</label>
+                    <p id="FullModalClubText" style="margin:5px 0 0 0; font-weight:600; color:#333; display:flex; align-items:center;">
+                    </p>
                 </div>
 
                 <button onclick="window.saveProfileChanges(event)" 
@@ -864,13 +986,62 @@ function injectFullProfileModal() {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // Add CSS for the hover effect
+    // Add CSS for the hover effect and dark mode support
     const style = document.createElement('style');
     style.innerHTML = `
         .profile-modal-avatar-container:hover .avatar-edit-overlay { opacity: 1 !important; }
         .profile-modal-avatar-container:hover img { filter: brightness(80%); }
-        body.dark-mode #FullProfileModal .modal-content { background: #1e1e1e; border: 1px solid #333; }
-        body.dark-mode #UserProfileBio { background: #2c2c2c; border-color: #444; color: #fff; }
+        
+        /* DARK MODE STYLES */
+        body.dark-mode #FullProfileModal .modal-overlay { background: rgba(0, 0, 0, 0.8); }
+        body.dark-mode #FullProfileModal .modal-content { 
+            background: #1e1e1e; 
+            border: 1px solid #333;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+        }
+        body.dark-mode #FullProfileModal .share-header { 
+            background: #fa3737; 
+            color: white;
+        }
+        body.dark-mode #FullProfileModal .profile-modal-body {
+            background: #1e1e1e;
+        }
+        body.dark-mode #FullProfileModal .profile-modal-body label { 
+            color: #aaa;
+        }
+        body.dark-mode #FullProfileModal .profile-modal-body h2,
+        body.dark-mode #FullProfileModal .profile-modal-body p {
+            color: #fff;
+        }
+        body.dark-mode #UserProfileBio { 
+            background: #2c2c2c; 
+            border-color: #444; 
+            color: #fff;
+        }
+        body.dark-mode #UserProfileBio::placeholder {
+            color: #666;
+        }
+        body.dark-mode #FullModalClubContainer { 
+            background: #2c2c2c !important;
+            border-left: 4px solid #666 !important;
+        }
+        body.dark-mode #FullModalClubContainer label {
+            color: #aaa;
+        }
+        body.dark-mode #FullModalClubText {
+            color: #fff;
+        }
+        body.dark-mode #FullProfileModal .save-prefs-btn {
+            background: #fa3737;
+            color: white;
+            border: 1px solid #c92a2a;
+        }
+        body.dark-mode #FullProfileModal .save-prefs-btn:hover {
+            background: #e62222;
+        }
+        body.dark-mode #FullModalBadges {
+            background: transparent;
+        }
     `;
     document.head.appendChild(style);
 }

@@ -124,99 +124,117 @@ window.addEventListener('click', (e) => {
 // ==========================================
 // CARD GENERATOR
 // ==========================================
+// ClubPortalFeed.js - Full Integrated Function
+
 function createPostCard(post, currentUser) {
     const currentUserName = currentUser ? currentUser.name : "";
     const isAdmin = currentUser && currentUser.usertype === 'Admin';
     const date = new Date(post.timestamp).toLocaleDateString();
 
-    // 1. FILTER: Prevent Global posts from rendering as regular cards
-    if (post.isGlobal === true) return null; 
-
-    // 2. Initialize card element
+    // 1. Initialize card element
     const card = document.createElement('div');
     card.className = 'post-card';
     card.id = `post-${post._id}`;
 
-    // --- 3. DYNAMIC PROFILE & LOGO LOGIC ---
-    const clubLogo = post.clubLogo || '/uploads/default_pfp.png';
-    const fallbackImage = '/uploads/default_pfp.png';
-    
-    // Priority Logic for Author Profile Picture
-    let authorPfp;
-    if (post.author === currentUserName && currentUser.profilePicture) {
-        authorPfp = currentUser.profilePicture;
+    // --- 2. DYNAMIC PROFILE & LOGO LOGIC (Standard vs Global) ---
+    let clubLogo, clubName, profileLink, authorName, authorPfp;
+
+    if (post.isGlobal === true) {
+        // --- ADMIN STATIC ASSET LOGIC ---
+        // Force the use of the static admin profile picture
+        const staticAdminPfp = "/ClubPortalFeed/admin_pfp.png"; 
+
+        clubLogo = staticAdminPfp; 
+        clubName = "University Administration";
+        authorName = "Official System Update";
+        authorPfp = staticAdminPfp; 
+        profileLink = "#"; 
+        
+        // Add visual priority styling
+        card.style.borderLeft = "6px solid #fa3737"; 
+        card.style.backgroundColor = "#fffafa";     
+        card.classList.add('global-priority-post');
     } else {
-        authorPfp = (post.authorProfile && post.authorProfile.trim() !== "") 
-            ? post.authorProfile 
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=random&color=fff`;
+        // STYLE AS REGULAR CLUB POST
+        clubLogo = post.clubLogo || '/uploads/admin_pfp.png';
+        clubName = post.clubname;
+        authorName = post.author;
+        profileLink = post.clubSlug ? `/ClubProfile/ClubProfile.html?slug=${post.clubSlug}` : '#';
+        
+        // Priority Logic for Author Profile Picture
+        if (post.author === currentUserName && currentUser.profilePicture) {
+            authorPfp = currentUser.profilePicture;
+        } else {
+            authorPfp = (post.authorProfile && post.authorProfile.trim() !== "") 
+                ? post.authorProfile 
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=random&color=fff`;
+        }
     }
 
-    const profileLink = post.clubSlug ? `/ClubProfile/ClubProfile.html?slug=${post.clubSlug}` : '#';
+    const fallbackImage = '/uploads/admin_pfp.png';
     const isLiked = post.isLiked;
     const heartIconClass = isLiked ? "bx bxs-heart" : "bx bx-heart"; 
     const heartColor = isLiked ? "#fa3737" : "currentColor"; 
     const comments = post.comments || [];
 
-    // --- 4. COMMENT LIST GENERATION (The "Lost" 40 lines) ---
+    // --- 3. COMMENT LIST GENERATION ---
     const commentsHTML = comments.map(c => {
-    const isMyComment = c.author === currentUserName;
-    const avatarUrl = c.userProfile || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.author)}&background=random&color=fff&size=64`;
-    
-    // Action Buttons: Delete (if mine) OR Report (if not mine)
-    const actionBtn = isMyComment 
-        ? `<button class="action-link delete-btn" onclick="deleteComment('${post._id}', '${c._id}')" title="Delete"><i class='bx bx-trash'></i></button>` 
-        : `<button class="action-link report-btn" onclick="reportContent('Comment', '${post._id}|${c._id}')" title="Report"><i class='bx bx-flag'></i></button>`;
-
-    const repliesHTML = (c.replies || []).map(r => {
-        const isMyReply = r.author === currentUserName;
-        // Construct ID as "PostID|CommentID|ReplyID" for the backend locator
-        const replyTargetId = `${post._id}|${c._id}|${r._id}`;
+        const isMyComment = c.author === currentUserName;
+        const avatarUrl = c.userProfile || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.author)}&background=random&color=fff&size=64`;
         
-        const replyAction = isMyReply
-             ? `` // Optional: Add delete reply logic here if desired
-             : `<button class="action-link report-btn" onclick="reportContent('Reply', '${replyTargetId}')" title="Report" style="font-size:0.7rem;"><i class='bx bx-flag'></i></button>`;
+        const actionBtn = isMyComment 
+            ? `<button class="action-link delete-btn" onclick="deleteComment('${post._id}', '${c._id}')" title="Delete"><i class='bx bx-trash'></i></button>` 
+            : `<button class="action-link report-btn" onclick="reportContent('Comment', '${post._id}|${c._id}')" title="Report"><i class='bx bx-flag'></i></button>`;
+
+        const repliesHTML = (c.replies || []).map(r => {
+            const isMyReply = r.author === currentUserName;
+            const replyTargetId = `${post._id}|${c._id}|${r._id}`;
+            const replyAction = isMyReply
+                 ? `` 
+                 : `<button class="action-link report-btn" onclick="reportContent('Reply', '${replyTargetId}')" title="Report" style="font-size:0.7rem;"><i class='bx bx-flag'></i></button>`;
+
+            return `
+            <div class="reply-item">
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <span><span class="comment-author" style="font-size:0.8rem;">${r.author}:</span> ${r.content}</span>
+                    ${replyAction}
+                </div>
+            </div>`;
+        }).join('');
 
         return `
-        <div class="reply-item">
-            <div style="display:flex; justify-content:space-between; width:100%;">
-                <span><span class="comment-author" style="font-size:0.8rem;">${r.author}:</span> ${r.content}</span>
-                ${replyAction}
+        <div class="comment-item" id="comment-${c._id}" style="display:flex; gap:10px; margin-bottom:15px;">
+            <img src="${avatarUrl}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+            <div style="flex:1;">
+                <div class="comment-bubble"> 
+                    <div class="comment-header">
+                        <span>${c.author}</span>
+                        <div class="comment-actions">${actionBtn}</div>
+                    </div>
+                    <div class="comment-text">${c.content}</div>
+                </div>
+                <div class="replies-list">${repliesHTML}</div>
+                <div style="margin-top:2px; margin-left:12px; font-size:0.8rem;">
+                    <button class="reply-btn" onclick="toggleReplyInput('${c._id}')">Reply</button>
+                </div>
+                <div id="reply-input-${c._id}" class="reply-input-container" style="display:none;">
+                    <input type="text" class="reply-input" placeholder="Reply..." id="input-reply-${c._id}">
+                    <button onclick="submitReply('${post._id}', '${c._id}')" class="comment-btn">Post</button>
+                </div>
             </div>
         </div>`;
     }).join('');
 
-    return `
-    <div class="comment-item" id="comment-${c._id}" style="display:flex; gap:10px; margin-bottom:15px;">
-        <img src="${avatarUrl}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
-        <div style="flex:1;">
-            <div class="comment-bubble"> 
-                <div class="comment-header">
-                    <span>${c.author}</span>
-                    <div class="comment-actions">${actionBtn}</div>
-                </div>
-                <div class="comment-text">${c.content}</div>
-            </div>
-            <div class="replies-list">${repliesHTML}</div>
-            <div style="margin-top:2px; margin-left:12px; font-size:0.8rem;">
-                <button class="reply-btn" onclick="toggleReplyInput('${c._id}')">Reply</button>
-            </div>
-            <div id="reply-input-${c._id}" class="reply-input-container" style="display:none;">
-                <input type="text" class="reply-input" placeholder="Reply..." id="input-reply-${c._id}">
-                <button onclick="submitReply('${post._id}', '${c._id}')" class="comment-btn">Post</button>
-            </div>
-        </div>
-    </div>`;
-}).join('');
-    // --- 5. ASSEMBLE CARD INNER HTML ---
+    // --- 4. ASSEMBLE CARD INNER HTML ---
     card.innerHTML = `
         <div class="post-header" style="position:relative;">
             <a href="${profileLink}" class="header-left" style="display:flex; align-items:center; text-decoration:none;">
-                <img src="${clubLogo}" class="club-avatar" onerror="this.onerror=null; this.src='${fallbackImage}'" style="width:45px; height:45px; border-radius:50%; margin-right:12px; border:1px solid #eee; object-fit:cover;">
+                <img src="${clubLogo}" class="club-avatar" onerror="this.onerror=null; this.src='${fallbackImage}'" style="width:45px; height:45px; border-radius:50%; margin-right:12px; border:2px solid ${post.isGlobal ? '#fa3737' : '#eee'}; object-fit:cover;">
                 <div class="header-info">
-                    <span class="club-name-link" style="font-weight:bold; color:#333;">${post.clubname}</span>
+                    <span class="club-name-link" style="font-weight:bold; color:${post.isGlobal ? '#fa3737' : '#333'};">${clubName} ${post.isGlobal ? '📢' : ''}</span>
                     <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
                         <img src="${authorPfp}" style="width:18px; height:18px; border-radius:50%; object-fit:cover;">
-                        <span class="post-author-name" style="font-size:0.8rem; color:#666;">${post.author} • ${date}</span>
+                        <span class="post-author-name" style="font-size:0.8rem; color:#666;">${authorName} • ${date}</span>
                     </div>
                 </div>
             </a>
@@ -237,7 +255,7 @@ function createPostCard(post, currentUser) {
         
         <div class="post-actions" style="display:flex; gap:20px; padding-top:15px; border-top:1px solid #eee; margin-top:10px;">
             <button class="action-btn" onclick="toggleLike('${post._id}', this)">
-                <i class='${heartIconClass}' style="color:${heartColor};"></i> <span>${post.likesCount}</span>
+                <i class='${heartIconClass}' style="color:${heartColor};"></i> <span class="like-count">${post.likesCount}</span>
             </button>
             <button class="action-btn" onclick="toggleComments('${post._id}')">
                 <i class='bx bx-message-rounded-dots'></i> ${comments.length}

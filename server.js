@@ -93,7 +93,7 @@ app.get('/', async (req, res) => {
 app.use('/public', protectPublicFolders, express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
-
+app.use('/ClubPortalFeed', express.static(path.join(__dirname, 'public', 'ClubPortalFeed')));
 
 // --- FILE UPLOAD CONFIGURATION ---
 const uploadDir = path.join(__dirname, 'public', 'uploads');
@@ -619,30 +619,59 @@ app.patch('/api/clubs/update-description', async (req, res) => {
 
 app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount: 1 }]), async (req, res) => {
     try {
-        const { clubname, adviser, category } = req.body; 
+        const { clubId, clubname, adviser, category } = req.body; 
+        
+        console.log("Update Branding Request:", { clubId, clubname, adviser, category, hasLogo: !!(req.files && req.files['logo']) });
+        
         const updateData = {};
         
-        // 1. Handle Logo
-        if (req.files && req.files['logo']) {
-            updateData['branding.logo'] = `/uploads/${req.files['logo'][0].filename}`;
+        // 1. Handle Club Name
+        if (clubname && clubname.trim()) {
+            updateData['clubname'] = clubname;
         }
         
-        // 2. Handle Adviser
-        if (adviser) updateData['adviser'] = adviser;
+        // 2. Handle Logo
+        if (req.files && req.files['logo']) {
+            updateData['branding.logo'] = `/uploads/${req.files['logo'][0].filename}`;
+            console.log("Logo updated to:", updateData['branding.logo']);
+        }
+        
+        // 3. Handle Adviser
+        if (adviser && adviser.trim()) {
+            updateData['adviser'] = adviser;
+        }
 
-        // 3. Handle Category as a simple string
-        if (category) {
+        // 4. Handle Category
+        if (category && category.trim()) {
             updateData['category'] = category;
         }
 
+        console.log("Update Data:", updateData);
+
+        // Try to find by ID first, then fall back to clubname for backwards compatibility
+        let lookupQuery = {};
+        if (clubId) {
+            lookupQuery = { _id: clubId };
+            console.log("Looking up by ID:", clubId);
+        } else if (clubname) {
+            lookupQuery = { clubname: clubname };
+            console.log("Looking up by clubname:", clubname);
+        } else {
+            return res.status(400).json({ message: "Either clubId or clubname is required" });
+        }
+
         const updatedClub = await Club.findOneAndUpdate(
-            { clubname: clubname }, 
+            lookupQuery, 
             { $set: updateData }, 
             { new: true }
         );
 
-        if (!updatedClub) return res.status(404).json({ message: "Club not found" });
+        if (!updatedClub) {
+            console.error("Club not found with query:", lookupQuery);
+            return res.status(404).json({ message: "Club not found" });
+        }
         
+        console.log("Club updated successfully:", updatedClub);
         res.json({ message: "Updated successfully", club: updatedClub });
     } catch (error) {
         console.error("Update Branding Error:", error);

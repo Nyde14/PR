@@ -64,6 +64,7 @@ router.post('/create', upload.single('media'), async (req, res) => {
             title,
             content,
             author: user.name,
+            authorProfile: user.profilePicture || '', // Save author's profile picture
             clubname: targetClubName, 
             mediaUrl,
             mediaType,
@@ -157,19 +158,30 @@ router.get('/feed', async (req, res) => {
         ]);
 
         // 4. Hydrate Avatars (Your existing logic)
+        // First, get all authors and commenters
+        const allAuthors = new Set();
         const commentAuthors = new Set();
         allPosts.forEach(post => {
+            allAuthors.add(post.author);
             if (post.comments) post.comments.forEach(c => commentAuthors.add(c.author));
         });
 
-        if (commentAuthors.size > 0) {
-            const authorsData = await User.find({ name: { $in: Array.from(commentAuthors) } }).select('name profilePicture');
-            const avatarMap = {};
-            authorsData.forEach(u => avatarMap[u.name] = u.profilePicture);
+        // Fetch all users in one query
+        const allNamesList = Array.from(new Set([...allAuthors, ...commentAuthors]));
+        if (allNamesList.length > 0) {
+            const usersData = await User.find({ name: { $in: allNamesList } }).select('name profilePicture');
+            const userAvatarMap = {};
+            usersData.forEach(u => userAvatarMap[u.name] = u.profilePicture);
+            
+            // Update post author profiles
             allPosts.forEach(post => {
+                if (userAvatarMap[post.author]) {
+                    post.authorProfile = userAvatarMap[post.author];
+                }
+                // Update comment author profiles
                 if (post.comments) {
                     post.comments.forEach(c => {
-                        if (avatarMap[c.author]) c.userAvatar = avatarMap[c.author];
+                        if (userAvatarMap[c.author]) c.userProfile = userAvatarMap[c.author];
                     });
                 }
             });

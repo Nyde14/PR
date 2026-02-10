@@ -516,3 +516,16 @@ body.dark-mode .tab-btn.active {
     background: #e2e3e5; /* Light Gray */
     color: #383d41;
 }
+
+/* Profile Settings Button in Header */
+.btn-profile-settings {
+    display: block !important;
+    width: auto !important;
+    padding: 5px 10px !important;
+    margin-top: 8px !important;
+    white-space: nowrap;
+}
+
+.btn-profile-settings:hover {
+    opacity: 0.8;
+}

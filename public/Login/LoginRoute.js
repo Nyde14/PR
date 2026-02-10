@@ -123,9 +123,21 @@ router.post('/login', async (req, res) => {
         
         // 1. Find User
         const user = await User.findOne({ email });
+        
+        // Security: Don't reveal if user exists vs wrong password, but we need user obj for locking
         if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
-        // --- A. CHECK RESTRICTION STATUS ---
+        // --- SECURITY: CHECK LOCKOUT STATUS (New) ---
+        if (user.lockUntil && user.lockUntil > Date.now()) {
+            const remaining = Math.ceil((user.lockUntil - Date.now()) / 60000);
+            return res.status(429).json({ 
+                message: `Account locked. Try again in ${remaining} Minutes.`,
+                lockout: true,
+                remainingTime: user.lockUntil - Date.now()
+            });
+        }
+
+        // --- A. CHECK RESTRICTION STATUS (Your Original Logic) ---
         if(user.isRestricted) {
             const now = new Date();
             if (!user.restrictionEnds || user.restrictionEnds > now) {
@@ -147,6 +159,7 @@ router.post('/login', async (req, res) => {
         let isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
+            // Your Migration Logic
             if (user.password === password) {
                 console.log(`⚠️ Migrating user ${user.email} to hash...`);
                 const salt = await bcrypt.genSalt(10);
@@ -157,38 +170,63 @@ router.post('/login', async (req, res) => {
             }
         }
 
-        if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
+        // --- SECURITY: HANDLE FAILED ATTEMPT (New) ---
+        if (!isMatch) {
+            // Increment failed attempts
+            user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+            // Lockout Logic: 5 fails = 3 mins, 10 fails = 6 mins, etc.
+            if (user.failedLoginAttempts >= 5) {
+                const multiplier = Math.floor(user.failedLoginAttempts / 5);
+                const lockTime = 3 * 60 * 1000 * multiplier; 
+                user.lockUntil = Date.now() + lockTime;
+            }
+            
+            await user.save();
+            
+            // Calculate remaining attempts for the user message
+            const attemptsLeft = 5 - (user.failedLoginAttempts % 5);
+            return res.status(400).json({ 
+                message: `Invalid email or password. ${attemptsLeft === 0 ? "Account locked." : `${attemptsLeft} attempts remaining.`}` 
+            });
+        }
 
         // --- C. LOGIN SUCCESS (Persistence Fix) ---
+        
+        // SECURITY: Reset counters on success (New)
+        user.failedLoginAttempts = 0;
+        user.lockUntil = null;
+        await user.save();
+
         // We ensure 'clubPosition' is fetched from the DB and put in the token
         const token = jwt.sign(
-    { 
-        userId: user._id, 
-        role: user.usertype, 
-        name: user.name,
-        clubPosition: user.clubPosition || 'Member' // Sync token
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '24h' }
-);
+            { 
+                userId: user._id, 
+                role: user.usertype, 
+                name: user.name,
+                clubPosition: user.clubPosition || 'Member' // Sync token
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
 
-if (req.session) {
-    req.session.token = token;
-}
+        if (req.session) {
+            req.session.token = token;
+        }
 
-res.json({
-    message: "Login successful",
-    token,
-    user: {
-        name: user.name,
-        email: user.email,
-        usertype: user.usertype,
-        club: user.club,
-        // MUST BE INCLUDED HERE
-        clubPosition: user.clubPosition || 'Member' 
-    },
-    redirectUrl: '/ClubPortalFeed/ClubPortalFeed.html'
-});
+        res.json({
+            message: "Login successful",
+            token,
+            user: {
+                name: user.name,
+                email: user.email,
+                usertype: user.usertype,
+                club: user.club,
+                // MUST BE INCLUDED HERE
+                clubPosition: user.clubPosition || 'Member' 
+            },
+            redirectUrl: '/ClubPortalFeed/ClubPortalFeed.html'
+        });
 
     } catch (error) {
         console.error("Login Error:", error);

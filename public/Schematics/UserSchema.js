@@ -20,7 +20,9 @@ const userSchema = new mongoose.Schema({
     restrictionReason: { type: String, default: "" },
     restrictionEnds: { type: Date },
     resetOTP: { type: String },
-    otpExpires: { type: Date }
+    otpExpires: { type: Date },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Number, default: null }
 });
 
 module.exports = mongoose.model('User', userSchema);
