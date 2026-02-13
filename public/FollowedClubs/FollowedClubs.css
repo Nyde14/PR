@@ -1,4 +1,12 @@
+* {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
 /* Layout */
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
 #MainContent {
     margin-left: 240px;
     margin-top: 80px;

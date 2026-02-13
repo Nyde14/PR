@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const ClubSchema = new mongoose.Schema({
   urlSlug: String,
     clubname: String,
-    category: String,
+    category: [String],
     shortDescription: String,
     fullDescription: String,
     branding: {
@@ -11,7 +11,8 @@ const ClubSchema = new mongoose.Schema({
         banner: String,
         themeColor: String
     },
-    membercount: Number
+    memberCount: Number,
+    adviser: String
 }, { collection: 'Clubs' });
 
 module.exports = mongoose.model('club', ClubSchema, 'Clubs');

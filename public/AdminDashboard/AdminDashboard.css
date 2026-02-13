@@ -1,3 +1,7 @@
+* {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
 body {
     background-color: #f4f6f9;
 }
@@ -275,11 +279,11 @@ body {
 .modal-input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
 body {
     background-color: #f4f6f9;
-    font-family: 'Inter', sans-serif; /* Professional base font */
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; /* Professional base font */
 }
 
 h1, h2, h3, .tab-btn {
-    font-family: 'Montserrat', sans-serif; /* Bold heading font */
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; /* Bold heading font */
 }
 
 /* Fix Header Layout: Use a single container for title and button */
@@ -528,4 +532,101 @@ body.dark-mode .tab-btn.active {
 
 .btn-profile-settings:hover {
     opacity: 0.8;
+}
+/* MOBILE RESPONSIVENESS */
+@media (max-width: 768px) {
+    /* Remove sidebar offset */
+    .admin-clubs-container, 
+    .dashboard-layout {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 15px;
+    }
+
+    /* Hide sidebar on mobile */
+    #MainSideBar {
+        display: none;
+    }
+
+    /* Adjust header for smaller screens */
+    .admin-clubs-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .btn-back {
+        width: 100%;
+    }
+
+    /* Stack cards in a single column on very small screens */
+    .clubs-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* Allow the logo to visible outside the containers */
+.club-card {
+    overflow: visible !important;
+    position: relative;
+}
+
+.club-card-banner {
+    overflow: visible !important; /* Critical to show the logo overlapping the content */
+}
+
+/* Ensure the banner image still respects the top rounded corners */
+.club-card-banner img {
+    border-radius: 12px 12px 0 0;
+}
+/* Professional button styling */
+.btn-back {
+    background: #fa3737; /* UE Red brand color */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(250, 55, 55, 0.2);
+}
+
+.btn-back:hover {
+    background: #d62f2f;
+    transform: translateX(-3px); /* Subtle feedback */
+}
+/* Dark Mode Support for Club Management Container */
+body.dark-mode .admin-clubs-container {
+    background-color: #121212;
+}
+
+body.dark-mode .admin-clubs-header,
+body.dark-mode .club-card,
+body.dark-mode .empty-state {
+    background-color: #1e1e1e; /* Matches AdminDashboard.css cards */
+    border-color: #333;
+    color: #e0e0e0;
+}
+
+body.dark-mode .club-card-name {
+    color: #ffffff;
+}
+
+body.dark-mode .club-card-adviser,
+body.dark-mode .admin-clubs-header p {
+    color: #bbbbbb;
+}
+
+body.dark-mode .club-card-category {
+    background: #2c2c2c;
+    color: #aaaaaa;
+}
+
+/* Adjust circle logo border for dark mode visibility */
+body.dark-mode .club-card-logo {
+    border-color: #1e1e1e;
+    background-color: #1e1e1e;
 }

@@ -1,4 +1,12 @@
+* {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
 /* CONTAINER */
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
 .inbox-container {
     max-width: 900px;
     margin: 0 auto;

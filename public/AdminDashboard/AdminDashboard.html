@@ -40,6 +40,7 @@
             <button id="TabUsers" class="tab-btn active" onclick="switchTab('users')">User Management</button>
             <button id="TabReports" class="tab-btn" onclick="switchTab('reports')">Reports</button>
             <button id="TabClubs" class="tab-btn" onclick="switchTab('clubs')">Club Management</button>
+            <button id="TabSystem" class="tab-btn" onclick="switchTab('system')">System Actions</button>
         </div>
 
         <div id="UsersSection" class="table-card">
@@ -134,9 +135,14 @@
 <div id="ClubsSection" class="table-card" style="display:none;">
     <div class="table-actions" style="justify-content: space-between;">
         <h3 style="margin:0;">Manage Organizations</h3>
-        <button onclick="openClubModal()" class="btn-broadcast" style="padding: 8px 15px;">
-            <i class='bx bx-plus-circle'></i> Add New Club
-        </button>
+        <div style="display:flex; gap:10px;">
+            <button onclick="window.location.href='/AdminDashboard/AdminClubList.html'" class="btn-broadcast" style="padding: 8px 15px;">
+                <i class='bx bx-layout'></i> Club Dashboards
+            </button>
+            <button onclick="openCreateClubModal()" class="btn-broadcast" style="padding: 8px 15px;">
+                <i class='bx bx-plus-circle'></i> Add New Club
+            </button>
+        </div>
     </div>
 
     <table class="admin-table">
@@ -153,6 +159,19 @@
             <tr><td colspan="5" style="text-align:center;">Loading clubs...</td></tr>
         </tbody>
     </table>
+</div>
+
+<div id="SystemSection" class="table-card" style="display:none; max-width: 600px; margin: 0 auto;">
+    <h3 style="margin-top:0; color:#333;">System Actions</h3>
+    <p style="color:#666; font-size:0.9rem; margin-bottom:20px;">Manage system-wide operations and school year resets.</p>
+    
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+        <h4 style="margin-top: 0; color: #856404;">⚠️ End of School Year Reset</h4>
+        <p style="color: #856404; margin-bottom: 10px;">Remove all students from clubs at the end of the school year. Club advisers and moderators will NOT be affected.</p>
+        <button onclick="openResetStudentClubsModal()" class="btn-confirm" style="background-color: #ff9800; width: 100%; padding: 12px;">
+            🔄 Reset Student Club Memberships
+        </button>
+    </div>
 </div>
 
 <div id="ClubEditModal" class="modal">
@@ -179,11 +198,12 @@
     <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Arts')">Arts</button>
     <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Performance')">Performance</button>
     <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Tech')">Tech</button>
+    <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Leadership')">Leadership</button>
 </div>
 
         <label class="form-label">Assign Adviser</label>
         <select id="EditClubAdviser" class="modal-input">
-            <option value="none">-- Select Faculty/Admin --</option>
+            <option value="">-- Keep Unchanged --</option>
         </select>
 
         <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
@@ -306,6 +326,59 @@
         <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
             <button onclick="closeProfileSettings()" class="btn-cancel">Cancel</button>
             <button onclick="uploadProfilePicture()" class="btn-confirm">Save Picture</button>
+        </div>
+    </div>
+</div>
+<div id="ClubCreateModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close" onclick="closeCreateClubModal()">&times;</span>
+        <h3 style="color: #fa3737; margin-top: 0;">Add New Organization</h3>
+        
+        <form id="CreateClubForm" onsubmit="submitNewClub(event)">
+            
+            <label class="form-label" style="margin-top: 15px;">Club Name</label>
+            <input type="text" id="CreateClubName" class="modal-input" placeholder="e.g. Debate Society" required>
+
+            <label class="form-label">Primary Category</label>
+            <select id="CreateClubCategory" class="modal-input">
+                <option value="Academic">Academic</option>
+                <option value="Arts">Arts</option>
+                <option value="Sports">Sports</option>
+                <option value="Tech">Tech</option>
+                <option value="Social">Social</option>
+                <option value="Performance">Performance</option>
+                <option value = "Leadership">Leadership</option>
+            </select>
+
+            <label class="form-label">Assigned Moderator (Adviser)</label>
+            <select id="CreateClubAdviser" class="modal-input">
+                <option value="">-- Optional: Select Later --</option>
+            </select>
+
+            <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn-cancel" onclick="closeCreateClubModal()">Cancel</button>
+                <button type="submit" class="btn-confirm">Create Organization</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="ResetStudentClubsModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close" onclick="closeResetStudentClubsModal()">&times;</span>
+        <h3 style="color: #ff6b6b; margin-top: 0;">⚠️ Reset Student Club Memberships</h3>
+        
+        <div style="background: #ffe0e0; border: 1px solid #ff6b6b; border-radius: 8px; padding: 15px; margin: 15px 0;">
+            <p style="margin: 0; color: #c92a2a; font-weight: bold;">THIS ACTION CANNOT BE UNDONE</p>
+            <p style="margin: 10px 0 0 0; color: #555; font-size: 0.95rem;">All students will be removed from their club memberships. Advisers and moderators will remain assigned.</p>
+        </div>
+
+        <label style="display:block; margin-top:20px; font-weight:bold;">To confirm, type: <code style="background: #f1f1f1; padding: 3px 8px; border-radius: 4px;">reset all</code></label>
+        <input type="text" id="ResetConfirmInput" class="modal-input" placeholder="Type 'reset all' to confirm" style="margin-top: 10px;">
+
+        <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeResetStudentClubsModal()" class="btn-cancel">Cancel</button>
+            <button onclick="submitResetStudentClubs()" class="btn-confirm" style="background-color: #ff6b6b;">Confirm Reset</button>
         </div>
     </div>
 </div>

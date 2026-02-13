@@ -10,10 +10,11 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
 }
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f4f4f4;
     padding-top: var(--header-h); /* Prevent content hiding behind header */
 }
@@ -115,7 +116,7 @@ body {
 }
 
 .page-title {
-    font-family: "Myriad Pro", Arial, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     margin-bottom: 25px;
     color: #333;
 }
@@ -123,8 +124,8 @@ body {
 /* GRID SETUP - Automatically adjusts columns */
 .clubs-grid {
     display: grid;
-    /* This creates as many columns as fit, minimum 350px wide each */
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+    /* This creates as many columns as fit, minimum 280px wide each */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
     gap: 25px;
 }
 
@@ -187,7 +188,7 @@ body {
 
 /* Club Name */
 .club-name {
-    font-family: "Myriad Pro", Arial, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     position: absolute;
     bottom: 15px;
     right: 20px;

@@ -1,4 +1,8 @@
 /* Dashboard Layout Adjustments */
+* {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
 .dashboard-layout {
     margin-top: var(--header-h);
     padding: 30px;
@@ -40,7 +44,7 @@
 #AppTable {
     width: 100%;
     border-collapse: collapse;
-    font-family: Arial, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 #AppTable th {

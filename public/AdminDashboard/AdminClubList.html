@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Club Management</title>
+    
+    <link rel="stylesheet" href="/ClubPortalFeed/ClubPortalFeed.css">
+    <link rel="stylesheet" href="/AdminDashboard/AdminDashboard.css">
+    
+    <style>
+        /* --- LAYOUT & SIDEBAR OFFSET --- */
+        .admin-clubs-container {
+            /* Fix: Calc requires spaces around the '-' operator */
+            margin-left: 250px; 
+            margin-top: 80px;
+            padding: 30px;
+            width: calc(100% - 250px); 
+            box-sizing: border-box;
+            min-height: 100vh;
+        }
+
+        .admin-clubs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+        }
+
+        /* --- GRID LOGIC --- */
+        .clubs-grid {
+            display: grid;
+            /* auto-fill with 1fr ensures cards fill space without overflowing */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 25px;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        /* --- CARD & CIRCLE LOGO FIX --- */
+        .club-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #eee;
+            overflow: visible; /* Changed to visible so logo can pop out */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .club-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 20px rgba(250, 55, 55, 0.15);
+            border-color: #fa3737;
+        }
+
+        .club-card-banner {
+            width: 100%;
+            height: 120px;
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
+            position: relative;
+            background: #eee;
+        }
+
+        .club-card-banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* THE CIRCLE FIX: object-fit cover + fixed aspect ratio */
+        .club-card-logo {
+            width: 80px !important;  
+            height: 80px !important; 
+            aspect-ratio: 1 / 1 !important; 
+            border-radius: 50% !important; 
+            border: 4px solid white;
+            object-fit: cover !important; /* Prevents oval stretching */
+            position: absolute;
+            bottom: -40px;
+            left: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background-color: white; 
+            z-index: 2;
+        }
+
+        .club-card-content {
+            padding: 50px 20px 20px;
+        }
+
+        .club-card-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .club-card-category {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #666;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-top: 10px;
+        }
+
+        .club-card-stats {
+            display: flex;
+            gap: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            margin-top: 15px;
+        }
+
+        .club-card-stat-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fa3737;
+        }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            .admin-clubs-container, 
+            .dashboard-layout {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding: 15px;
+                margin-top: 70px;
+            }
+
+            #MainSideBar {
+                display: none;
+            }
+
+            .admin-clubs-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .clubs-grid {
+                grid-template-columns: 1fr !important; 
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav id="MainSideBar">
+        <ul id="MainSideBarList"></ul>
+    </nav>
+
+    <div id="HomeHeader">
+        <div id="UserProfile" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="StatusBadge" class="status-badge" style="background: black;">Admin</div>
+                <div id="Name" style="font-weight: 600;">Loading...</div>
+            </div>
+        </div>
+        <a href="../ClubPortalFeed/ClubPortalFeed.html" id="homebutton">UE Club Portal</a>
+        <p id="SchoolYear">Club Management</p>
+    </div>
+
+    <main id="MainContent" class="dashboard-layout admin-clubs-container">
+        <div class="admin-clubs-header">
+            <div>
+                <h1>📋 Club Management</h1>
+                <p>Access and manage individual club dashboards as an administrator</p>
+            </div>
+            <div class="admin-clubs-header-actions">
+                <button onclick="window.history.back()" class="btn-back">← Back to Admin Panel</button>
+            </div>
+        </div>
+
+        <div id="ClubsGrid" class="clubs-grid">
+            </div>
+
+        <div id="EmptyState" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">📭</div>
+            <h3>No Clubs Found</h3>
+            <p>There are currently no clubs in the system.</p>
+        </div>
+    </main>
+
+    <script src="/public/Global.js"></script>
+    <script src="/public/AdminDashboard/AdminClubList.js"></script>
+</body>
+</html>

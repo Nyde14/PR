@@ -2,6 +2,14 @@
    1. MAIN LAYOUT & WRAPPER
    ========================================= */
 
+* {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
 /* Adjust MainContent to fit next to Sidebar (250px) and Header (80px) */
 #MainContent {
     margin-left: 250px;

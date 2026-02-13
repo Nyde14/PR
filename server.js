@@ -20,6 +20,7 @@ const Application = require('./public/Schematics/applicationschema.js');
 const Message = require('./public/Schematics/MessageSchema.js');
 const User = require('./public/Schematics/UserSchema.js');
 const Club = require('./public/Schematics/ClubSchema.js');  
+const Post = require('./public/Schematics/ClubPostSchema.js');
  
 
 const app = express();
@@ -58,6 +59,53 @@ const ensureAuthenticatedHtml = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
+    return res.redirect('/Login/Login.html');
+  }
+};
+
+// --- ADMIN AUTHENTICATION MIDDLEWARE ---
+const ensureAdminHtml = async (req, res, next) => {
+  try {
+    // Try to get token from session first, then from Authorization header
+    let token = req.session?.token;
+    
+    // If no session token, try Authorization header
+    if (!token && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.slice(7);
+      }
+    }
+
+    // If still no token, redirect to login
+    if (!token) {
+      console.log("No token found for admin access");
+      return res.redirect('/Login/Login.html');
+    }
+
+    // Verify and decode the JWT
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Fetch user from database to verify admin status
+    const user = await User.findById(decoded.userId);
+    
+    if (!user) {
+      console.log("User not found:", decoded.userId);
+      return res.redirect('/Login/Login.html');
+    }
+
+    if (user.usertype !== 'Admin') {
+      console.log("User is not admin:", user.name, "Type:", user.usertype);
+      return res.redirect('/ClubPortalFeed/ClubPortalFeed.html');
+    }
+
+    // Admin verified, proceed
+    req.user = decoded;
+    req.adminUser = user;
+    next();
+    
+  } catch (err) {
+    console.error("Admin Auth Middleware Error:", err.message);
     return res.redirect('/Login/Login.html');
   }
 };
@@ -636,7 +684,7 @@ app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount:
             console.log("Logo updated to:", updateData['branding.logo']);
         }
         
-        // 3. Handle Adviser
+        // 3. Handle Adviser - only update if provided
         if (adviser && adviser.trim()) {
             updateData['adviser'] = adviser;
         }
@@ -895,6 +943,104 @@ app.get('/api/reports/:id/view', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+app.post('/api/clubs/create', async (req, res) => {
+    try {
+        const { clubname, category, adviser } = req.body;
+
+        // 1. Validate Input - only clubname is required
+        if (!clubname) {
+            return res.status(400).json({ message: "Club Name is required." });
+        }
+
+        // 2. Check for duplicates
+        const existing = await Club.findOne({ 
+            clubname: { $regex: new RegExp(`^${clubname.trim()}$`, 'i') } 
+        });
+        if (existing) {
+            return res.status(400).json({ message: "An organization with this name already exists." });
+        }
+
+        // 3. Generate unique URL slug
+        const urlSlug = clubname.toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+
+        // 4. Create initial entry
+        const newClub = new Club({
+            clubname: clubname.trim(),
+            adviser: adviser || null,
+            category: Array.isArray(category) ? category : [category || "Organization"],
+            urlSlug,
+            branding: {
+                logo: '/uploads/default_pfp.png',
+                banner: '/uploads/default_banner.jpg'
+            },
+            memberCount: 0
+        });
+
+        await newClub.save();
+        res.status(201).json({ message: "Organization created successfully", club: newClub });
+
+    } catch (error) {
+        // This will print the exact error in your VS Code/Terminal console
+        console.error("CRITICAL: Club Creation Failed:", error); 
+        res.status(500).json({ 
+            error: "Internal Server Error", 
+            details: error.message // Sends the specific error back to the frontend
+        });
+    }
+});
+
+// ============================================
+// RESET STUDENTS FROM ALL CLUBS (END OF YEAR)
+// ============================================
+app.post('/api/clubs/reset-students', async (req, res) => {
+    try {
+        // 1. Find all students
+        const students = await User.find({ usertype: 'Student', club: { $ne: 'none' } });
+        
+        if (students.length === 0) {
+            return res.status(200).json({ 
+                message: "No students to remove from clubs.",
+                studentsRemoved: 0 
+            });
+        }
+
+        // 2. Get list of clubs they belong to
+        const clubsToUpdate = [...new Set(students.map(s => s.club))];
+
+        // 3. Remove students from their clubs
+        const updateResult = await User.updateMany(
+            { usertype: 'Student', club: { $ne: 'none' } },
+            { club: 'none' }
+        );
+
+        // 4. Decrement memberCount for each affected club
+        for (const clubName of clubsToUpdate) {
+            const studentsInClub = students.filter(s => s.club === clubName).length;
+            await Club.updateOne(
+                { clubname: clubName },
+                { $inc: { memberCount: -studentsInClub } }
+            );
+        }
+
+        console.log(`✅ Reset Complete: ${students.length} students removed from clubs`);
+        
+        res.status(200).json({ 
+            message: `Successfully removed ${students.length} students from ${clubsToUpdate.length} clubs.`,
+            studentsRemoved: students.length,
+            clubsAffected: clubsToUpdate.length
+        });
+
+    } catch (error) {
+        console.error("CRITICAL: Student Reset Failed:", error);
+        res.status(500).json({ 
+            error: "Internal Server Error",
+            message: error.message 
+        });
+    }
+});
 // ============================================
 // 5. HTML PAGE ROUTES
 // ============================================
@@ -922,6 +1068,18 @@ app.get('/ChatInbox/ChatInbox.html', ensureAuthenticatedHtml, (req, res) => {
 });
 app.get('/ClubChat/ClubChat.html', ensureAuthenticatedHtml, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'ClubChat', 'ClubChat.html'));
+});
+
+// ============================================
+// 6. ADMIN-ONLY PAGE ROUTES
+// ============================================
+
+app.get('/AdminDashboard/AdminClubList.html', ensureAdminHtml, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'AdminDashboard', 'AdminClubList.html'));
+});
+
+app.get('/AdminDashboard/AdminClubAdviserDashboard.html', ensureAdminHtml, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'AdminDashboard', 'AdminClubAdviserDashboard.html'));
 });
 
 // Logger

@@ -531,6 +531,8 @@ function injectInterestModal() {
                     <button class="filter-tag" onclick="toggleInterest(this, 'Arts')">Arts</button>
                     <button class="filter-tag" onclick="toggleInterest(this, 'Performance')">Performance</button>
                     <button class="filter-tag" onclick="toggleInterest(this, 'Tech')">Tech</button>
+                     <button class="filter-tag" onclick="toggleInterest(this, 'Leadership')">Leadership</button>
+                </div>
                 </div>
             </div>
             <div class="modal-footer">

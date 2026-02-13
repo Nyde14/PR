@@ -10,6 +10,11 @@
 
 *{ box-sizing: border-box; }
 
+/* Ensure Segoe UI font for all text */
+body, html, * {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
 /* Header */
 #HomeHeader {
     position: fixed;
@@ -79,7 +84,7 @@
 #MainSideBarList{ list-style: none; padding: 0; margin: 0; }
 
 .SidebarItem{
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-size: 1.05rem;
     display: block;
     text-decoration: none;
@@ -111,7 +116,7 @@
 }
 
 #noclub{
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-size: 48px;
     color: #9ca3af;
     margin: 0;
@@ -1923,7 +1928,7 @@ body.dark-mode #NotifBadge {
     border: none;
 }
 #homebutton {
-    font-family: 'Montserrat', sans-serif; /* The new font */
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; /* The new font */
     font-weight: 800;    /* Extra Bold */
     font-size: 1.4rem;   /* Slightly larger */
     color: white;
@@ -1940,7 +1945,7 @@ body.dark-mode #NotifBadge {
     transform: scale(1.02); /* Subtle pop effect on hover */
 }
 .post-title {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-weight: 700; /* Bold */
     font-size: 1.3rem;
     color: #1f2937;   /* Dark Grey (softer than pure black) */
@@ -1950,7 +1955,7 @@ body.dark-mode #NotifBadge {
 
 /* 2. Club Name (Matches Header Brand) */
 .club-name-link {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-weight: 600;
     font-size: 1rem;
     color: #111;
@@ -1958,7 +1963,7 @@ body.dark-mode #NotifBadge {
 
 /* 3. Main Post Body (Readable Inter Font) */
 .post-content {
-    font-family: 'Inter', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-size: 1rem;
     color: #4b5563;   /* Comfortable reading grey */
     line-height: 1.6; /* More breathing room between lines */
@@ -1967,12 +1972,12 @@ body.dark-mode #NotifBadge {
 
 /* 4. Comments & Metadata */
 .comment-text, .post-date, .like-count, .subtext {
-    font-family: 'Inter', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Update Comment Author Name */
 .comment-author {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-weight: 600;
     font-size: 0.9rem;
 }
@@ -2038,7 +2043,7 @@ body.dark-mode .highlight-post {
     justify-content: space-between;
     align-items: center;
     font-weight: bold;
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Tabs (DM vs Club) */
@@ -2183,7 +2188,7 @@ body.dark-mode .highlight-post {
     padding: 10px;
     border-radius: 8px;
     border: 1px solid #ddd;
-    font-family: 'Inter', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     resize: none;
     margin-top: 10px;
 }
@@ -2354,7 +2359,7 @@ body.dark-mode .post-card.global-pinned {
     background: #fa3737;
     color: white;
     padding: 10px 20px;
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-weight: 800;
     font-size: 0.8rem;
     letter-spacing: 1px;
@@ -2368,13 +2373,13 @@ body.dark-mode .post-card.global-pinned {
 }
 
 .global-alert-body h2 {
-    font-family: 'Montserrat', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     margin: 0 0 10px 0;
     color: #111;
 }
 
 .global-alert-body div {
-    font-family: 'Inter', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: #444;
 }
@@ -2560,4 +2565,8 @@ body.dark-mode .highlight-active {
 /* Flag Icon specifics */
 .report-btn i {
     pointer-events: none; /* Ensures click hits the button, not the icon */
+}
+#UserProfile img, .status-badge + #Name {
+    object-fit: cover;
+    aspect-ratio: 1 / 1;
 }

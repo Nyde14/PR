@@ -133,7 +133,7 @@ async function openClubModal(id = null, name = '', adviser = 'none') {
 
     // Populate adviser dropdown with both Teachers and Admins
     const select = document.getElementById('EditClubAdviser');
-    select.innerHTML = '<option value="none">-- Select Moderator(Adviser)/Admin --</option>';
+    select.innerHTML = '<option value="">-- Keep Unchanged --</option>';
     
     const staff = allUsers.filter(u => u.usertype === 'Teacher' || u.usertype === 'Admin');
     staff.forEach(s => {
@@ -154,10 +154,7 @@ function closeClubModal() {
 
 // 4. Save Club Data
 async function saveClubData() {
-    if (!editingClubId) {
-        alert("❌ Error: No club selected for editing");
-        return;
-    }
+    
 
     const clubName = document.getElementById('EditClubName').value;
     const adviser = document.getElementById('EditClubAdviser').value;
@@ -166,7 +163,11 @@ async function saveClubData() {
     const formData = new FormData();
     formData.append('clubId', editingClubId);
     formData.append('clubname', clubName);
-    formData.append('adviser', adviser);
+    
+    // Only send adviser if one was selected (not empty/unchanged)
+    if (adviser && adviser.trim()) {
+        formData.append('adviser', adviser);
+    }
     
     // Save category as a single string (first selected tag)
     const categoriesArray = Array.from(currentClubCategory);
@@ -606,8 +607,11 @@ function switchTab(tabName) {
     } else if (tabName === 'clubs') {
         document.getElementById('TabClubs').classList.add('active');
         document.getElementById('ClubsSection').style.display = 'block';
-        loadClubManagementList(); //
-}
+        loadClubManagementList();
+    } else if (tabName === 'system') {
+        document.getElementById('TabSystem').classList.add('active');
+        document.getElementById('SystemSection').style.display = 'block';
+    }
 }
 
 // ==========================================
@@ -838,3 +842,111 @@ window.addEventListener('click', (e) => {
     const modal = document.getElementById('ProfileSettingsModal');
     if (e.target === modal) closeProfileSettings();
 });
+function openCreateClubModal() {
+    // 1. Populate Adviser Dropdown from the global allUsers array
+    const select = document.getElementById('CreateClubAdviser');
+    select.innerHTML = '<option value="">-- Optional: Select Later --</option>';
+    
+    // Filter for staff members who can lead a club
+    const staff = allUsers.filter(u => u.usertype === 'Teacher' || u.usertype === 'Admin');
+    staff.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.name;
+        opt.innerText = `${s.name} (${s.usertype})`;
+        select.appendChild(opt);
+    });
+
+    document.getElementById('ClubCreateModal').style.display = 'block';
+}
+
+function closeCreateClubModal() {
+    document.getElementById('ClubCreateModal').style.display = 'none';
+    document.getElementById('CreateClubForm').reset();
+}
+
+async function submitNewClub(e) {
+    e.preventDefault();
+
+    const clubname = document.getElementById('CreateClubName').value.trim();
+    const category = document.getElementById('CreateClubCategory').value;
+    const adviser = document.getElementById('CreateClubAdviser').value || null;
+
+    if (!clubname) return alert("Please provide a club name.");
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.innerText = "Creating...";
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/clubs/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clubname, category, adviser })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            alert("✅ Organization created successfully!");
+            closeCreateClubModal();
+            loadClubManagementList(); // Refresh the table
+        } else {
+            alert("❌ Failed: " + (data.message || "Unknown error"));
+        }
+    } catch (error) {
+        console.error("Create Club Error:", error);
+        alert("Server error. Check console.");
+    } finally {
+        btn.innerText = "Create Organization";
+        btn.disabled = false;
+    }
+}
+
+// ==========================================
+// SYSTEM ACTIONS & END OF YEAR RESET
+// ==========================================
+
+function openResetStudentClubsModal() {
+    document.getElementById('ResetStudentClubsModal').style.display = 'block';
+}
+
+function closeResetStudentClubsModal() {
+    document.getElementById('ResetStudentClubsModal').style.display = 'none';
+}
+
+async function submitResetStudentClubs() {
+    const confirmText = document.getElementById('ResetConfirmInput').value;
+    
+    if (confirmText.toLowerCase() !== 'reset all') {
+        alert("❌ Please type 'reset all' to confirm this action.");
+        return;
+    }
+
+    const btn = event.target;
+    btn.innerText = "Resetting...";
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/clubs/reset-students', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            alert(`✅ ${data.studentsRemoved} students have been removed from all organizations!\n\nAdvisers and moderators were NOT affected.`);
+            closeResetStudentClubsModal();
+            loadClubManagementList(); // Refresh the club list
+        } else {
+            alert("❌ Error: " + (data.message || "Failed to reset clubs"));
+        }
+    } catch (error) {
+        console.error("Reset Error:", error);
+        alert("❌ Server error: " + error.message);
+    } finally {
+        btn.innerText = "Confirm Reset";
+        btn.disabled = false;
+        document.getElementById('ResetConfirmInput').value = "";
+    }
+}
