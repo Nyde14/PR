@@ -429,3 +429,77 @@ body.dark-mode .role-dropdown-styled {
     color: #eee;
     border-color: #444;
 }
+.table-card, .table-container {
+    width: 100%;
+    overflow-x: auto; /* Enables horizontal scroll for the table only */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for mobile */
+    box-sizing: border-box;
+}
+
+/* 2. Prevent Table Squishing */
+.admin-table, #AppTable, #MemberTable {
+    width: 100%;
+    min-width: 700px; /* Forces scrollbar on mobile instead of squishing columns */
+    border-collapse: collapse;
+}
+
+/* 3. Mobile Adjustments (768px and below) */
+@media (max-width: 768px) {
+    .dashboard-layout {
+        margin-left: 0 !important; /* Removes sidebar offset on mobile */
+        padding: 15px !important;
+        width: 100% !important;
+    }
+
+    .admin-table th, .admin-table td, 
+    #AppTable th, #AppTable td {
+        padding: 10px 8px !important; /* Smaller padding for more space */
+        font-size: 0.85rem;
+    }
+    
+    /* Ensure action buttons don't wrap strangely */
+    .btn-action, .btn-approve, .btn-reject {
+        padding: 5px 8px;
+        font-size: 0.75rem;
+    }
+}
+.table-card, 
+.section-card, 
+.table-container {
+    width: 100%;
+    overflow-x: auto; /* Enables horizontal scroll for the table ONLY */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for mobile */
+    box-sizing: border-box; /* Ensures padding doesn't push the box off-screen */
+}
+
+/* --- PREVENT COLUMN SQUISHING --- */
+
+.admin-table, 
+#AppTable, 
+#MemberTable {
+    width: 100%;
+    min-width: 700px; /* Forces the table to be readable on mobile */
+    border-collapse: collapse;
+}
+
+/* --- MOBILE LAYOUT ADJUSTMENTS --- */
+
+@media (max-width: 768px) {
+    .dashboard-layout {
+        margin-left: 0 !important; /* Removes sidebar offset */
+        padding: 15px !important;
+        width: 100% !important;
+    }
+
+    /* Shrink text and padding for better fit on small screens */
+    .admin-table th, .admin-table td, 
+    #AppTable th, #AppTable td {
+        padding: 10px 8px !important;
+        font-size: 0.8rem;
+    }
+
+    /* Ensure buttons stay on one line */
+    .admin-table td:last-child {
+        white-space: nowrap;
+    }
+}

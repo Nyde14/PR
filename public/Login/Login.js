@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-
+             localStorage.clear(); 
+    sessionStorage.clear();
             // --- FIX: DEFINE THE VARIABLE HERE ---
             const msgBox = document.getElementById('LoginMessage'); 
             const btn = document.getElementById('loginbtn');
@@ -41,7 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.innerText = "Logging in...";
 
             const email = document.getElementById('EmailInput').value;
-            const password = document.getElementById('password').value;
+            const password = document.getElementById('password').value; 
+           
 
             try {
                 const res = await fetch('/api/auth/login', {
@@ -59,18 +61,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
                 if (res.ok) {
-                    // SUCCESS
-                    localStorage.setItem('token', data.token);
-                    
-                    msgBox.style.color = "#155724"; 
-                    msgBox.style.backgroundColor = "#d4edda";
-                    msgBox.style.borderColor = "#c3e6cb";
-                    msgBox.innerText = "Login Successful! Redirecting...";
-                    msgBox.style.display = 'block';
+    // 1. CLEAR OLD STATE
+    localStorage.clear();
+    sessionStorage.clear();
 
-                    setTimeout(() => {
-                        window.location.href = '/ClubPortalFeed/ClubPortalFeed.html';
-                    }, 1000);
+    // 2. SAVE FRESH DATA
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user)); // Save full object
+    localStorage.setItem('username', data.user.name);
+    localStorage.setItem('usertype', data.user.usertype);
+    localStorage.setItem('userclub', data.user.club);
+    
+    // 3. UI FEEDBACK
+    msgBox.style.color = "#155724"; 
+    msgBox.style.backgroundColor = "#d4edda";
+    msgBox.innerText = "Login Successful! Redirecting...";
+    msgBox.style.display = 'block';
+
+    setTimeout(() => {
+        window.location.href = '/ClubPortalFeed/ClubPortalFeed.html';
+    }, 1000);
+
                 } else {
                     // FAILURE
                     throw new Error(data.message || "Login failed");

@@ -100,7 +100,8 @@ body {
     display: flex;
     flex-direction: column;
     max-width: 75%;          /* Maximum width of the bubble container */
-    width: auto;             
+    width: auto;    
+    position:relative; /* Needed for delete button positioning */         
 }
 
 /* My messages (Right) - DEFAULT */

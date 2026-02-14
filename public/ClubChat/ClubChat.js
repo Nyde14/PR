@@ -73,6 +73,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 // 3. CORE MESSAGING LOGIC
 // ==========================================
 
+// ClubChat.js - Fixed loadMessages function
+
 async function loadMessages() {
     const container = document.getElementById('MessageArea'); 
     if (!container || !chatRoom) return; 
@@ -93,14 +95,18 @@ async function loadMessages() {
         container.innerHTML = messages.map(msg => {
             const isMe = msg.sender === 'Me' || msg.sender === myName;
 
+            // --- PERMISSION LOGIC ---
+            // Checks if user is Admin or the Teacher assigned to this specific club
+            const isAdmin = globalUserType === 'Admin';
+            const isAdviserOfThisClub = globalUserType === 'Teacher' && chatRoom === (msg.clubname || chatRoom);
+            const canDelete = isMe || isAdmin || isAdviserOfThisClub;
+
             // 1. Identify Role and Assign Border Class
-            // We convert "Active Member" to "active-member" for the CSS selector.
             const role = msg.officerRole || 'Member';
             const roleKey = role.toLowerCase().replace(/\s+/g, '-');
             const borderClass = (role !== 'Member' && role !== 'Student') ? `border-${roleKey}` : '';
 
             // 2. Fixed Profile Picture Fallback
-            // Checks if avatar is null, undefined, or an empty string.
             const avatarSrc = (msg.senderAvatar && msg.senderAvatar.trim() !== "") 
                 ? msg.senderAvatar 
                 : `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender)}&background=random&color=fff&size=64`;
@@ -136,9 +142,12 @@ async function loadMessages() {
             const time = msgDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const timestamp = `${date} ${time}`;
             const contentHTML = linkify(msg.content);
-            const deleteBtn = isMe ? `<button class="delete-btn" onclick="deleteMessage('${msg._id}')"><i class='bx bx-trash'></i></button>` : '';
 
-            // 3. RENDER MESSAGE WITH COLORED BORDER
+            // --- ACTION BUTTONS (Delete & Report) ---
+            const deleteBtn = canDelete ? `<button class="delete-btn" onclick="deleteMessage('${msg._id}')"><i class='bx bx-trash'></i></button>` : '';
+            const reportBtn = (!isMe) ? `<button class="msg-report-btn" onclick="reportContent('Message', '${msg._id}')" title="Report"><i class='bx bx-flag'></i></button>` : '';
+
+            // 3. RENDER MESSAGE
             return `
             <div class="message-row ${isMe ? 'me' : 'others'}" id="msg-${msg._id}">
                 ${!isMe ? `
@@ -149,7 +158,7 @@ async function loadMessages() {
                 ` : ''}
                 
                 <div class="msg-content-wrapper"> 
-                    ${chatType === 'group' && !isMe ? `<div class="sender-name">${msg.sender}</div>` : ''}
+                    ${chatType === 'group' && !isMe ? `<div class="sender-name">${msg.sender}${reportBtn}</div>` : ''}
                     
                     <div class="message-bubble ${isMe ? 'me' : 'others'}">
                         ${mediaHTML}
@@ -164,10 +173,10 @@ async function loadMessages() {
         }).join('');
 
         if (shouldScroll) { container.scrollTop = container.scrollHeight; isFirstLoad = false; }
+        checkAndHighlightMessage(); // Call the highlight logic after rendering
 
     } catch (e) { console.error("Load Msg Error:", e); }
 }
-
 // ==========================================
 // 4. ACTION FUNCTIONS
 // ==========================================

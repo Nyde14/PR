@@ -374,23 +374,66 @@ router.post('/comment/reply/:postId/:commentId', async (req, res) => {
 // ==========================================
 // 8. DELETE POST (FIXED ROUTE & VARIABLE)
 // ==========================================
-router.delete('/:id', async (req, res) => {  // FIX: Changed from '/api/posts/:id' to '/:id'
+// ClubPostRoute.js - REVISED DELETE ROUTE
+
+// ClubPostRoute.js - FINAL FIXED DELETE ROUTE
+
+router.delete('/:id', async (req, res) => {
     try {
         const postId = req.params.id;
+        
+        // 1. Find the post using the correct model
+        const post = await ClubPost.findById(postId);
+        if (!post) return res.status(404).json({ message: "Post not found" });
 
-        // 1. Find the post using Correct Model (ClubPost)
-        const post = await ClubPost.findById(postId); // FIX: Changed 'Post' to 'ClubPost'
-        if (!post) {
-            return res.status(404).json({ message: "Post not found" });
+        // 2. Identify the person performing the deletion
+        const user = await getUser(req); // Uses your helper function
+        if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+        const isAdmin = user.usertype === 'Admin';
+        const isAdviser = user.usertype === 'Teacher' && user.club === post.clubname;
+        const isAuthor = post.author === user.name;
+
+        // 3. Permission Check: Only Author, Admin, or the specific Club Adviser can delete
+        if (!isAuthor && !isAdmin && !isAdviser) {
+            return res.status(403).json({ message: "You do not have permission to delete this post." });
         }
 
-        // 2. Delete the post
-        await ClubPost.findByIdAndDelete(postId); // FIX: Changed 'Post' to 'ClubPost'
+        // 4. Notification Logic: If a Moderator (Admin/Adviser) deletes it
+        if (!isAuthor && (isAdmin || isAdviser)) {
+            // Notify the Student Author
+            const authorNotif = new Notification({
+                recipient: post.author,
+                sender: "System",
+                type: 'alert',
+                message: `Your post "${post.title}" was removed by an Admin`,
+                link: '#'
+            });
+            await authorNotif.save();
 
-        res.json({ success: true, message: "Post deleted successfully" });
+            // If an Admin deletes it, also notify the Club Adviser
+            if (isAdmin) {
+                const clubData = await Club.findOne({ clubname: post.clubname });
+                if (clubData && clubData.adviser && clubData.adviser !== user.name) {
+                    const adviserNotif = new Notification({
+                        recipient: clubData.adviser,
+                        sender: "System",
+                        type: 'alert',
+                        message: `An administrator has removed a post ("${post.title}") from your club's feed.`,
+                        link: '#'
+                    });
+                    await adviserNotif.save();
+                }
+            }
+        }
+
+        // 5. Perform the actual deletion
+        await ClubPost.findByIdAndDelete(postId);
+        res.json({ success: true, message: "Post deleted and notifications sent." });
+
     } catch (err) {
-        console.error("Delete Error:", err);
-        res.status(500).json({ message: "Server Error" });
+        console.error("CRITICAL DELETE ERROR:", err);
+        res.status(500).json({ error: "Server Error", details: err.message });
     }
 });
 // 2. GET FEED (With "New User" Algorithm)

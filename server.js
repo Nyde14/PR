@@ -21,7 +21,7 @@ const Message = require('./public/Schematics/MessageSchema.js');
 const User = require('./public/Schematics/UserSchema.js');
 const Club = require('./public/Schematics/ClubSchema.js');  
 const Post = require('./public/Schematics/ClubPostSchema.js');
- 
+const Notification = require('./public/Schematics/NotificationSchema.js');
 
 const app = express();
 
@@ -422,21 +422,34 @@ app.post('/api/chat/send', upload.single('media'), async (req, res) => {
 
 app.patch('/api/chat/delete/:id', async (req, res) => {
     try {
-        const messageId = req.params.id;
-        const token = req.session.token;
+        const token = req.session.token || req.headers['authorization']?.split(' ')[1];
         if (!token) return res.status(401).json({ message: "Unauthorized" });
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.userId);
-        const msg = await Message.findById(messageId);
+        const msg = await Message.findById(req.params.id);
 
         if (!msg) return res.status(404).json({ message: "Message not found" });
 
+        const isAdmin = user.usertype === 'Admin';
+        const isAdviser = user.usertype === 'Teacher' && user.club === msg.clubname;
         const isSender = msg.sender === user.name;
-        const isAdviser = user.usertype === 'Teacher' || user.usertype === 'Admin';
 
-        if (!isSender && !isAdviser) {
-            return res.status(403).json({ message: "You can only delete your own messages." });
+        // Permission Check
+        if (!isSender && !isAdmin && !isAdviser) {
+            return res.status(403).json({ message: "Permission denied." });
+        }
+
+        // Notify user if a moderator deleted their message
+        if (!isSender && (isAdmin || isAdviser)) {
+            const newNotif = new Notification({
+                recipient: msg.sender,
+                sender: "System",
+                type: 'alert',
+                message: `A message you sent in ${msg.clubname || 'Private Chat'} was removed by a moderator.`,
+                link: msg.clubname ? '/ClubChat/ClubChat.html' : '/ChatInbox/ChatInbox.html'
+            });
+            await newNotif.save();
         }
 
         msg.isDeleted = true;
@@ -444,7 +457,7 @@ app.patch('/api/chat/delete/:id', async (req, res) => {
         msg.deletedAt = new Date();
         await msg.save();
 
-        res.json({ message: "Message deleted" });
+        res.json({ message: "Message deleted successfully" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -668,62 +681,48 @@ app.patch('/api/clubs/update-description', async (req, res) => {
 app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount: 1 }]), async (req, res) => {
     try {
         const { clubId, clubname, adviser, category } = req.body; 
-        
-        console.log("Update Branding Request:", { clubId, clubname, adviser, category, hasLogo: !!(req.files && req.files['logo']) });
-        
         const updateData = {};
         
-        // 1. Handle Club Name
-        if (clubname && clubname.trim()) {
-            updateData['clubname'] = clubname;
-        }
-        
-        // 2. Handle Logo
+        // 1. Prepare Update Data
+        if (clubname && clubname.trim()) updateData['clubname'] = clubname;
+        if (category && category.trim()) updateData['category'] = category;
         if (req.files && req.files['logo']) {
             updateData['branding.logo'] = `/uploads/${req.files['logo'][0].filename}`;
-            console.log("Logo updated to:", updateData['branding.logo']);
         }
-        
-        // 3. Handle Adviser - only update if provided
-        if (adviser && adviser.trim()) {
-            updateData['adviser'] = adviser;
-        }
+        if (adviser && adviser.trim()) updateData['adviser'] = adviser;
 
-        // 4. Handle Category
-        if (category && category.trim()) {
-            updateData['category'] = category;
-        }
+        // 2. Identify the OLD adviser before performing the update
+        const currentClub = await Club.findById(clubId || req.body.id);
+        const oldAdviserName = currentClub ? currentClub.adviser : null;
 
-        console.log("Update Data:", updateData);
-
-        // Try to find by ID first, then fall back to clubname for backwards compatibility
-        let lookupQuery = {};
-        if (clubId) {
-            lookupQuery = { _id: clubId };
-            console.log("Looking up by ID:", clubId);
-        } else if (clubname) {
-            lookupQuery = { clubname: clubname };
-            console.log("Looking up by clubname:", clubname);
-        } else {
-            return res.status(400).json({ message: "Either clubId or clubname is required" });
-        }
-
+        // 3. Update the Club Document
         const updatedClub = await Club.findOneAndUpdate(
-            lookupQuery, 
+            { _id: clubId || req.body.id }, 
             { $set: updateData }, 
             { new: true }
         );
 
-        if (!updatedClub) {
-            console.error("Club not found with query:", lookupQuery);
-            return res.status(404).json({ message: "Club not found" });
-        }
+        if (!updatedClub) return res.status(404).json({ message: "Club not found" });
+
+        // --- NEW SYNC LOGIC: LINKING THE USER TO THE CLUB ---
         
-        console.log("Club updated successfully:", updatedClub);
+        // A. If adviser was changed, reset the old adviser's user record to 'none'
+        if (adviser && oldAdviserName && oldAdviserName !== adviser) {
+            await User.findOneAndUpdate({ name: oldAdviserName }, { club: 'none' });
+        }
+
+        // B. Update the NEW adviser's user record to link them to this club
+        if (adviser) {
+            await User.findOneAndUpdate(
+                { name: adviser }, 
+                { club: updatedClub.clubname } // This updates the "club" field in UserSchema
+            );
+        }
+
         res.json({ message: "Updated successfully", club: updatedClub });
     } catch (error) {
         console.error("Update Branding Error:", error);
-        res.status(500).json({ error: "Internal Server Error", details: error.message });
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
@@ -1041,6 +1040,7 @@ app.post('/api/clubs/reset-students', async (req, res) => {
         });
     }
 });
+
 // ============================================
 // 5. HTML PAGE ROUTES
 // ============================================
