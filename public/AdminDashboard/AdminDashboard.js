@@ -26,25 +26,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 // TAB SWITCHING LOGIC
 // ==========================================
 function switchTab(tabName) {
+    // 1. Reset all UI elements first
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.table-card').forEach(card => card.style.display = 'none');
 
-    if (tabName === 'users') {
-        document.getElementById('TabUsers').classList.add('active');
-        document.getElementById('UsersSection').style.display = 'block';
-        loadAllUsers();
-    } else if (tabName === 'reports') {
-        document.getElementById('TabReports').classList.add('active');
-        document.getElementById('ReportsSection').style.display = 'block';
-        loadReports();
-    } else if (tabName === 'clubs') {
-        document.getElementById('TabClubs').classList.add('active');
-        document.getElementById('ClubsSection').style.display = 'block';
-        loadClubManagementList(); // New function
-    } else if (tabName === 'create') {
-        document.getElementById('TabCreate').classList.add('active');
-        document.getElementById('CreateSection').style.display = 'block';
-        loadClubsForDropdown();
+    // 2. Identify the target tab
+    const targetBtnId = 'Tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
+    const targetSectionId = tabName.charAt(0).toUpperCase() + tabName.slice(1) + 'Section';
+
+    const btn = document.getElementById(targetBtnId);
+    const section = document.getElementById(targetSectionId);
+
+    if (btn && section) {
+        btn.classList.add('active');
+        section.style.display = 'block';
+
+        // 3. Load specific data based on the tab
+        if (tabName === 'users') loadAllUsers();
+        else if (tabName === 'reports') loadReports();
+        else if (tabName === 'clubs') loadClubManagementList();
+        else if (tabName === 'create') loadClubsForDropdown();
+        else if (tabName === 'docs') loadAdminDocs(); // Trigger your new function
+        else if (tabName === 'system') { /* No data to load */ }
+    } else {
+        console.error(`Tab error: Could not find ${targetBtnId} or ${targetSectionId}`);
     }
 }
 
@@ -586,33 +591,7 @@ async function submitAnnouncement() {
         btn.disabled = false;
     }
 }
-function switchTab(tabName) {
-    // 1. Reset Tabs & Sections
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.table-card').forEach(card => card.style.display = 'none');
 
-    // 2. Activate Selection
-    if (tabName === 'users') {
-        document.getElementById('TabUsers').classList.add('active');
-        document.getElementById('UsersSection').style.display = 'block';
-        loadAllUsers();
-    } else if (tabName === 'reports') {
-        document.getElementById('TabReports').classList.add('active');
-        document.getElementById('ReportsSection').style.display = 'block';
-        loadReports();
-    } else if (tabName === 'create') {
-        document.getElementById('TabCreate').classList.add('active');
-        document.getElementById('CreateSection').style.display = 'block';
-        loadClubsForDropdown(); // Fetch clubs when tab opens
-    } else if (tabName === 'clubs') {
-        document.getElementById('TabClubs').classList.add('active');
-        document.getElementById('ClubsSection').style.display = 'block';
-        loadClubManagementList();
-    } else if (tabName === 'system') {
-        document.getElementById('TabSystem').classList.add('active');
-        document.getElementById('SystemSection').style.display = 'block';
-    }
-}
 
 // ==========================================
 // CREATE ACCOUNT LOGIC
@@ -840,7 +819,13 @@ async function uploadProfilePicture() {
 // Close modal when clicking outside
 window.addEventListener('click', (e) => {
     const modal = document.getElementById('ProfileSettingsModal');
+    const previewFull = document.getElementById('DocPreviewFull');
+    
+    // THE FIX: If the user is clicking INSIDE the preview container, do NOT close
+    if (e.target.closest('#PreviewContainer')) return; 
+
     if (e.target === modal) closeProfileSettings();
+    if (e.target === previewFull) window.closeDocPreview();
 });
 function openCreateClubModal() {
     // 1. Populate Adviser Dropdown from the global allUsers array
@@ -950,3 +935,372 @@ async function submitResetStudentClubs() {
         document.getElementById('ResetConfirmInput').value = "";
     }
 }
+async function loadAdminDocs() {
+    const tbody = document.getElementById('AdminDocTableBody');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/admin/documents/all');
+        const docs = await res.json();
+
+        if (docs.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No documents in the queue.</td></tr>";
+            return;
+        }
+
+        tbody.innerHTML = docs.map(doc => {
+            const isApproved = doc.status === 'approved';
+            const statusClass = isApproved ? 'badge-resolved' : 
+                                doc.status === 'rejected' ? 'badge-restricted' : 'badge-pending';
+            
+            // 1. Primary Action: View/Review
+            let actionButtons = `
+                <button class="btn-action btn-unrestrict" 
+                        onclick="window.viewDocumentForReview('${doc._id}', '${doc.fileUrl}', '${doc.fileName}', '${doc.status}')">
+                    <i class='bx bx-show'></i> ${isApproved ? 'View Original' : 'View & Review'}
+                </button>`;
+
+            // 2. Secondary Action: View Signed (Only if it exists)
+            if (isApproved && doc.signedFileUrl) {
+                actionButtons += `
+                    <button class="btn-action" style="background:#fa3737; color:white; margin-left:5px;"
+                            onclick="window.viewDocument('${doc.signedFileUrl}', 'SIGNED-${doc.fileName}')">
+                        <i class='bx bxs-file-pdf'></i> View Signed
+                    </button>`;
+            }
+            
+            return `
+                <tr>
+                    <td><strong>${doc.clubName}</strong></td>
+                    <td>${doc.purpose}</td>
+                    <td>${doc.submittedBy} <br><small>${doc.uploaderRole}</small></td>
+                    <td><span class="badge ${statusClass}">${doc.status.toUpperCase()}</span></td>
+                    <td>
+                        <div style="display:flex; gap:5px;">
+                            ${actionButtons}
+                        </div>
+                    </td>
+                </tr>`;
+        }).join('');
+    } catch (e) {
+        console.error("Load Docs Error:", e);
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading documents.</td></tr>";
+    }
+}
+
+window.switchTab = function(tabName) {
+    console.log("Switching to tab:", tabName); // Debugging line
+
+    // 1. Reset all tabs and sections
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.table-card').forEach(card => card.style.display = 'none');
+
+    // 2. Map tab names to their specific IDs
+    const tabMap = {
+        'users': { btn: 'TabUsers', section: 'UsersSection', loader: loadAllUsers },
+        'reports': { btn: 'TabReports', section: 'ReportsSection', loader: loadReports },
+        'create': { btn: 'TabCreate', section: 'CreateSection', loader: loadClubsForDropdown },
+        'clubs': { btn: 'TabClubs', section: 'ClubsSection', loader: loadClubManagementList },
+        'system': { btn: 'TabSystem', section: 'SystemSection', loader: null },
+        'docs': { btn: 'TabDocs', section: 'DocsSection', loader: loadAdminDocs }
+    };
+
+    const target = tabMap[tabName];
+
+    if (target) {
+        const btn = document.getElementById(target.btn);
+        const section = document.getElementById(target.section);
+
+        if (btn && section) {
+            btn.classList.add('active');
+            section.style.display = 'block';
+            if (target.loader) target.loader(); // Trigger the data fetch
+        } else {
+            console.error(`Missing DOM elements: ${target.btn} or ${target.section}`);
+        }
+    }
+};
+window.viewDocumentForReview = function(docId, url, fileName, status) {
+    // Open the standard document viewer
+    window.viewDocument(url, fileName);
+
+    const actionBar = document.getElementById('AdminActionBar');
+    const approveBtn = document.getElementById('BtnModalApprove');
+    const rejectBtn = document.getElementById('BtnModalReject');
+
+    // --- DEBUG MODE: Always show action bar regardless of status ---
+    if (actionBar) {
+        actionBar.style.display = 'flex'; 
+        
+        approveBtn.onclick = (e) => {
+            // Prevent the click from bubbling up to the modal backdrop
+            e.stopPropagation(); 
+            // Trigger the signing placement logic
+            window.processDocument(docId, 'approved'); 
+        };
+
+        rejectBtn.onclick = (e) => {
+            e.stopPropagation();
+            // Rejections close the modal as per your existing workflow
+            window.closeDocPreview();
+            // Trigger the rejection logic (Note: Ensure 'window.Document' isn't a typo in your file)
+            window.processDocument(docId, 'rejected'); 
+        };
+    }
+};
+window.openSignatureModal = async function() {
+    try {
+        const res = await fetch('/api/auth/me');
+        const user = await res.json();
+        const preview = document.getElementById('CurrentSignaturePreview');
+        
+        // --- THE FIX: Match field names exactly with server.js response ---
+        // Your server.js line 238 returns 'eSignature' (lowercase 'e')
+        const sigPath = user.eSignature || user.Signature; 
+
+        if (user.hasSignature && sigPath) {
+            // Remove any leftover '/public' from the string just in case
+            const cleanPath = sigPath.replace('/public', '');
+            preview.src = cleanPath + '?t=' + Date.now(); 
+        } else {
+            preview.src = "/uploads/no-signature.png"; 
+        }
+
+        document.getElementById('SignatureModal').style.display = 'block';
+    } catch (e) { console.error("Modal Error:", e); }
+};
+window.closeSignatureModal = function() {
+    document.getElementById('SignatureModal').style.display = 'none';
+    document.getElementById('SignatureInput').value = "";
+};
+
+window.previewNewSignature = function(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('CurrentSignaturePreview').src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+let signaturePad, ctx, drawing = false;
+let signatureMode = 'upload'; // Default mode
+
+window.setSignatureMode = function(mode) {
+    signatureMode = mode;
+    document.getElementById('UploadSignatureSection').style.display = mode === 'upload' ? 'block' : 'none';
+    document.getElementById('DrawSignatureSection').style.display = mode === 'draw' ? 'block' : 'none';
+    
+    // UI Tab toggle
+    document.getElementById('TabUploadMode').classList.toggle('active', mode === 'upload');
+    document.getElementById('TabDrawMode').classList.toggle('active', mode === 'draw');
+    
+    if (mode === 'draw') initSignaturePad();
+};
+
+function initSignaturePad() {
+    signaturePad = document.getElementById('SignaturePad');
+    ctx = signaturePad.getContext('2d');
+    ctx.strokeStyle = "#000"; // Black ink
+    ctx.lineWidth = 2;
+    
+    // Mouse Events for Drawing
+    signaturePad.addEventListener('mousedown', (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+    signaturePad.addEventListener('mousemove', (e) => { if(drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
+    signaturePad.addEventListener('mouseup', () => { drawing = false; });
+}
+
+window.clearSignaturePad = function() {
+    ctx.clearRect(0, 0, signaturePad.width, signaturePad.height);
+};
+window.saveAdminSignature = async function() {
+    const formData = new FormData();
+    const btn = document.getElementById('BtnSaveSignature');
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    if (signatureMode === 'upload') {
+        const file = document.getElementById('SignatureInput').files[0];
+        if (!file) return alert("Please select a PNG file.");
+        formData.append('signature', file);
+    } else {
+        // Convert Canvas to Blob
+        const blob = await new Promise(resolve => signaturePad.toBlob(resolve, 'image/png'));
+        formData.append('signature', blob, 'signature.png');
+    }
+
+    try {
+        const res = await fetch('/api/admin/save-signature', { method: 'POST', body: formData });
+        if (res.ok) {
+            alert("✅ Signature saved successfully!");
+            closeSignatureModal();
+        } else {
+            alert("❌ Failed to save signature.");
+        }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        btn.innerText = "Save Signature";
+        btn.disabled = false;
+    }
+};
+window.processDocument = async function(docId, status) {
+    if (status === 'approved') {
+        const authRes = await fetch('/api/auth/me');
+        const user = await authRes.json();
+        
+        if (!user.hasSignature) {
+            alert("❌ You haven't set a signature yet.");
+            window.openSignatureModal();
+            return;
+        }
+
+        // --- THE FIX: Clean the path to ensure it starts with /uploads ---
+        let sigUrl = user.eSignature || user.Signature;
+        if (sigUrl) sigUrl = sigUrl.replace('/public', ''); 
+
+        startSignaturePlacement(docId, sigUrl);
+    } else {
+        // ... (Existing rejection logic with prompt)
+    }
+};
+
+function startSignaturePlacement(docId, sigUrl) {
+    const wrapper = document.getElementById('PageWrapper');
+    
+    if (!wrapper) {
+        console.error("PageWrapper not found.");
+        return alert("❌ Error: Please open a document first.");
+    }
+
+    // Standardize URL to remove /public prefix for frontend display
+    const cleanSigUrl = sigUrl.startsWith('/public') ? sigUrl.replace('/public', '') : sigUrl;
+
+    // 1. Create Transparent Overlay
+    const overlay = document.createElement('div');
+    overlay.id = "SignaturePlacementOverlay";
+    overlay.style = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; cursor: crosshair; background: rgba(250, 55, 55, 0.05);`;
+    wrapper.appendChild(overlay);
+
+    // 2. Create the Ghost Signature
+    const ghostSig = document.createElement('img');
+    ghostSig.src = cleanSigUrl;
+    ghostSig.id = "GhostSignature";
+    ghostSig.style = `position: absolute; width: 150px; opacity: 0.6; pointer-events: none; z-index: 10001; border: 1px dashed #fa3737; transform: translate(-50%, -50%); display: none;`;
+    wrapper.appendChild(ghostSig);
+
+    // 3. Handle Movement
+    const moveHandler = (e) => {
+        const rect = wrapper.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Show the signature following the mouse inside the page
+        ghostSig.style.display = 'block';
+        ghostSig.style.left = x + 'px';
+        ghostSig.style.top = y + 'px';
+    };
+    
+    overlay.addEventListener('mousemove', moveHandler);
+
+    // 4. Handle Final Placement Click
+    overlay.onclick = (e) => {
+        e.stopPropagation();
+        const rect = wrapper.getBoundingClientRect();
+        
+        // Final coordinate calculation relative to document width/height
+        const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+        const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+
+        // Visual cleanup
+        overlay.remove();
+        ghostSig.remove();
+
+        setTimeout(() => {
+            if (confirm(`Place signature at these coordinates? (${Math.round(xPercent)}%, ${Math.round(yPercent)}%)`)) {
+                finalizeSignature(docId, xPercent, yPercent);
+            } else {
+                // Restart if they changed their mind
+                startSignaturePlacement(docId, sigUrl); 
+            }
+        }, 50);
+    };
+}
+async function finalizeSignature(docId, x, y) {
+    try {
+        const res = await fetch(`/api/admin/documents/${docId}/sign`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ x, y })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert("✅ Document signed and finalized!");
+            window.closeDocPreview();
+            loadAdminDocs(); // Refresh the table
+        } else {
+            alert("❌ Error: " + data.message);
+        }
+    } catch (err) {
+        console.error("Finalize Error:", err);
+        alert("Failed to finalize document.");
+    }
+}
+function updatePreviewFromCanvas() {
+    const signaturePad = document.getElementById('SignaturePad');
+    const previewImg = document.getElementById('CurrentSignaturePreview');
+    // This generates a data:image/png;base64 string directly
+    previewImg.src = signaturePad.toDataURL("image/png"); 
+}
+
+// Update your initSignaturePad to trigger this on 'mouseup'
+function initSignaturePad() {
+    signaturePad = document.getElementById('SignaturePad');
+    ctx = signaturePad.getContext('2d');
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+
+    const getPos = (e) => {
+        const rect = signaturePad.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    };
+
+    const start = (e) => { 
+        drawing = true; 
+        const pos = getPos(e);
+        ctx.beginPath(); 
+        ctx.moveTo(pos.x, pos.y); 
+        if (e.touches) e.preventDefault(); // Stop scrolling while drawing
+    };
+
+    const move = (e) => { 
+        if (!drawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y); 
+        ctx.stroke(); 
+    };
+
+    const stop = () => { 
+        drawing = false; 
+        updatePreviewFromCanvas(); 
+    };
+
+    // Mouse Listeners
+    signaturePad.onmousedown = start;
+    signaturePad.onmousemove = move;
+    signaturePad.onmouseup = stop;
+
+    // Touch Listeners
+    signaturePad.ontouchstart = start;
+    signaturePad.ontouchmove = move;
+    signaturePad.ontouchend = stop;
+}
+window.clearSignaturePad = function() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, signaturePad.width, signaturePad.height);
+    // THE FIX: Correct path
+    document.getElementById('CurrentSignaturePreview').src = "/uploads/no-signature.png"; 
+};

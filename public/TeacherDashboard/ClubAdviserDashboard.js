@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             fetchClubStats(liveData.club);
             fetchPendingApplications(liveData.club); 
             fetchClubMembers(liveData.club); 
+            fetchClubDocuments(liveData.club);
         } else {
             const appList = document.getElementById('ApplicationsList');
             if (appList) {
@@ -516,3 +517,91 @@ window.saveClubLogo = async function() {
         btn.disabled = false;
     }
 };
+async function fetchClubDocuments(clubName) {
+    const container = document.getElementById('AdviserDocList');
+    if (!container) return;
+
+    try {
+        const res = await fetch(`/api/clubs/documents?clubname=${encodeURIComponent(clubName)}`);
+        const data = await res.json();
+
+        if (!Array.isArray(data)) {
+            container.innerHTML = `<tr><td colspan='5' style='text-align:center;'>${data.message || 'Error loading history'}</td></tr>`;
+            return;
+        }
+
+        if (data.length === 0) {
+            container.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No documents submitted yet.</td></tr>";
+            return;
+        }
+
+        container.innerHTML = data.map(doc => {
+            const isApproved = doc.status === 'approved';
+            const statusClass = isApproved ? 'badge-resolved' : 
+                                doc.status === 'rejected' ? 'badge-restricted' : 'badge-pending';
+            
+            // 1. Primary Action: View Original
+            let actionButtons = `
+                <button class="btn-approve" style="background:#007bff; margin-bottom:5px;" 
+                        onclick="window.viewDocument('${doc.fileUrl}', '${doc.fileName}')">
+                    <i class='bx bx-show'></i> View Original
+                </button>`;
+
+            // 2. THE FIX: Use viewDocument for the Signed version too, instead of location.href
+            if (isApproved && doc.signedFileUrl) {
+                actionButtons += `
+                    <button class="btn-approve" style="background:#fa3737;" 
+                            onclick="window.viewDocument('${doc.signedFileUrl}', 'SIGNED-${doc.fileName}')">
+                        <i class='bx bxs-file-pdf'></i> View Signed
+                    </button>`;
+            }
+            
+            return `
+                <tr>
+                    <td><strong>${doc.fileName}</strong><br><small>${doc.purpose}</small></td>
+                    <td><span class="badge ${statusClass}">${doc.status.toUpperCase()}</span></td>
+                    <td>${new Date(doc.createdAt).toLocaleDateString()}</td>
+                    <td style="font-size:0.85rem; color:#666;">${doc.adminFeedback || 'No feedback provided.'}</td>
+                    <td style="display:flex; flex-direction:column;">
+                        ${actionButtons}
+                    </td>
+                </tr>`;
+        }).join('');
+    } catch (e) {
+        container.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Network Error.</td></tr>";
+    }
+}
+
+// 2. Handle Upload with Standard Alerts
+const uploadForm = document.getElementById('UploadDocForm');
+if (uploadForm) {
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clubName = document.getElementById('DisplayClubName').innerText;
+        const purpose = document.getElementById('DocPurpose').value;
+        const file = document.getElementById('DocFile').files[0];
+
+        const formData = new FormData();
+        formData.append('clubname', clubName);
+        formData.append('purpose', purpose);
+        formData.append('document', file);
+
+        try {
+            const res = await fetch('/api/clubs/submit-document', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (res.ok) {
+                alert("✅ Document submitted successfully to Admin!"); // Replaced toast
+                uploadForm.reset();
+                fetchClubDocuments(clubName);
+            } else {
+                alert("❌ Error: Could not submit document.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("❌ Network Error: Server unreachable.");
+        }
+    });
+}

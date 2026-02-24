@@ -6,6 +6,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
+const { PDFDocument } = require('pdf-lib');
 require('dotenv').config();
 
 // --- ROUTE IMPORTS ---
@@ -22,6 +23,7 @@ const User = require('./public/Schematics/UserSchema.js');
 const Club = require('./public/Schematics/ClubSchema.js');  
 const Post = require('./public/Schematics/ClubPostSchema.js');
 const Notification = require('./public/Schematics/NotificationSchema.js');
+const DocumentSubmission = require('./public/Schematics/DocumentSchema.js');
 
 const app = express();
 
@@ -169,6 +171,57 @@ const storage = multer.diskStorage({
         }
     }
 });
+const docStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const docPath = path.join(__dirname, 'public', 'uploads', 'documents');
+        // Ensure the directory exists to prevent "No such file or directory" error 500
+        if (!fs.existsSync(docPath)){
+            fs.mkdirSync(docPath, { recursive: true });
+        }
+        cb(null, docPath);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        // Safe name: Replace spaces and special characters
+        const clubSafe = req.body.clubname.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        const uniqueName = `${clubSafe}-${Date.now()}${ext}`;
+        cb(null, uniqueName);
+    }
+});
+const uploadDoc = multer({ 
+    storage: docStorage,
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            'application/pdf', 
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' // .docx MIME type
+        ];
+        
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF and DOCX files are allowed!'), false);
+        }
+    }
+});
+const sigStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const sigPath = path.join(__dirname, 'public', 'uploads', 'signatures');
+        if (!fs.existsSync(sigPath)) {
+            fs.mkdirSync(sigPath, { recursive: true });
+        }
+        cb(null, sigPath);
+    },
+    filename: (req, file, cb) => {
+        // Use the Admin's ID to ensure they only ever have one signature file
+        const uniqueSuffix = req.user.userId + '-' + Date.now();
+        cb(null, `sig-${uniqueSuffix}.png`);
+    }
+});
+
+const uploadSig = multer({ 
+    storage: sigStorage,
+    limits: { fileSize: 2 * 1024 * 1024 } // 2MB limit is plenty for a signature
+});
 
 // Initialize Upload with Limits
 const upload = multer({ 
@@ -212,7 +265,10 @@ app.get('/api/auth/me', async (req, res) => {
             clubPosition: userdata.clubPosition || 'Member', 
             hiddenPosts: userdata.hiddenPosts || [],
             following: userdata.following || [],
+            Signature: userdata.Signature || "",
+            hasSignature: userdata.hasSignature || false,
             profilePicture: userdata.profilePicture
+            
         });
     } catch (error) {
         console.error("Auth Me Error:", error);
@@ -637,6 +693,106 @@ app.get('/api/clubs/members', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+app.post('/api/clubs/submit-document', ensureAuthenticatedHtml, async (req, res) => {
+    // 1. Manually check auth for the API instead of redirecting
+    const token = req.session.token || req.headers['authorization']?.split(' ')[1];
+    if (!token) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    uploadDoc.single('document')(req, res, async (err) => {
+        if (err) return res.status(500).json({ success: false, message: err.message });
+        if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded." });
+
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await User.findById(decoded.userId);
+
+            const newDoc = new DocumentSubmission({
+                clubName: req.body.clubname,
+                fileName: req.file.originalname,
+                fileUrl: `/uploads/documents/${req.file.filename}`,
+                purpose: req.body.purpose,
+                submittedBy: user.name,
+                uploaderRole: user.usertype
+            });
+
+            await newDoc.save();
+            res.json({ success: true, message: "Document submitted successfully!" });
+        } catch (error) {
+            console.error("DB SAVE ERROR:", error);
+            res.status(500).json({ success: false, message: "Database Error" });
+        }
+    });
+});
+app.get('/api/clubs/documents', async (req, res) => {
+    try {
+        const { clubname } = req.query;
+        const token = req.session.token || req.headers['authorization']?.split(' ')[1];
+
+        // 1. JSON-friendly Auth Check
+        if (!token) return res.status(401).json({ success: false, message: "Unauthorized" });
+        
+        if (!clubname) {
+            return res.status(400).json({ success: false, message: "Club name is required." });
+        }
+
+        // 2. Fetch documents for this club
+        const docs = await DocumentSubmission.find({ clubName: clubname })
+            .sort({ createdAt: -1 });
+
+        res.json(docs); // Return the array
+
+    } catch (error) {
+        console.error("Fetch Documents Error:", error);
+        res.status(500).json({ success: false, message: "Database Error" });
+    }
+});
+app.get('/api/admin/documents/all', ensureAdminHtml, async (req, res) => {
+    try {
+        const docs = await DocumentSubmission.find().sort({ createdAt: -1 });
+        res.json(docs);
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+// server.js - ADMIN ACTION ROUTE
+app.patch('/api/admin/documents/:id/status', ensureAdminHtml, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, feedback } = req.body;
+
+        const updated = await DocumentSubmission.findByIdAndUpdate(id, {
+            status,
+            adminFeedback: feedback || "",
+            resolvedBy: req.adminUser.name,
+            resolvedAt: new Date()
+        }, { new: true });
+        const recipients = await User.find({
+            $or: [
+                { name: doc.submittedBy }, // The original uploader (usually Adviser)
+                { club: doc.clubName, clubPosition: "President" }, // Club President
+                { club: doc.clubName, clubPosition: "Vice President" } // Vice President
+            ]
+        }).select('name');
+
+        // 2. Create individual notifications for each recipient
+        const notificationPromises = recipients.map(user => {
+            const newNotif = new Notification({
+                recipient: user.name,
+                sender: "System / Admin",
+                type: 'alert',
+                message: `✅ The document "${doc.fileName}" for ${doc.clubName} has been signed and approved!`,
+                link: '/AdviserDashboard/AdviserDashboard.html' // Pointing them to the history table
+            });
+            return newNotif.save();
+        });
+
+        await Promise.all(notificationPromises);
+        res.json({ success: true, message: `Document ${status}`, data: updated });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 app.get('/api/clubs/:slug', async (req, res) => {
   try {
@@ -683,40 +839,80 @@ app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount:
         const { clubId, clubname, adviser, category } = req.body; 
         const updateData = {};
         
-        // 1. Prepare Update Data
-        if (clubname && clubname.trim()) updateData['clubname'] = clubname;
+        // 1. Fetch the existing club FIRST to detect changes
+        const currentClub = await Club.findById(clubId || req.body.id);
+        if (!currentClub) return res.status(404).json({ message: "Club not found" });
+
+        const oldClubName = currentClub.clubname;
+        const newClubName = (clubname && clubname.trim()) ? clubname.trim() : oldClubName;
+        const isRenaming = oldClubName !== newClubName;
+
+        // 2. Prepare Update Data
+        if (isRenaming) {
+            updateData['clubname'] = newClubName;
+            // Also update URL slug for routing
+            updateData['urlSlug'] = newClubName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        }
+
         if (category && category.trim()) updateData['category'] = category;
         if (req.files && req.files['logo']) {
             updateData['branding.logo'] = `/uploads/${req.files['logo'][0].filename}`;
         }
         if (adviser && adviser.trim()) updateData['adviser'] = adviser;
 
-        // 2. Identify the OLD adviser before performing the update
-        const currentClub = await Club.findById(clubId || req.body.id);
-        const oldAdviserName = currentClub ? currentClub.adviser : null;
+        const oldAdviserName = currentClub.adviser;
 
         // 3. Update the Club Document
-        const updatedClub = await Club.findOneAndUpdate(
-            { _id: clubId || req.body.id }, 
+        const updatedClub = await Club.findByIdAndUpdate(
+            currentClub._id, 
             { $set: updateData }, 
             { new: true }
         );
 
-        if (!updatedClub) return res.status(404).json({ message: "Club not found" });
-
-        // --- NEW SYNC LOGIC: LINKING THE USER TO THE CLUB ---
-        
-        // A. If adviser was changed, reset the old adviser's user record to 'none'
+        // --- ADVISER SYNC LOGIC ---
         if (adviser && oldAdviserName && oldAdviserName !== adviser) {
             await User.findOneAndUpdate({ name: oldAdviserName }, { club: 'none' });
         }
-
-        // B. Update the NEW adviser's user record to link them to this club
         if (adviser) {
-            await User.findOneAndUpdate(
-                { name: adviser }, 
-                { club: updatedClub.clubname } // This updates the "club" field in UserSchema
+            await User.findOneAndUpdate({ name: adviser }, { club: updatedClub.clubname });
+        }
+
+        // --- CASCADING MIGRATION LOGIC ---
+        if (isRenaming) {
+            console.log(`Migrating data from "${oldClubName}" to "${newClubName}"...`);
+            const newSlug = updatedClub.urlSlug;
+
+            // A. Migrate all Users (Members & Officers)
+            await User.updateMany(
+                { club: oldClubName }, 
+                { $set: { club: newClubName } }
             );
+
+            // B. Migrate all Posts
+            await Post.updateMany(
+                { club: oldClubName }, 
+                { $set: { club: newClubName, clubSlug: newSlug } }
+            );
+
+            // C. Migrate all Chat Messages
+            await Message.updateMany(
+                { clubname: oldClubName }, 
+                { $set: { clubname: newClubName } }
+            );
+
+            // D. Migrate Pending Applications
+            await Application.updateMany(
+                { clubname: oldClubName }, 
+                { $set: { clubname: newClubName } }
+            );
+
+            // E. Migrate Document Review Queue
+            await DocumentSubmission.updateMany(
+                { clubName: oldClubName }, 
+                { $set: { clubName: newClubName } }
+            );
+            
+            console.log(`Migration complete for ${newClubName}`);
         }
 
         res.json({ message: "Updated successfully", club: updatedClub });
@@ -1040,7 +1236,113 @@ app.post('/api/clubs/reset-students', async (req, res) => {
         });
     }
 });
+app.post('/api/admin/save-signature', ensureAdminHtml, uploadSig.single('signature'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "No signature data received." });
+        }
 
+        // Generate the URL for the stored image
+        const signatureUrl = `/uploads/signatures/${req.file.filename}`;
+
+        // Update the Admin's user record
+        // We use the fields we discussed: eSignature and hasSignature
+        await User.findByIdAndUpdate(req.user.userId, {
+    eSignature: signatureUrl, // Standardize on eSignature
+    Signature: signatureUrl,  // Fallback for older code
+    hasSignature: true        
+}); 
+
+        res.json({ 
+            success: true, 
+            message: "Signature saved successfully!", 
+            url: signatureUrl 
+        });
+
+    } catch (error) {
+        console.error("Signature Save Error:", error);
+        res.status(500).json({ success: false, message: "Server error while saving signature." });
+    }
+});
+// server.js - CORRECTED SIGNING ROUTE
+app.post('/api/admin/documents/:id/sign', ensureAdminHtml, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { x, y } = req.body;
+
+        const doc = await DocumentSubmission.findById(id);
+        const admin = await User.findById(req.user.userId);
+
+        if (!doc) return res.status(404).json({ success: false, message: "Document not found." });
+        if (!admin) return res.status(404).json({ success: false, message: "Admin not found." });
+
+        // Helper to handle path cleaning and physical location
+        const getPhysicalPath = (dbPath) => {
+            if (!dbPath || typeof dbPath !== 'string') return null; // Prevent 'undefined' error
+            const clean = dbPath.startsWith('/public') ? dbPath.replace('/public', '') : dbPath;
+            return path.join(__dirname, 'public', clean);
+        };
+
+        // THE FIX: Use both field names as fallbacks
+        const pdfPath = getPhysicalPath(doc.fileUrl);
+        const sigPath = getPhysicalPath(admin.eSignature || admin.Signature);
+
+        if (!pdfPath) return res.status(400).json({ success: false, message: "PDF file path is missing in DB." });
+        if (!sigPath) return res.status(400).json({ success: false, message: "Admin signature path is missing in DB." });
+
+        // Verify files exist on your 8GB VPS before reading
+        if (!fs.existsSync(pdfPath)) return res.status(404).json({ success: false, message: "PDF file not found on server." });
+        if (!fs.existsSync(sigPath)) return res.status(404).json({ success: false, message: "Signature file not found on server." });
+
+        const existingPdfBytes = fs.readFileSync(pdfPath);
+        const signatureImageBytes = fs.readFileSync(sigPath);
+
+        const pdfDoc = await PDFDocument.load(existingPdfBytes);
+        const sigImage = await pdfDoc.embedPng(signatureImageBytes);
+
+        const pages = pdfDoc.getPages();
+        const firstPage = pages[0];
+        const { width, height } = firstPage.getSize();
+
+        const pdfX = (x / 100) * width;
+        const pdfY = height - ((y / 100) * height);
+
+        firstPage.drawImage(sigImage, {
+            x: pdfX - 75,
+            y: pdfY - 25,
+            width: 150,
+            height: 50
+        });
+
+        const signedFileName = `SIGNED-${path.basename(doc.fileUrl)}`;
+        const signedPath = path.join(__dirname, 'public', 'uploads', 'documents', signedFileName);
+        const signedPdfBytes = await pdfDoc.save();
+        
+        fs.writeFileSync(signedPath, signedPdfBytes);
+
+        doc.status = 'approved';
+        doc.signedFileUrl = `/uploads/documents/${signedFileName}`;
+        doc.resolvedBy = admin.name;
+        doc.resolvedAt = new Date();
+        await doc.save();
+
+        res.json({ success: true, message: "Document signed and approved!" });
+
+    } catch (error) {
+        console.error("Signing Error:", error);
+        res.status(500).json({ success: false, message: "Backend Path Error: " + error.message });
+    }
+});
+app.get('/api/admin/fix-database-paths', ensureAdminHtml, async (req, res) => {
+    try {
+        const users = await User.find({ eSignature: { $regex: /^\/public/ } });
+        for (let user of users) {
+            user.eSignature = user.eSignature.replace('/public', '');
+            await user.save();
+        }
+        res.send(`Fixed ${users.length} users.`);
+    } catch (e) { res.status(500).send(e.message); }
+});
 // ============================================
 // 5. HTML PAGE ROUTES
 // ============================================

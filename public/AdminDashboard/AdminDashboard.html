@@ -27,20 +27,63 @@
 
     <main id="MainContent" class="dashboard-layout">
     <div class="dashboard-header">
-        <div class="header-text">
-            <h1>Admin Dashboard</h1>
-            <p>Manage users and review incoming reports.</p>
-        </div>
+    <div class="header-text">
+        <h1>Admin Dashboard</h1>
+        <p>Manage users and review incoming reports.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn-broadcast" onclick="openSignatureModal()" style="background: #333;">
+            <i class='bx bx-pen'></i> Customize Signature
+        </button>
         <button class="btn-broadcast" onclick="openAnnouncementModal()">
             <i class='bx bx-broadcast'></i> Global Announcement
         </button>
     </div>
+</div>
+
+<div id="SignatureModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close" onclick="closeSignatureModal()">&times;</span>
+        <h3 style="color: #fa3737; margin-top: 0;">🖋️ Signature Settings</h3>
+        
+        <div style="text-align: center; margin-bottom: 20px; border: 2px dashed #ddd; padding: 15px; border-radius: 8px; background: #f9f9f9;">
+            <label style="font-size: 0.75rem; color: #888; display: block; margin-bottom: 5px;">LIVE PREVIEW</label>
+            <img id="CurrentSignaturePreview" src="/uploads/no-signature.png" style="max-height: 100px; max-width: 100%; object-fit: contain;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="tab-btn active" id="TabUploadMode" onclick="setSignatureMode('upload')">Upload PNG</button>
+            <button class="tab-btn" id="TabDrawMode" onclick="setSignatureMode('draw')">Draw Signature</button>
+        </div>
+
+        <div id="UploadSignatureSection">
+             <label class="form-label" style="margin-top:0;">Select PNG Image</label>
+             <input type="file" id="SignatureInput" class="modal-input" accept="image/png" onchange="previewNewSignature(this)">
+             <small style="color:#888;">Transparency is recommended for clear signing.</small>
+        </div>
+
+        <div id="DrawSignatureSection" style="display: none;">
+            <div style="background: #fff; border: 2px solid #ddd; border-radius: 8px; position: relative; overflow: hidden;">
+                <canvas id="SignaturePad" width="450" height="200" style="cursor: crosshair; display: block;"></canvas>
+            </div>
+            <button onclick="clearSignaturePad()" class="btn-cancel" style="margin-top: 10px; width: 100%; font-size: 0.8rem;">
+                <i class='bx bx-eraser'></i> Clear Drawing Pad
+            </button>
+        </div>
+
+        <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeSignatureModal()" class="btn-cancel">Cancel</button>
+            <button onclick="saveAdminSignature()" id="BtnSaveSignature" class="btn-confirm">Save Signature</button>
+        </div>
+    </div>
+</div>
         <div class="tabs-container">
             <button id="TabCreate" class="tab-btn" onclick="switchTab('create')">Create Account</button>
             <button id="TabUsers" class="tab-btn active" onclick="switchTab('users')">User Management</button>
             <button id="TabReports" class="tab-btn" onclick="switchTab('reports')">Reports</button>
             <button id="TabClubs" class="tab-btn" onclick="switchTab('clubs')">Club Management</button>
             <button id="TabSystem" class="tab-btn" onclick="switchTab('system')">System Actions</button>
+            <button id="TabDocs" class="tab-btn" onclick="switchTab('docs')">Document Review</button>
         </div>
 
         <div id="UsersSection" class="table-card">
@@ -212,6 +255,29 @@
         </div>
     </div>
 </div>
+
+
+<div id="DocsSection" class="table-card" style="display:none;">
+    <div class="table-actions" style="justify-content: space-between; align-items: center;">
+        <h3 style="margin:0; color:#555;">Document Review Queue</h3>
+        <button onclick="loadAdminDocs()" class="btn-cancel" style="font-size:0.9rem;">Refresh Queue</button>
+    </div>
+
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Club Name</th>
+                <th>Purpose</th>
+                <th>Submitted By</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="AdminDocTableBody">
+            <tr><td colspan="5" style="text-align:center;">Loading submissions...</td></tr>
+        </tbody>
+    </table>
+</div>
     </main>
     
 
@@ -382,7 +448,31 @@
         </div>
     </div>
 </div>
+<div id="DocPreviewFull" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:9999; flex-direction:column;">
+    
+    <div style="background:#fa3737; color:white; padding:15px 25px; display:flex; justify-content:space-between; align-items:center;">
+        <h3 id="PreviewDocTitle" style="margin:0; font-size:1.1rem;">Document Preview</h3>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <a id="DownloadLink" href="#" download class="btn-cancel" style="background:white; color:#fa3737; text-decoration:none; font-size:0.8rem; padding:5px 12px; font-weight:bold;">
+                <i class='bx bx-download'></i> Download
+            </a>
+            <span onclick="window.closeDocPreview()" style="cursor:pointer; font-size:2rem; line-height:1;">&times;</span>
+        </div>
+    </div>
 
+    <div id="PreviewContainer" style="flex:1; width:100%; background:#525659; overflow:auto; position:relative; display:flex; justify-content:center; align-items:flex-start; padding: 20px;">
+    <div id="PageWrapper" style="position:relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); background:white; line-height:0;">
+        </div>
+</div>
+    <div id="AdminActionBar" style="background:white; padding:20px; display:none; justify-content:center; gap:20px; border-top:1px solid #ddd; box-shadow: 0 -5px 15px rgba(0,0,0,0.2);">
+        <button id="BtnModalReject" class="btn-action btn-restrict" style="padding:12px 30px; font-weight:bold;">
+            <i class='bx bx-x-circle'></i> Reject Proposal
+        </button>
+        <button id="BtnModalApprove" class="btn-action btn-unrestrict" style="padding:12px 30px; font-weight:bold;">
+            <i class='bx bx-check-circle'></i> Approve & Sign
+        </button>
+    </div>
+</div>
     <script src="/Global.js"></script>
     <script src="AdminDashboard.js"></script>
 </body>

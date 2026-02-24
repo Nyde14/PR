@@ -22,7 +22,10 @@ const userSchema = new mongoose.Schema({
     resetOTP: { type: String },
     otpExpires: { type: Date },
     failedLoginAttempts: { type: Number, default: 0 },
-    lockUntil: { type: Number, default: null }
+    lockUntil: { type: Number, default: null },
+    Signature: { type: String, default: "" },
+    hasSignature: { type: Boolean, default: false },
+
 });
 
 module.exports = mongoose.model('User', userSchema);

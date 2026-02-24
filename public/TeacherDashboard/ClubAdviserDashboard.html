@@ -222,6 +222,44 @@
 </div>
 
         </div>
+        <div class="section-card">
+    <div class="section-title">📂 Submit New Document</div>
+    <form id="UploadDocForm" style="display:flex; flex-direction:column; gap:15px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div>
+                <label class="form-label">Purpose / Title</label>
+                <input type="text" id="DocPurpose" class="modal-input" placeholder="e.g., Year-End Party Proposal" required>
+            </div>
+            <div>
+                <label class="form-label">Select PDF or Docx Document</label>
+                <input type="file" id="DocFile" accept=".pdf" class="modal-input" required>
+            </div>
+        </div>
+        <button type="submit" class="btn-save" style="width:100%;">
+            <i class='bx bx-upload'></i> Submit to Admin for Review
+        </button>
+    </form>
+</div>
+
+<div class="section-card">
+    <div class="section-title">📜 Document History & Status</div>
+    <div class="table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Document Name</th>
+                    <th>Status</th>
+                    <th>Submitted On</th>
+                    <th>Admin Feedback</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="AdviserDocList">
+                <tr><td colspan="5" style="text-align:center;">Loading history...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
     </main>
 
     <div id="RestrictModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
@@ -244,6 +282,21 @@
             </div>
         </div>
     </div>
+    <div id="DocPreviewFull" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:9999; flex-direction:column;">
+    
+    <div style="background:#fa3737; color:white; padding:15px 25px; display:flex; justify-content:space-between; align-items:center;">
+        <h3 id="PreviewDocTitle" style="margin:0; font-size:1.1rem;">Document Preview</h3>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <a id="DownloadLink" href="#" download class="btn-approve" style="background:white; color:#fa3737; text-decoration:none; font-size:0.8rem; padding:5px 12px; font-weight:bold;">
+                <i class='bx bx-download'></i> Download
+            </a>
+            <span onclick="window.closeDocPreview()" style="cursor:pointer; font-size:2rem; line-height:1;">&times;</span>
+        </div>
+    </div>
+
+    <div id="PreviewContainer" style="flex:1; width:100%; background:#525659; overflow:auto; position:relative; display:flex; justify-content:center; align-items:flex-start; padding: 20px;">
+        </div>
+</div>
 
     <script src="/public/Global.js"></script>
     <script src="/public/TeacherDashboard/ClubAdviserDashboard.js"></script>

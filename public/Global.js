@@ -531,13 +531,13 @@ function injectInterestModal() {
                     <button class="filter-tag" onclick="toggleInterest(this, 'Arts')">Arts</button>
                     <button class="filter-tag" onclick="toggleInterest(this, 'Performance')">Performance</button>
                     <button class="filter-tag" onclick="toggleInterest(this, 'Tech')">Tech</button>
-                     <button class="filter-tag" onclick="toggleInterest(this, 'Leadership')">Leadership</button>
-                </div>
-                </div>
-            </div>
-            <div class="modal-footer">
+                     <button class="filter-tag" onclick="toggleInterest(this, 'Leadership')">Leadership</button><div class="modal-footer">
                 <button class="save-prefs-btn" onclick="saveUserInterests()">💾 Save Interests</button>
             </div>
+                </div>
+                </div>
+            </div>
+            
         </div>
     </div>`;
 
@@ -1147,3 +1147,41 @@ document.addEventListener("DOMContentLoaded", () => {
     // ... existing loads
     injectPublicProfileModal();
 });
+// Global.js - REPAIRED PDF & IMAGE VIEWER
+window.viewDocument = function(url, fileName) {
+    const container = document.getElementById('PreviewContainer');
+    const title = document.getElementById('PreviewDocTitle');
+    const downloadLink = document.getElementById('DownloadLink');
+    const modal = document.getElementById('DocPreviewFull');
+
+    // 1. Ensure the Modal is visible before injecting content
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+    
+    if (title) title.innerText = fileName || "Document Preview";
+    if (downloadLink) downloadLink.href = url;
+
+    // 2. Identify File Type
+    const isPDF = url.toLowerCase().endsWith('.pdf');
+
+    // 3. Inject into PageWrapper with consistent sizing
+    // The fixed width/height for PDFs prevents layout breaking
+    container.innerHTML = `
+        <div id="PageWrapper" style="position:relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); background:white; line-height:0; display:inline-block; margin:auto;">
+            ${isPDF 
+                ? `<embed src="${url}#toolbar=0&navpanes=0&scrollbar=0" type="application/pdf" style="width:800px; height:1100px; border:none;" id="DocPDFPreview">`
+                : `<img src="${url}" style="max-width:100%; height:auto; display:block;" id="DocImagePreview">`
+            }
+        </div>
+    `;
+};
+
+// Ensure close function is also present
+window.closeDocPreview = function() {
+    const modal = document.getElementById('DocPreviewFull');
+    if (modal) modal.style.display = 'none';
+    const container = document.getElementById('PreviewContainer');
+    if (container) container.innerHTML = ""; // Clear content to free memory
+};
+
