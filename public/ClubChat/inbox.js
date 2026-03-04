@@ -160,14 +160,17 @@ function openChat(name, type, msgId = null, badgeId = null) {
         }
     }
 
-    // 2. REDIRECT
+    // 2. MARK AS READ: Update backend to mark messages as read
+    fetch(`/api/chat/mark-read/${encodeURIComponent(name)}`, { 
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+    }).catch(e => console.error("Could not mark as read:", e));
+
+    // 3. REDIRECT
     let url = `/ClubChat/ClubChat.html?room=${encodeURIComponent(name)}&type=${type}`;
     if (msgId) {
         url += `&msgId=${msgId}`;
     }
-    
-    // 3. Optional: Mark as read via API before leaving (improves sync)
-    // fetch(`/api/chat/mark-read/${encodeURIComponent(name)}`, { method: 'PUT' });
 
     window.location.href = url;
 }
@@ -182,7 +185,7 @@ async function handleAdminRedirect(myUserName) {
         try {
             // Logic to handle highlighting or finding the specific conversation
             // (Kept simple as per your previous file logic)
-             alert("Please find the conversation containing the reported message.");
+             window.showtoast("Please find the conversation containing the reported message.");
         } catch (e) {
             console.error(e);
         }

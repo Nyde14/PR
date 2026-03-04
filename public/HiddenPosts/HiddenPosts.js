@@ -57,7 +57,12 @@ async function loadHiddenPosts() {
 }
 
 async function unhidePost(postId) {
-    if (!confirm("Unhide this post? It will reappear in your feed.")) return;
+    const isConfirmed = await window.showConfirm(
+        "Unhide Post",
+        "Unhide this post? It will reappear in your feed.",
+        "Unhide"
+    );
+    if (!isConfirmed) return;
 
     const btn = document.querySelector(`#post-${postId} .unhide-btn`);
     if(btn) {
@@ -80,7 +85,7 @@ async function unhidePost(postId) {
                 setTimeout(loadHiddenPosts, 300); // Reload empty state
             }
         } else {
-            alert("Failed to unhide.");
+            window.showtoast("Failed to unhide.", "error");
             if(btn) {
                 btn.disabled = false;
                 btn.innerText = "👁️ Unhide Post";
@@ -88,6 +93,6 @@ async function unhidePost(postId) {
         }
     } catch (e) {
         console.error(e);
-        alert("Network error.");
+        window.showtoast("Network error.", "error");
     }
 } 

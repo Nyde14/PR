@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const user = await response.json();
 
         if (user.usertype !== 'Admin') {
-            alert("Access Denied: Admins Only.");
+            window.showtoast("Access Denied: Admins Only.", "error");
             window.location.href = "/ClubPortalFeed/ClubPortalFeed.html";
             return;
         }
@@ -184,16 +184,16 @@ async function saveClubData() {
     try {
         const res = await fetch('/api/clubs/update-branding', { method: 'PATCH', body: formData });
         if (res.ok) {
-            alert("✅ Club updated!");
+            window.showtoast("✅ Club updated!");
             closeClubModal();
             loadClubManagementList();
         } else {
             const error = await res.json();
-            alert(`❌ Error: ${error.message || 'Failed to update club'}`);
+            window.showtoast(`❌ Error: ${error.message || 'Failed to update club'}`, "error");
         }
     } catch (e) { 
         console.error(e);
-        alert(`❌ Error: ${e.message}`);
+        window.showtoast(`❌ Error: ${e.message}`, "error");
     }
 }
 
@@ -322,7 +322,12 @@ async function loadReports() {
     }
 }
 async function resolveReport(id, status) {
-    if(!confirm(`Mark report as ${status}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Resolve Report",
+        `Mark report as ${status}?`,
+        "Confirm"
+    );
+    if (!isConfirmed) return;
     try {
         await fetch(`/api/reports/${id}/resolve`, {
             method: 'PATCH',
@@ -343,7 +348,7 @@ async function viewReportedContent(reportId) {
         const result = await res.json();
 
         if (result.type === 'Deleted') {
-            alert(result.message);
+            window.showtoast(result.message);
             return;
         }
 
@@ -358,7 +363,7 @@ async function viewReportedContent(reportId) {
             openCommentModal(result.data, result.type);
         }
 
-    } catch (e) { console.error(e); alert("Error retrieving content."); }
+    } catch (e) { console.error(e); window.showtoast("Error retrieving content.", "error"); }
 }
 
 // --- NEW MODAL FOR COMMENTS/REPLIES ---
@@ -381,7 +386,12 @@ function closeReviewModal() {
 }
 
 async function deleteReportedComment(postId, commentId, replyId, type) {
-    if (!confirm(`Permanently delete this ${type}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Delete Content",
+        `Permanently delete this ${type}?`,
+        "Delete"
+    );
+    if (!isConfirmed) return;
 
     let url = `/api/posts/comment/${postId}/${commentId}`;
     // If it's a reply, we need a specific endpoint or logic, 
@@ -394,11 +404,11 @@ async function deleteReportedComment(postId, commentId, replyId, type) {
     try {
         const res = await fetch(url, { method: 'DELETE' });
         if (res.ok) {
-            alert("Deleted successfully.");
+            window.showtoast("Deleted successfully.");
             closeReviewModal();
             loadReports(); // Refresh table
         } else {
-            alert("Failed to delete.");
+            window.showtoast("Failed to delete.", "error");
         }
     } catch (e) { console.error(e); }
 }
@@ -466,7 +476,7 @@ async function submitRestriction() {
     const duration = document.getElementById('RestrictDuration').value;
     const reason = document.getElementById('RestrictReason').value;
 
-    if (!reason.trim()) return alert("Reason is required.");
+    if (!reason.trim()) return window.showtoast("Reason is required.", "error");
 
     try {
         const res = await fetch(`/api/users/restrict/${currentTargetId}`, {
@@ -477,11 +487,11 @@ async function submitRestriction() {
         
         const data = await res.json();
         if (res.ok) {
-            alert(data.message);
+            window.showtoast(data.message);
             closeRestrictModal();
             loadAllUsers(); 
         } else {
-            alert(data.message);
+            window.showtoast(data.message, "error");
         }
     } catch (e) {
         console.error(e);
@@ -489,20 +499,30 @@ async function submitRestriction() {
 }
 
 async function unrestrictUser(id, name) {
-    if (!confirm(`Unrestrict ${name}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Unrestrict User",
+        `Unrestrict ${name}?`,
+        "Unrestrict"
+    );
+    if (!isConfirmed) return;
     try {
         const res = await fetch(`/api/users/unrestrict/${id}`, { method: 'PUT' });
         const data = await res.json();
         if (res.ok) {
-            alert(data.message);
+            window.showtoast(data.message);
             loadAllUsers();
         } else {
-            alert(data.message);
+            window.showtoast(data.message, "error");
         }
     } catch (e) { console.error(e); }
 }
 async function deleteReportedMessage(messageId) {
-    if (!confirm("Are you sure you want to delete this message? This action is permanent.")) return;
+    const isConfirmed = await window.showConfirm(
+        "Delete Message",
+        "Are you sure you want to delete this message? This action is permanent.",
+        "Delete"
+    );
+    if (!isConfirmed) return;
 
     try {
         // Reuse the existing chat delete endpoint
@@ -513,16 +533,16 @@ async function deleteReportedMessage(messageId) {
         const result = await res.json();
 
         if (res.ok) {
-            alert("Message deleted successfully.");
+            window.showtoast("Message deleted successfully.");
             closeMessageModal();
             // Optional: Reload reports if you want to reflect changes, 
             // though the report itself still exists (just pointing to deleted content now)
         } else {
-            alert("Failed to delete: " + result.message);
+            window.showtoast("Failed to delete: " + result.message, "error");
         }
     } catch (e) {
         console.error(e);
-        alert("Network error while deleting.");
+        window.showtoast("Network error while deleting.", "error");
     }
 }
 function openAnnouncementModal() {
@@ -542,7 +562,12 @@ async function submitAnnouncement() {
     const mediaFile = document.getElementById('AnnounceMedia').files[0];
 
     if (!title || !content) return alert("Title and Content are required.");
-    if (!confirm("Are you sure? This will notify ALL users.")) return;
+    const isConfirmed = await window.showConfirm(
+        "Send Announcement",
+        "This will notify ALL users.",
+        "Send"
+    );
+    if (!isConfirmed) return;
 
     const btn = document.querySelector('#AnnouncementModal .btn-confirm');
     const originalText = btn.innerText;
@@ -576,16 +601,16 @@ async function submitAnnouncement() {
         });
 
         if (res.ok) {
-            alert("Global Announcement Posted!");
+            window.showtoast("Global Announcement Posted!");
             closeAnnouncementModal();
             // Optional: Reload feed if on the same page
         } else {
             const data = await res.json();
-            alert("Failed: " + data.message);
+            window.showtoast("Failed: " + data.message, "error");
         }
     } catch (e) { 
         console.error(e); 
-        alert("Error posting announcement.");
+        window.showtoast("Error posting announcement.", "error");
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
@@ -669,16 +694,16 @@ async function handleCreateUser(e) {
         const data = await res.json();
 
         if (res.ok) {
-            alert(`✅ Account Created Successfully!\nVerification bypassed for ${userData.name}.`);
+            window.showtoast(`✅ Account Created Successfully!\nVerification bypassed for ${userData.name}.`);
             document.getElementById('CreateUserForm').reset();
             toggleClubSelect(); 
         } else {
-            alert("Registration Failed: " + data.message);
+            window.showtoast("Registration Failed: " + data.message, "error");
         }
 
     } catch (error) {
         console.error("Admin Registration Error:", error);
-        alert("Network Error: Could not reach the registration server.");
+        window.showtoast("Network Error: Could not reach the registration server.", "error");
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -699,12 +724,16 @@ function previewClubLogo(input) {
 async function deleteClub(id, name, memberCount) {
     // 1. Safety Check: Don't delete clubs with members
     if (memberCount > 0) {
-        alert(`Cannot delete "${name}". You must remove or reassign the ${memberCount} members first.`);
+        window.showtoast(`Cannot delete "${name}". You must remove or reassign the ${memberCount} members first.`, "error");
         return;
     }
 
     // 2. Confirmation
-    const confirmation = confirm(`Are you sure you want to permanently delete the club "${name}"? This action cannot be undone.`);
+    const confirmation = await window.showConfirm(
+        "Delete Club",
+        `Are you sure you want to permanently delete the club "${name}"? This action cannot be undone.`,
+        "Delete"
+    );
     if (!confirmation) return;
 
     try {
@@ -713,15 +742,15 @@ async function deleteClub(id, name, memberCount) {
         });
 
         if (res.ok) {
-            alert(`✅ Club "${name}" has been removed.`);
+            window.showtoast(`✅ Club "${name}" has been removed.`);
             loadClubManagementList(); // Refresh the table
         } else {
             const data = await res.json();
-            alert("Delete failed: " + data.message);
+            window.showtoast("Delete failed: " + data.message, "error");
         }
     } catch (e) {
         console.error("Delete Error:", e);
-        alert("Server error occurred while deleting the club.");
+        window.showtoast("Server error occurred while deleting the club.", "error");
     }
 }
 let currentClubCategory = new Set(); // Temporarily hold tags for the current modal
@@ -767,7 +796,7 @@ async function openProfileSettings() {
         document.getElementById('ProfileSettingsModal').style.display = 'flex';
     } catch (error) {
         console.error("Error opening profile settings:", error);
-        alert("Failed to load profile.");
+        window.showtoast("Failed to load profile.", "error");
     }
 }
 
@@ -778,7 +807,7 @@ function closeProfileSettings() {
 async function uploadProfilePicture() {
     const fileInput = document.getElementById('ProfilePictureInput');
     if (!fileInput.files || fileInput.files.length === 0) {
-        alert("Please select an image.");
+        window.showtoast("Please select an image.", "error");
         return;
     }
 
@@ -802,13 +831,13 @@ async function uploadProfilePicture() {
         // Update preview
         document.getElementById('ProfilePreview').src = data.newUrl + '?t=' + Date.now();
         
-        alert("✅ Profile picture updated! Your announcements will use this new picture.");
+        window.showtoast("✅ Profile picture updated! Your announcements will use this new picture.");
         
         // Close modal
         closeProfileSettings();
     } catch (error) {
         console.error("Upload error:", error);
-        alert("❌ Failed to upload picture: " + error.message);
+        window.showtoast("❌ Failed to upload picture: " + error.message, "error");
     } finally {
         const btn = event.target;
         btn.disabled = false;
@@ -856,7 +885,7 @@ async function submitNewClub(e) {
     const category = document.getElementById('CreateClubCategory').value;
     const adviser = document.getElementById('CreateClubAdviser').value || null;
 
-    if (!clubname) return alert("Please provide a club name.");
+    if (!clubname) return window.showtoast("Please provide a club name.", "error");
 
     const btn = e.target.querySelector('button[type="submit"]');
     btn.innerText = "Creating...";
@@ -872,15 +901,15 @@ async function submitNewClub(e) {
         const data = await res.json();
 
         if (res.ok) {
-            alert("✅ Organization created successfully!");
+            window.showtoast("✅ Organization created successfully!");
             closeCreateClubModal();
             loadClubManagementList(); // Refresh the table
         } else {
-            alert("❌ Failed: " + (data.message || "Unknown error"));
+            window.showtoast("❌ Failed: " + (data.message || "Unknown error"), "error");
         }
     } catch (error) {
         console.error("Create Club Error:", error);
-        alert("Server error. Check console.");
+        window.showtoast("Server error. Check console.", "error");
     } finally {
         btn.innerText = "Create Organization";
         btn.disabled = false;
@@ -903,7 +932,7 @@ async function submitResetStudentClubs() {
     const confirmText = document.getElementById('ResetConfirmInput').value;
     
     if (confirmText.toLowerCase() !== 'reset all') {
-        alert("❌ Please type 'reset all' to confirm this action.");
+        window.showtoast("❌ Please type 'reset all' to confirm this action.", "error");
         return;
     }
 
@@ -920,72 +949,110 @@ async function submitResetStudentClubs() {
         const data = await res.json();
 
         if (res.ok) {
-            alert(`✅ ${data.studentsRemoved} students have been removed from all organizations!\n\nAdvisers and moderators were NOT affected.`);
+            window.showtoast(`✅ ${data.studentsRemoved} students have been removed from all organizations!\n\nAdvisers and moderators were NOT affected.`);
             closeResetStudentClubsModal();
             loadClubManagementList(); // Refresh the club list
         } else {
-            alert("❌ Error: " + (data.message || "Failed to reset clubs"));
+            window.showtoast("❌ Error: " + (data.message || "Failed to reset clubs"), "error");
         }
     } catch (error) {
         console.error("Reset Error:", error);
-        alert("❌ Server error: " + error.message);
+        window.showtoast("❌ Server error: " + error.message, "error");
     } finally {
         btn.innerText = "Confirm Reset";
         btn.disabled = false;
         document.getElementById('ResetConfirmInput').value = "";
     }
 }
+let allDocs = []; // Global array to store documents for local filtering
+
 async function loadAdminDocs() {
     const tbody = document.getElementById('AdminDocTableBody');
     if (!tbody) return;
 
     try {
         const res = await fetch('/api/admin/documents/all');
-        const docs = await res.json();
-
-        if (docs.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No documents in the queue.</td></tr>";
-            return;
-        }
-
-        tbody.innerHTML = docs.map(doc => {
-            const isApproved = doc.status === 'approved';
-            const statusClass = isApproved ? 'badge-resolved' : 
-                                doc.status === 'rejected' ? 'badge-restricted' : 'badge-pending';
-            
-            // 1. Primary Action: View/Review
-            let actionButtons = `
-                <button class="btn-action btn-unrestrict" 
-                        onclick="window.viewDocumentForReview('${doc._id}', '${doc.fileUrl}', '${doc.fileName}', '${doc.status}')">
-                    <i class='bx bx-show'></i> ${isApproved ? 'View Original' : 'View & Review'}
-                </button>`;
-
-            // 2. Secondary Action: View Signed (Only if it exists)
-            if (isApproved && doc.signedFileUrl) {
-                actionButtons += `
-                    <button class="btn-action" style="background:#fa3737; color:white; margin-left:5px;"
-                            onclick="window.viewDocument('${doc.signedFileUrl}', 'SIGNED-${doc.fileName}')">
-                        <i class='bx bxs-file-pdf'></i> View Signed
-                    </button>`;
-            }
-            
-            return `
-                <tr>
-                    <td><strong>${doc.clubName}</strong></td>
-                    <td>${doc.purpose}</td>
-                    <td>${doc.submittedBy} <br><small>${doc.uploaderRole}</small></td>
-                    <td><span class="badge ${statusClass}">${doc.status.toUpperCase()}</span></td>
-                    <td>
-                        <div style="display:flex; gap:5px;">
-                            ${actionButtons}
-                        </div>
-                    </td>
-                </tr>`;
-        }).join('');
+        allDocs = await res.json();
+        
+        // Trigger the filter and render function immediately after fetching
+        filterAndSortDocs(); 
     } catch (e) {
         console.error("Load Docs Error:", e);
         tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading documents.</td></tr>";
     }
+}
+
+// NEW: Master filter & sort logic
+window.filterAndSortDocs = function() {
+    const searchTerm = (document.getElementById('DocSearchInput').value || '').toLowerCase();
+    const statusFilter = document.getElementById('DocStatusFilter').value || 'all';
+    const sortBy = document.getElementById('DocSortBy').value || 'newest';
+
+    // 1. Apply Search and Filter
+    let filteredDocs = allDocs.filter(doc => {
+        const matchesSearch = doc.clubName.toLowerCase().includes(searchTerm) || 
+                              doc.fileName.toLowerCase().includes(searchTerm) || 
+                              doc.purpose.toLowerCase().includes(searchTerm);
+        
+        const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
+        
+        return matchesSearch && matchesStatus;
+    });
+
+    // 2. Apply Sorting
+    filteredDocs.sort((a, b) => {
+        if (sortBy === 'newest') return new Date(b.createdAt || 0) < new Date(a.createdAt || 0) ? 1 : -1;
+        if (sortBy === 'oldest') return new Date(a.createdAt || 0) < new Date(b.createdAt || 0) ? 1 : -1;
+        if (sortBy === 'name_asc') return a.clubName.localeCompare(b.clubName);
+        return 0;
+    });
+
+    // 3. Render
+    renderDocsTable(filteredDocs);
+};
+
+// NEW: Extracted rendering logic
+function renderDocsTable(docs) {
+    const tbody = document.getElementById('AdminDocTableBody');
+    if (!tbody) return;
+
+    if (docs.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No documents match your search criteria.</td></tr>";
+        return;
+    }
+
+    tbody.innerHTML = docs.map(doc => {
+        const isApproved = doc.status === 'approved';
+        const statusClass = isApproved ? 'badge-resolved' : 
+                            doc.status === 'rejected' ? 'badge-restricted' : 'badge-pending';
+        
+        let actionButtons = `
+            <button class="btn-action btn-unrestrict" 
+                    onclick="window.viewDocumentForReview('${doc._id}', '${doc.fileUrl}', '${doc.fileName}', '${doc.status}')">
+                <i class='bx bx-show'></i> ${isApproved ? 'View Original' : 'View & Review'}
+            </button>`;
+
+        if (isApproved && doc.signedFileUrl) {
+            actionButtons += `
+                <button class="btn-action" style="background:#fa3737; color:white; margin-left:5px;"
+                        onclick="window.viewDocument('${doc.signedFileUrl}', 'SIGNED-${doc.fileName}')">
+                    <i class='bx bxs-file-pdf'></i> View Signed
+                </button>`;
+        }
+        
+        return `
+            <tr>
+                <td><strong>${doc.clubName}</strong></td>
+                <td><strong>${doc.purpose}</strong><br><small style="color:#888;">${doc.fileName}</small></td>
+                <td>${doc.submittedBy} <br><small>${doc.uploaderRole}</small></td>
+                <td><span class="badge ${statusClass}">${doc.status.toUpperCase()}</span></td>
+                <td>
+                    <div style="display:flex; gap:5px;">
+                        ${actionButtons}
+                    </div>
+                </td>
+            </tr>`;
+    }).join('');
 }
 
 window.switchTab = function(tabName) {
@@ -1132,10 +1199,10 @@ window.saveAdminSignature = async function() {
     try {
         const res = await fetch('/api/admin/save-signature', { method: 'POST', body: formData });
         if (res.ok) {
-            alert("✅ Signature saved successfully!");
+            window.showtoast("✅ Signature saved successfully!");
             closeSignatureModal();
         } else {
-            alert("❌ Failed to save signature.");
+            window.showtoast("❌ Failed to save signature.", "error");
         }
     } catch (e) {
         console.error(e);
@@ -1150,7 +1217,7 @@ window.processDocument = async function(docId, status) {
         const user = await authRes.json();
         
         if (!user.hasSignature) {
-            alert("❌ You haven't set a signature yet.");
+            window.showtoast("❌ You haven't set a signature yet.", "error");
             window.openSignatureModal();
             return;
         }
@@ -1166,85 +1233,94 @@ window.processDocument = async function(docId, status) {
 };
 
 function startSignaturePlacement(docId, sigUrl) {
-    const wrapper = document.getElementById('PageWrapper');
-    
-    if (!wrapper) {
-        console.error("PageWrapper not found.");
-        return alert("❌ Error: Please open a document first.");
-    }
+    // Select ALL generated pages instead of just one
+    const wrappers = document.querySelectorAll('.pdf-page-wrapper');
+    if (wrappers.length === 0) return window.showtoast("❌ Error: Document pages not found.", "error");
 
-    // Standardize URL to remove /public prefix for frontend display
     const cleanSigUrl = sigUrl.startsWith('/public') ? sigUrl.replace('/public', '') : sigUrl;
 
-    // 1. Create Transparent Overlay
-    const overlay = document.createElement('div');
-    overlay.id = "SignaturePlacementOverlay";
-    overlay.style = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; cursor: crosshair; background: rgba(250, 55, 55, 0.05);`;
-    wrapper.appendChild(overlay);
+    // Apply overlay logic to every page
+    wrappers.forEach(wrapper => {
+        wrapper.style.position = 'relative';
 
-    // 2. Create the Ghost Signature
-    const ghostSig = document.createElement('img');
-    ghostSig.src = cleanSigUrl;
-    ghostSig.id = "GhostSignature";
-    ghostSig.style = `position: absolute; width: 150px; opacity: 0.6; pointer-events: none; z-index: 10001; border: 1px dashed #fa3737; transform: translate(-50%, -50%); display: none;`;
-    wrapper.appendChild(ghostSig);
+        const overlay = document.createElement('div');
+        overlay.className = "SignaturePlacementOverlay";
+        overlay.style = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; cursor: crosshair; background: rgba(250, 55, 55, 0.05);`;
+        wrapper.appendChild(overlay);
 
-    // 3. Handle Movement
-    const moveHandler = (e) => {
-        const rect = wrapper.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const ghostSig = document.createElement('img');
+        ghostSig.src = cleanSigUrl;
+        ghostSig.className = "GhostSignature";
+        ghostSig.style = `position: absolute; width: 150px; opacity: 0.6; pointer-events: none; z-index: 10001; border: 1px dashed #fa3737; transform: translate(-50%, -50%); display: none;`;
+        wrapper.appendChild(ghostSig);
 
-        // Show the signature following the mouse inside the page
-        ghostSig.style.display = 'block';
-        ghostSig.style.left = x + 'px';
-        ghostSig.style.top = y + 'px';
-    };
-    
-    overlay.addEventListener('mousemove', moveHandler);
+        overlay.addEventListener('mousemove', (e) => {
+            const rect = wrapper.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
 
-    // 4. Handle Final Placement Click
-    overlay.onclick = (e) => {
-        e.stopPropagation();
-        const rect = wrapper.getBoundingClientRect();
-        
-        // Final coordinate calculation relative to document width/height
-        const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-        const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+            // Hide ghost signatures on all OTHER pages while hovering over this one
+            document.querySelectorAll('.GhostSignature').forEach(g => g.style.display = 'none');
 
-        // Visual cleanup
-        overlay.remove();
-        ghostSig.remove();
+            ghostSig.style.display = 'block';
+            ghostSig.style.left = x + 'px';
+            ghostSig.style.top = y + 'px';
+        });
 
-        setTimeout(() => {
-            if (confirm(`Place signature at these coordinates? (${Math.round(xPercent)}%, ${Math.round(yPercent)}%)`)) {
-                finalizeSignature(docId, xPercent, yPercent);
-            } else {
-                // Restart if they changed their mind
-                startSignaturePlacement(docId, sigUrl); 
-            }
-        }, 50);
-    };
+        overlay.addEventListener('mouseleave', () => {
+            ghostSig.style.display = 'none';
+        });
+
+        overlay.onclick = (e) => {
+            e.stopPropagation();
+            const rect = wrapper.getBoundingClientRect();
+            
+            const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+            const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            // Extract the page number from the wrapper we clicked on
+            const pageNum = parseInt(wrapper.dataset.page) || 1;
+
+            // Cleanup ALL overlays
+            document.querySelectorAll('.SignaturePlacementOverlay, .GhostSignature').forEach(el => el.remove());
+
+            setTimeout(async () => {
+                const isConfirmed = await window.showConfirm(
+                    "Confirm Signature",
+                    `Confirm signature placement on Page ${pageNum}?`,
+                    "Confirm"
+                );
+                if (isConfirmed) {
+                    // Pass the specific pageNum to the finalize function
+                    finalizeSignature(docId, xPercent, yPercent, pageNum);
+                } else {
+                    startSignaturePlacement(docId, sigUrl); 
+                }
+            }, 50);
+        };
+    });
 }
-async function finalizeSignature(docId, x, y) {
+
+// Ensure finalizeSignature accepts the pageNum parameter
+async function finalizeSignature(docId, x, y, pageNum) {
     try {
         const res = await fetch(`/api/admin/documents/${docId}/sign`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ x, y })
+            body: JSON.stringify({ x, y, page: pageNum }) // Sending the correct page to backend
         });
 
         const data = await res.json();
         if (data.success) {
-            alert("✅ Document signed and finalized!");
+            window.showtoast("✅ " + data.message);
             window.closeDocPreview();
-            loadAdminDocs(); // Refresh the table
+            loadAdminDocs(); 
         } else {
-            alert("❌ Error: " + data.message);
+            window.showtoast("❌ Error: " + data.message, "error");
         }
     } catch (err) {
         console.error("Finalize Error:", err);
-        alert("Failed to finalize document.");
+        window.showtoast("Failed to finalize document.", "error");
     }
 }
 function updatePreviewFromCanvas() {

@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Validate Access
         if (!isStaff && !isOfficer) {
-            alert("Access Denied. Only Advisers, Presidents, and VPs can view this dashboard.");
+            window.showtoast("Access Denied. Only Advisers, Presidents, and VPs can view this dashboard.", "error");
             window.location.href = "/ClubPortalFeed/ClubPortalFeed.html";
             return;
         }
@@ -109,7 +109,12 @@ async function fetchClubMembers(clubName) {
 
 // Global function to update role via API
 window.updateMemberRole = async function(userId, newRole) {
-    if(!confirm(`Change role to ${newRole}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Change Role",
+        `Change role to ${newRole}?`,
+        "Change"
+    );
+    if (!isConfirmed) return;
     
     try {
         const res = await fetch('/api/users/assign-role', {
@@ -119,17 +124,17 @@ window.updateMemberRole = async function(userId, newRole) {
         });
 
         if(res.ok) {
-            alert("✅ Role updated successfully!");
+            window.showtoast("✅ Role updated successfully!");
             // Refresh the list immediately to confirm the DB has the new role
             const clubName = document.getElementById('DisplayClubName').innerText;
             fetchClubMembers(clubName);
         } else {
             const err = await res.json();
-            alert("❌ Failed: " + err.message);
+            window.showtoast("❌ Failed: " + err.message, "error");
         }
     } catch(e) { 
         console.error(e); 
-        alert("Network error updating role.");
+        window.showtoast("Network error updating role.", "error");
     }
 };
 
@@ -156,7 +161,7 @@ window.submitRestriction = async function() {
     const duration = document.getElementById('RestrictDuration').value;
     const reason = document.getElementById('RestrictReason').value;
 
-    if (!reason.trim()) return alert("Please provide a reason.");
+    if (!reason.trim()) return window.showtoast("Please provide a reason.", "error");
 
     try {
         const response = await fetch(`/api/users/restrict/${currentTargetId}`, {
@@ -170,21 +175,26 @@ window.submitRestriction = async function() {
         const data = await response.json();
 
         if (response.ok) {
-            alert(data.message);
+            window.showtoast(data.message);
             window.closeRestrictModal();
             const clubName = document.getElementById('DisplayClubName').innerText;
             fetchClubMembers(clubName);
         } else {
-            alert("Error: " + data.message);
+            window.showtoast("Error: " + data.message, "error");
         }
     } catch (e) {
         console.error(e);
-        alert("Network error.");
+        window.showtoast("Network error.", "error");
     }
 };
 
 window.unrestrictUser = async function(userId, userName) {
-    if (!confirm(`Lift restriction for ${userName}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Lift Restriction",
+        `Lift restriction for ${userName}?`,
+        "Lift"
+    );
+    if (!isConfirmed) return;
 
     try {
         const response = await fetch(`/api/users/unrestrict/${userId}`, {
@@ -194,21 +204,26 @@ window.unrestrictUser = async function(userId, userName) {
         const data = await response.json();
 
         if (response.ok) {
-            alert("User is now active.");
+            window.showtoast("User is now active.");
             const clubName = document.getElementById('DisplayClubName').innerText;
             fetchClubMembers(clubName);
         } else {
-            alert("Error: " + data.message);
+            window.showtoast("Error: " + data.message, "error");
         }
     } catch (e) {
         console.error(e);
-        alert("Network error.");
+        window.showtoast("Network error.", "error");
     }
 };
 
 window.removeMember = async function(studentName) {
     const clubName = document.getElementById('DisplayClubName').innerText;
-    if (!confirm(`Are you sure you want to remove ${studentName} from ${clubName}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Remove Member",
+        `Are you sure you want to remove ${studentName} from ${clubName}?`,
+        "Remove"
+    );
+    if (!isConfirmed) return;
 
     try {
         const response = await fetch('/api/clubs/remove-member', {
@@ -218,12 +233,12 @@ window.removeMember = async function(studentName) {
         });
 
         if (response.ok) {
-            alert("Member removed.");
+            window.showtoast("Member removed.");
             fetchClubMembers(clubName);
             fetchClubStats(clubName);
         } else {
             const error = await response.json();
-            alert("Error: " + error.message);
+            window.showtoast("Error: " + error.message, "error");
         }
     } catch (error) {
         console.error("Removal error:", error);
@@ -298,7 +313,12 @@ async function fetchClubStats(clubName) {
 }
 
 window.updateStatus = async function(id, newStatus) {
-    if (!confirm(`Are you sure you want to ${newStatus} this application?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Update Application",
+        `Are you sure you want to ${newStatus} this application?`,
+        "Confirm"
+    );
+    if (!isConfirmed) return;
 
     try {
         const response = await fetch(`/api/applications/${id}/status`, {
@@ -308,17 +328,17 @@ window.updateStatus = async function(id, newStatus) {
         });
 
         if (response.ok) {
-            alert(`Application ${newStatus}!`);
+            window.showtoast(`Application ${newStatus}!`);
             const currentClub = document.getElementById('DisplayClubName').innerText;
             fetchPendingApplications(currentClub); 
             fetchClubStats(currentClub);
             fetchClubMembers(currentClub); 
         } else {
             const result = await response.json();
-            alert("Error: " + result.error);
+            window.showtoast("Error: " + result.error, "error");
         }
     } catch (error) {
-        alert("Update failed: " + error.message);
+        window.showtoast("Update failed: " + error.message, "error");
     }
 };
 
@@ -331,7 +351,12 @@ window.saveDescription = async function() {
     const shortDesc = document.getElementById('ShortDescInput').value;
     const fullDesc = document.getElementById('FullDescInput').value;
 
-    if (!confirm("Update club description?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Update Description",
+        "Update club description?",
+        "Update"
+    );
+    if (!isConfirmed) return;
 
     try {
         const response = await fetch('/api/clubs/update-description', {
@@ -340,8 +365,8 @@ window.saveDescription = async function() {
             body: JSON.stringify({ clubname: clubName, shortDescription: shortDesc, fullDescription: fullDesc })
         });
 
-        if (response.ok) alert("Club profile updated successfully!");
-        else alert("Update failed.");
+        if (response.ok) window.showtoast("Club profile updated successfully!");
+        else window.showtoast("Update failed.", "error");
     } catch (error) { console.error(error); }
 };
 
@@ -350,8 +375,13 @@ window.saveBranding = async function() {
     const logoFile = document.getElementById('LogoInput').files[0];
     const bannerFile = document.getElementById('BannerInput').files[0];
 
-    if (!logoFile && !bannerFile) return alert("Select an image first.");
-    if (!confirm("Upload selected images?")) return;
+    if (!logoFile && !bannerFile) return window.showtoast("Select an image first.", "error");
+    const isConfirmed = await window.showConfirm(
+        "Upload Images",
+        "Upload selected images?",
+        "Upload"
+    );
+    if (!isConfirmed) return;
 
     const formData = new FormData();
     formData.append('clubname', clubName);
@@ -361,10 +391,10 @@ window.saveBranding = async function() {
     try {
         const response = await fetch('/api/clubs/update-branding', { method: 'PATCH', body: formData });
         if (response.ok) {
-            alert("Images uploaded successfully!");
+            window.showtoast("Images uploaded successfully!");
             location.reload(); 
         } else {
-            alert("Upload failed.");
+            window.showtoast("Upload failed.", "error");
         }
     } catch (error) { console.error(error); }
 };
@@ -394,13 +424,13 @@ if (postForm) {
         try {
             const response = await fetch('/api/posts/create', { method: 'POST', body: formData });
             if (response.ok) {
-                alert("✅ Announcement posted!");
+                window.showtoast("✅ Announcement posted!");
                 postForm.reset();
             } else {
                 throw new Error("Failed to post");
             }
         } catch (error) {
-            alert("❌ Error: " + error.message);
+            window.showtoast("❌ Error: " + error.message, "error");
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
@@ -503,15 +533,15 @@ window.saveClubLogo = async function() {
                 logoDisplay.src = `${data.club.branding.logo}?t=${new Date().getTime()}`;
             }
 
-            alert("✅ Club Logo Updated!");
+            window.showtoast("✅ Club Logo Updated!");
             cancelClubLogo(); // Close modal
         } else {
             const err = await response.json();
-            alert("❌ Upload failed: " + (err.message || "Unknown error"));
+            window.showtoast("❌ Upload failed: " + (err.message || "Unknown error"), "error");
         }
     } catch (error) {
         console.error("Logo Upload Error:", error);
-        alert("Network error.");
+        window.showtoast("Network error.", "error");
     } finally {
         btn.innerText = "Save Logo";
         btn.disabled = false;
@@ -593,15 +623,15 @@ if (uploadForm) {
             });
 
             if (res.ok) {
-                alert("✅ Document submitted successfully to Admin!"); // Replaced toast
+                window.showtoast("✅ Document submitted successfully to Admin!"); // Replaced toast
                 uploadForm.reset();
                 fetchClubDocuments(clubName);
             } else {
-                alert("❌ Error: Could not submit document.");
+                window.showtoast("❌ Error: Could not submit document.", "error");
             }
         } catch (err) {
             console.error(err);
-            alert("❌ Network Error: Server unreachable.");
+            window.showtoast("❌ Network Error: Server unreachable.", "error");
         }
     });
 }

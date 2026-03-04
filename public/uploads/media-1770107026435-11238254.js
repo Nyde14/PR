@@ -278,7 +278,12 @@ async function sendMessage() {
 }
 
 window.deleteMessage = async function(msgId) {
-    if (!confirm("Delete this message?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Delete Message",
+        "Delete this message?",
+        "Delete"
+    );
+    if (!isConfirmed) return;
     try {
         await fetch(`/api/chat/delete/${msgId}`, { method: 'PATCH' });
         loadMessages(); 

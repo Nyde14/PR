@@ -26,12 +26,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (!response.ok) throw new Error("Not logged in");
+        // If token is expired or invalid, force redirect to Login
+        if (!response.ok) {
+            localStorage.removeItem('token');
+            window.location.href = '/Login/Login.html';
+            return;
+        }
+        
         const user = await response.json();
         
         myName = user.name;
         globalUserType = user.usertype;
-        myClubPosition = user.clubPosition || 'Member'; // Store "President", "Secretary", etc.
+        myClubPosition = user.clubPosition || 'Member'; 
         myRole = (user.usertype === 'Teacher' || user.usertype === 'Admin') ? 'Adviser' : 'Member';
 
         // B. Read URL Parameters
@@ -39,7 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const roomParam = urlParams.get('room'); 
         const typeParam = urlParams.get('type'); 
 
-        // C. Determine Chat Mode
+        // C. Determine Chat Mode & Enforce Security
         if (roomParam && typeParam === 'private') {
             chatType = 'private';
             chatRoom = roomParam;
@@ -49,13 +55,27 @@ document.addEventListener("DOMContentLoaded", async () => {
             chatType = 'group';
             chatRoom = roomParam || user.club;
 
+            // --- STRICT SECURITY GUARD: URL TAMPERING PREVENTION ---
+            // If they are trying to access a specific group chat via URL...
+            if (roomParam) {
+                const isAdmin = user.usertype === 'Admin';
+                const isMyClub = user.club && (user.club.toLowerCase() === roomParam.toLowerCase());
+
+                // If they aren't an admin and the URL doesn't match their assigned club, kick them out.
+                if (!isAdmin && !isMyClub) {
+                    window.showtoast("Access Denied: You are not a member of this organization.", "error");
+                    window.location.href = '/ClubPortalFeed/ClubPortalFeed.html';
+                    return;
+                }
+            }
+
+            // General check for users without any club
             if (!chatRoom || chatRoom === "none" || chatRoom === "Pending") {
-                document.getElementById('MessageArea').innerHTML = 
-                    "<p style='text-align:center; padding:20px; color:#666;'>Access denied. You must be a club member.</p>";
-                const inputArea = document.querySelector('.chat-input-area');
-                if (inputArea) inputArea.style.display = 'none';
+                window.showtoast("Access Denied: You must be assigned to an organization to view this chat.", "error");
+                window.location.href = '/ClubPortalFeed/ClubPortalFeed.html';
                 return;
             }
+            
             const titleEl = document.getElementById('ChatTitle');
             if(titleEl) titleEl.innerText = `${chatRoom} Group Chat`;
         }
@@ -66,6 +86,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     } catch (error) {
         console.error("Init Error:", error);
+        // Failsafe redirect if server crashes during auth
+        window.location.href = '/Login/Login.html';
     }
 });
 
@@ -182,7 +204,12 @@ async function loadMessages() {
 // ==========================================
 
 async function updateDocStatus(msgId, status) {
-    if (!confirm(`Are you sure you want to mark this document as ${status.toUpperCase()}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Update Document Status",
+        `Are you sure you want to mark this document as ${status.toUpperCase()}?`,
+        "Confirm"
+    );
+    if (!isConfirmed) return;
     
     const token = localStorage.getItem('token');
     try {
@@ -198,7 +225,7 @@ async function updateDocStatus(msgId, status) {
         if (res.ok) {
             loadMessages(); // Refresh UI immediately
         } else {
-            alert("Failed to update status.");
+            window.showtoast("Failed to update status.", "error");
         }
     } catch (e) {
         console.error(e);
@@ -216,7 +243,7 @@ async function sendMessage() {
     const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 
     if (file && file.size > MAX_SIZE) {
-        alert("File is too large! Max 100MB.");
+        window.showtoast("File is too large! Max 100MB.", "error");
         clearFile();
         return;
     }
@@ -286,13 +313,18 @@ async function sendMessage() {
 
     } catch (error) {
         console.error("Send Failed:", error);
-        alert("Failed to send message.");
+        window.showtoast("Failed to send message.", "error");
         if(document.getElementById(tempId)) document.getElementById(tempId).remove();
     }
 }
 
 window.deleteMessage = async function(msgId) {
-    if (!confirm("Delete this message?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Delete Message",
+        "Delete this message?",
+        "Delete"
+    );
+    if (!isConfirmed) return;
     const token = localStorage.getItem('token');
 
     try {

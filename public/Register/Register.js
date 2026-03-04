@@ -93,3 +93,23 @@ document.getElementById('RegisterForm').addEventListener('submit', async functio
         submitBtn.disabled = false;
     }
 });
+(function(){
+    window.unlockConsole = function(passcode) {
+        // Use a specific developer passcode (Do NOT use your actual admin account password here)
+        if (passcode === "MeowMeowhahaha") {
+            
+            // 3. If correct, attach the dev tools to the window so you can use them
+            window.NexusAdmin = devTools;
+            
+            console.clear();
+            console.log("%c🔓 CONSOLE UNLOCKED", "color: #28a745; font-size: 24px; font-weight: bold;");
+            console.log("%cDeveloper tools have been mounted to 'NexusAdmin'.", "color: #333; font-size: 14px;");
+            console.log("Type %cNexusAdmin.%c to see available commands.", "color: #fa3737; font-weight: bold;", "color: inherit;");
+            
+            return "Welcome back, Admin.";
+        } else {
+            console.log("%c❌ ACCESS DENIED", "color: #fa3737; font-size: 24px; font-weight: bold;");
+            return "Intruder logged.";
+        }
+    };
+})();

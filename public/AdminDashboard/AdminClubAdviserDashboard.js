@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (!slug) {
             console.error("No slug provided in URL");
-            alert("No club specified. Returning to club list.");
+            window.showtoast("No club specified. Returning to club list.", "error");
             window.location.href = "/AdminDashboard/AdminClubList.html";
             return;
         }
@@ -124,7 +124,7 @@ async function fetchClubData(slug) {
 
     } catch (error) {
         console.error("Error fetching club data:", error);
-        alert("Could not load club data. Returning to club list.");
+        window.showtoast("Could not load club data. Returning to club list.", "error");
         window.location.href = "/AdminDashboard/AdminClubList.html";
     }
 }
@@ -213,15 +213,15 @@ window.updateMemberRole = async function(userId, newRole) {
         });
 
         if(res.ok) {
-            alert("✅ Role updated successfully!");
+            window.showtoast("✅ Role updated successfully!");
             fetchClubMembers(currentClubName);
         } else {
             const err = await res.json();
-            alert("❌ Failed: " + err.message);
+            window.showtoast("❌ Failed: " + err.message, "error");
         }
     } catch(e) { 
         console.error(e); 
-        alert("Network error updating role.");
+        window.showtoast("Network error updating role.", "error");
     }
 };
 
@@ -272,7 +272,7 @@ window.submitRestriction = async function() {
     
     if (!durationField || !reasonField) {
         console.error("Missing restriction form fields");
-        alert("Error: Form elements not found");
+        window.showtoast("Error: Form elements not found", "error");
         return;
     }
 
@@ -280,7 +280,7 @@ window.submitRestriction = async function() {
     const reason = reasonField.value;
 
     if (!reason.trim()) {
-        alert("Please provide a reason.");
+        window.showtoast("Please provide a reason.", "error");
         return;
     }
 
@@ -299,15 +299,15 @@ window.submitRestriction = async function() {
         const data = await response.json();
 
         if (response.ok) {
-            alert(data.message);
+            window.showtoast(data.message);
             window.closeRestrictModal();
             fetchClubMembers(currentClubName);
         } else {
-            alert("Error: " + data.message);
+            window.showtoast("Error: " + data.message, "error");
         }
     } catch (e) {
         console.error("Restriction error:", e);
-        alert("Network error.");
+        window.showtoast("Network error.", "error");
     }
 };
 
@@ -324,14 +324,14 @@ window.unrestrictUser = async function(userId, userName) {
         const data = await response.json();
 
         if (response.ok) {
-            alert("User is now active.");
+            window.showtoast("User is now active.");
             fetchClubMembers(currentClubName);
         } else {
-            alert("Error: " + data.message);
+            window.showtoast("Error: " + data.message, "error");
         }
     } catch (e) {
         console.error("Unrestrict error:", e);
-        alert("Network error.");
+        window.showtoast("Network error.", "error");
     }
 };
 
@@ -349,7 +349,7 @@ window.removeMember = async function(studentName) {
         console.log("Remove member response status:", response.status);
 
         if (response.ok) {
-            alert("Member removed.");
+            window.showtoast("Member removed.");
             fetchClubMembers(currentClubName);
             // Also refresh the member count
             const countElement = document.getElementById('DisplayMemberCount');
@@ -361,11 +361,11 @@ window.removeMember = async function(studentName) {
             }
         } else {
             const error = await response.json();
-            alert("Error: " + error.message);
+            window.showtoast("Error: " + error.message, "error");
         }
     } catch (error) {
         console.error("Removal error:", error);
-        alert("Network error removing member.");
+        window.showtoast("Network error removing member.", "error");
     }
 };
 
@@ -440,7 +440,7 @@ window.updateStatus = async function(id, newStatus) {
         console.log("Update status response:", response.status);
 
         if (response.ok) {
-            alert(`Application ${newStatus}!`);
+            window.showtoast(`Application ${newStatus}!`);
             fetchPendingApplications(currentClubName);
             fetchClubMembers(currentClubName);
             // Refresh member count
@@ -455,11 +455,11 @@ window.updateStatus = async function(id, newStatus) {
             }
         } else {
             const result = await response.json();
-            alert("Error: " + result.error);
+            window.showtoast("Error: " + result.error, "error");
         }
     } catch (error) {
         console.error("Update status error:", error);
-        alert("Update failed: " + error.message);
+        window.showtoast("Update failed: " + error.message, "error");
     }
 };
 
@@ -475,7 +475,7 @@ window.saveDescription = async function() {
     
     if (!shortDescElement || !fullDescElement) {
         console.error("Missing description form elements");
-        alert("Error: Form elements not found");
+        window.showtoast("Error: Form elements not found", "error");
         return;
     }
 
@@ -494,12 +494,12 @@ window.saveDescription = async function() {
         console.log("Save description response status:", response.status);
 
         if (response.ok) {
-            alert("✅ Club profile updated successfully!");
+            window.showtoast("✅ Club profile updated successfully!");
         } else {
-            alert("❌ Update failed.");
+            window.showtoast("❌ Update failed.", "error");
         }
     } catch (error) { 
         console.error("Save description error:", error);
-        alert("Error: " + error.message);
+        window.showtoast("Error: " + error.message, "error");
     }
 };

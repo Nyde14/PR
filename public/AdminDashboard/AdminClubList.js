@@ -61,44 +61,42 @@ async function loadClubsList() {
         emptyState.style.display = 'none';
         grid.style.display = 'grid';
 
-        // THE FIX: Correctly map data while preserving all reference logic
+        
         grid.innerHTML = allClubs.map(club => {
-            const logo = (club.branding && club.branding.logo) 
-                ? club.branding.logo 
-                : (club.logo || '/uploads/default_pfp.png');
-            
-            const banner = (club.branding && club.branding.banner)
-                ? club.branding.banner
-                : '/uploads/default_banner.jpg';
-            
-            const memberCount = club.memberCount || 0;
-            
-            // Reference logic for category handling
-            const categoryText = club.category || 'Organization';
-            
-            return `
-            <div class="club-card" onclick="openClubDashboard('${club.urlSlug}')">
-                <div class="club-card-banner">
-                    <img src="${banner}" alt="${club.clubname} banner" onerror="this.src='/uploads/default_banner.jpg'">
-                    <img class="club-card-logo" src="${logo}" alt="${club.clubname} logo" onerror="this.src='/uploads/default_pfp.png'">
+    const logo = (club.branding && club.branding.logo) 
+        ? club.branding.logo 
+        : (club.logo || '/uploads/default_pfp.png');
+    
+    const banner = (club.branding && club.branding.banner)
+        ? club.branding.banner
+        : '/uploads/default_banner.jpg';
+    
+    const memberCount = club.memberCount || 0;
+    const categoryText = club.category || 'Organization';
+    
+    return `
+    <div class="club-card" onclick="openClubDashboard('${club.urlSlug}')">
+        <div class="club-card-banner">
+            <img src="${banner}" alt="${club.clubname} banner" onerror="this.onerror=null; this.src='/uploads/default_banner.jpg';">
+            <img class="club-card-logo" src="${logo}" alt="${club.clubname} logo" onerror="this.onerror=null; this.src='/uploads/default_pfp.png';">
+        </div>
+        <div class="club-card-content">
+            <div class="club-card-name">${club.clubname}</div>
+            <div class="club-card-adviser">
+                 ${club.adviser || 'Unassigned'}
+            </div>
+            <div class="club-card-category">
+                ${escapeHtml(displayCategoryText(categoryText))}
+            </div>
+            <div class="club-card-stats">
+                <div class="club-card-stat">
+                    <div class="club-card-stat-number">${memberCount}</div>
+                    <div class="club-card-stat-label">Members</div>
                 </div>
-                <div class="club-card-content">
-                    <div class="club-card-name">${club.clubname}</div>
-                    <div class="club-card-adviser">
-                         ${club.adviser || 'Unassigned'}
-                    </div>
-                    <div class="club-card-category">
-                        ${escapeHtml(displayCategoryText(categoryText))}
-                    </div>
-                    <div class="club-card-stats">
-                        <div class="club-card-stat">
-                            <div class="club-card-stat-number">${memberCount}</div>
-                            <div class="club-card-stat-label">Members</div>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-        }).join('');
+            </div>
+        </div>
+    </div>`;
+}).join('');;
 
     } catch (error) {
         console.error("Failed to load clubs:", error);

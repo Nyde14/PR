@@ -395,12 +395,17 @@ function toggleShareMenu(postId) {
 }
 
 function copyLink(url) {
-    navigator.clipboard.writeText(url).then(() => alert("Link copied!"));
+    navigator.clipboard.writeText(url).then(() => window.showtoast("Link copied!"));
     document.querySelectorAll('.share-dropdown').forEach(el => el.style.display = 'none');
 }
 
 async function hidePost(postId) {
-    if(!confirm("Hide this post?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Hide Post",
+        "Hide this post?",
+        "Hide"
+    );
+    if (!isConfirmed) return;
     try {
         const res = await fetch(`/api/users/hide-post/${postId}`, { method: 'PUT' });
         if(res.ok) {
@@ -419,12 +424,17 @@ async function reportContent(type, id) {
             body: JSON.stringify({ targetType: type, targetId: id, reason })
         });
         const data = await res.json();
-        alert(data.message);
-    } catch(e) { alert("Failed to submit report."); }
+        window.showtoast(data.message);
+    } catch(e) { window.showtoast("Failed to submit report.", "error"); }
 }
 
 async function deletePost(postId) {
-    if (!confirm("Delete post (Admin)?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Delete Post",
+        "Delete post (Admin)?",
+        "Delete"
+    );
+    if (!isConfirmed) return;
     try {
         const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
         if (response.ok) document.getElementById(`post-${postId}`).remove();
@@ -477,7 +487,12 @@ async function submitComment(postId) {
 }
 
 async function deleteComment(postId, commentId) {
-    if (!confirm("Delete comment?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Delete Comment",
+        "Delete comment?",
+        "Delete"
+    );
+    if (!isConfirmed) return;
     try {
         const response = await fetch(`/api/posts/comment/${postId}/${commentId}`, { method: 'DELETE' });
         if (response.ok) loadClubPosts(document.getElementById('club-name').innerText);
@@ -547,7 +562,12 @@ function setupJoinButton(btn, studentName, clubName) {
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
     newBtn.addEventListener('click', async () => {
-        if (!confirm(`Apply to join ${clubName}?`)) return;
+        const isConfirmed = await window.showConfirm(
+            "Join Club",
+            `Apply to join ${clubName}?`,
+            "Apply"
+        );
+        if (!isConfirmed) return;
         try {
             newBtn.innerText = "Sending...";
             newBtn.disabled = true;
@@ -557,13 +577,13 @@ function setupJoinButton(btn, studentName, clubName) {
                 body: JSON.stringify({ studentname: studentName, clubname: clubName })
             });
             if (response.ok) {
-                alert("Application submitted!");
+                window.showtoast("Application submitted!");
                 location.reload(); 
             } else {
                 throw new Error("Failed to apply");
             }
         } catch (error) {
-            alert(error.message);
+            window.showtoast(error.message, "error");
             newBtn.innerText = "Join Club";
             newBtn.disabled = false;
         }
@@ -571,7 +591,12 @@ function setupJoinButton(btn, studentName, clubName) {
 }
 
 async function withdrawApplication(studentName, clubName) {
-    if (!confirm("Withdraw your application?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Withdraw Application",
+        "Withdraw your application?",
+        "Withdraw"
+    );
+    if (!isConfirmed) return;
     try {
         await fetch('/api/applications/withdraw', {
             method: 'DELETE',

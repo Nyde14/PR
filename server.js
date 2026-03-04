@@ -391,6 +391,29 @@ app.get('/api/chat/conversations', async (req, res) => {
             }
         });
 
+        // Add unread count for each conversation
+        for (let conv of conversations) {
+            const unreadCount = await Message.countDocuments({
+                recipient: { $ne: null },
+                isRead: false,
+                $and: [
+                    {
+                        $or: [
+                            { sender: conv.name, recipient: myName },
+                            { sender: myName, recipient: conv.name }
+                        ]
+                    },
+                    {
+                        $or: [
+                            { readBy: { $not: { $in: [myName] } } },
+                            { readBy: { $exists: false } }
+                        ]
+                    }
+                ]
+            });
+            conv.unread = unreadCount;
+        }
+
         res.json(conversations);
 
     } catch (error) {
@@ -518,6 +541,112 @@ app.patch('/api/chat/delete/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Get unread message count for a specific chat room (group or DM)
+app.get('/api/chat/unread/:room', async (req, res) => {
+    try {
+        const { room } = req.params;
+        const token = req.session.token;
+        if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const currentUser = await User.findById(decoded.userId);
+        const myName = currentUser.name;
+
+        let query;
+        
+        // Check if it's a group chat (clubname) or direct message (recipient or sender is the room)
+        const isGroupChat = room === currentUser.club;
+        
+        if (isGroupChat) {
+            // Group chat: count unread messages where recipient is null or empty
+            query = {
+                clubname: room,
+                isRead: false,
+                $or: [
+                    { readBy: { $not: { $in: [myName] } } },
+                    { readBy: { $exists: false } }
+                ]
+            };
+        } else {
+            // Direct message: count unread messages from the other person
+            query = {
+                recipient: { $ne: null },
+                isRead: false,
+                $and: [
+                    {
+                        $or: [
+                            { sender: room, recipient: myName },
+                            { sender: myName, recipient: room }
+                        ]
+                    },
+                    {
+                        $or: [
+                            { readBy: { $not: { $in: [myName] } } },
+                            { readBy: { $exists: false } }
+                        ]
+                    }
+                ]
+            };
+        }
+
+        const unreadCount = await Message.countDocuments(query);
+        
+        res.json({ count: unreadCount, room: room });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Mark messages as read in a specific chat room
+app.put('/api/chat/mark-read/:room', async (req, res) => {
+    try {
+        const { room } = req.params;
+        const token = req.session.token;
+        if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const currentUser = await User.findById(decoded.userId);
+        const myName = currentUser.name;
+
+        let query;
+        
+        // Check if it's a group chat or direct message
+        const isGroupChat = room === currentUser.club;
+        
+        if (isGroupChat) {
+            // Mark all unread messages in the group chat as read
+            query = {
+                clubname: room,
+                isRead: false
+            };
+        } else {
+            // Mark all unread messages in the DM conversation as read
+            query = {
+                recipient: { $ne: null },
+                $or: [
+                    { sender: room, recipient: myName },
+                    { sender: myName, recipient: room }
+                ],
+                isRead: false
+            };
+        }
+
+        // Update messages: set isRead to true and add current user to readBy array
+        const result = await Message.updateMany(
+            query,
+            {
+                $set: { isRead: true },
+                $addToSet: { readBy: myName }
+            }
+        );
+
+        res.json({ message: "Messages marked as read", modifiedCount: result.modifiedCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/chat/private/:otherUser', async (req, res) => {
     try {
         const { otherUser } = req.params;
@@ -598,6 +727,29 @@ app.get('/api/chat/conversations', async (req, res) => {
                 });
             }
         });
+
+        // Add unread count for each conversation
+        for (let conv of conversations) {
+            const unreadCount = await Message.countDocuments({
+                recipient: { $ne: null },
+                isRead: false,
+                $and: [
+                    {
+                        $or: [
+                            { sender: conv.name, recipient: myName },
+                            { sender: myName, recipient: conv.name }
+                        ]
+                    },
+                    {
+                        $or: [
+                            { readBy: { $not: { $in: [myName] } } },
+                            { readBy: { $exists: false } }
+                        ]
+                    }
+                ]
+            });
+            conv.unread = unreadCount;
+        }
 
         res.json(conversations);
 
@@ -756,41 +908,70 @@ app.get('/api/admin/documents/all', ensureAdminHtml, async (req, res) => {
 });
 
 // server.js - ADMIN ACTION ROUTE
-app.patch('/api/admin/documents/:id/status', ensureAdminHtml, async (req, res) => {
+app.post('/api/admin/documents/:id/sign', ensureAdminHtml, async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, feedback } = req.body;
+        // THE FIX: Destructure 'page' from the frontend payload
+        const { x, y, page } = req.body; 
 
-        const updated = await DocumentSubmission.findByIdAndUpdate(id, {
-            status,
-            adminFeedback: feedback || "",
-            resolvedBy: req.adminUser.name,
-            resolvedAt: new Date()
-        }, { new: true });
-        const recipients = await User.find({
-            $or: [
-                { name: doc.submittedBy }, // The original uploader (usually Adviser)
-                { club: doc.clubName, clubPosition: "President" }, // Club President
-                { club: doc.clubName, clubPosition: "Vice President" } // Vice President
-            ]
-        }).select('name');
+        const doc = await DocumentSubmission.findById(id);
+        const admin = await User.findById(req.user.userId);
 
-        // 2. Create individual notifications for each recipient
-        const notificationPromises = recipients.map(user => {
-            const newNotif = new Notification({
-                recipient: user.name,
-                sender: "System / Admin",
-                type: 'alert',
-                message: `✅ The document "${doc.fileName}" for ${doc.clubName} has been signed and approved!`,
-                link: '/AdviserDashboard/AdviserDashboard.html' // Pointing them to the history table
-            });
-            return newNotif.save();
+        if (!doc || !admin) return res.status(404).json({ success: false, message: "Record not found." });
+
+        const getPhysicalPath = (dbPath) => {
+            if (!dbPath) return null;
+            const clean = dbPath.startsWith('/public') ? dbPath.replace('/public', '') : dbPath;
+            return path.join(__dirname, 'public', clean);
+        };
+
+        const pdfPath = getPhysicalPath(doc.fileUrl);
+        const sigPath = getPhysicalPath(admin.eSignature || admin.Signature);
+
+        if (!fs.existsSync(pdfPath) || !fs.existsSync(sigPath)) {
+            return res.status(404).json({ success: false, message: "File missing on server." });
+        }
+
+        const existingPdfBytes = fs.readFileSync(pdfPath);
+        const signatureImageBytes = fs.readFileSync(sigPath);
+
+        const pdfDoc = await PDFDocument.load(existingPdfBytes);
+        const sigImage = await pdfDoc.embedPng(signatureImageBytes);
+        const pages = pdfDoc.getPages();
+        
+        // --- THE FIX: Select the correct page (Array is 0-indexed) ---
+        // If frontend sends page=2, we target pages[1]
+        const targetPageIndex = (page && page > 0 && page <= pages.length) ? (page - 1) : 0; 
+        const targetPage = pages[targetPageIndex];
+        
+        const { width, height } = targetPage.getSize();
+
+        const pdfX = (x / 100) * width;
+        const pdfY = height - ((y / 100) * height);
+
+        targetPage.drawImage(sigImage, {
+            x: pdfX - 75,
+            y: pdfY - 25,
+            width: 150,
+            height: 50
         });
 
-        await Promise.all(notificationPromises);
-        res.json({ success: true, message: `Document ${status}`, data: updated });
+        const signedFileName = `SIGNED-${path.basename(doc.fileUrl)}`;
+        const signedPath = path.join(__dirname, 'public', 'uploads', 'documents', signedFileName);
+        
+        fs.writeFileSync(signedPath, await pdfDoc.save());
+
+        doc.status = 'approved';
+        doc.signedFileUrl = `/uploads/documents/${signedFileName}`;
+        doc.resolvedBy = admin.name;
+        doc.resolvedAt = new Date();
+        await doc.save();
+
+        res.json({ success: true, message: `Document signed on Page ${targetPageIndex + 1}!` });
+
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Signing Error:", error);
+        res.status(500).json({ success: false, message: "Backend Path Error: " + error.message });
     }
 });
 
@@ -1268,7 +1449,7 @@ app.post('/api/admin/save-signature', ensureAdminHtml, uploadSig.single('signatu
 app.post('/api/admin/documents/:id/sign', ensureAdminHtml, async (req, res) => {
     try {
         const { id } = req.params;
-        const { x, y } = req.body;
+        const { x, y, page } = req.body; // <-- THE FIX: Accept the page parameter
 
         const doc = await DocumentSubmission.findById(id);
         const admin = await User.findById(req.user.userId);
@@ -1276,23 +1457,20 @@ app.post('/api/admin/documents/:id/sign', ensureAdminHtml, async (req, res) => {
         if (!doc) return res.status(404).json({ success: false, message: "Document not found." });
         if (!admin) return res.status(404).json({ success: false, message: "Admin not found." });
 
-        // Helper to handle path cleaning and physical location
         const getPhysicalPath = (dbPath) => {
-            if (!dbPath || typeof dbPath !== 'string') return null; // Prevent 'undefined' error
+            if (!dbPath || typeof dbPath !== 'string') return null;
             const clean = dbPath.startsWith('/public') ? dbPath.replace('/public', '') : dbPath;
             return path.join(__dirname, 'public', clean);
         };
 
-        // THE FIX: Use both field names as fallbacks
         const pdfPath = getPhysicalPath(doc.fileUrl);
         const sigPath = getPhysicalPath(admin.eSignature || admin.Signature);
 
-        if (!pdfPath) return res.status(400).json({ success: false, message: "PDF file path is missing in DB." });
-        if (!sigPath) return res.status(400).json({ success: false, message: "Admin signature path is missing in DB." });
+        if (!pdfPath) return res.status(400).json({ success: false, message: "PDF missing in DB." });
+        if (!sigPath) return res.status(400).json({ success: false, message: "Signature missing in DB." });
 
-        // Verify files exist on your 8GB VPS before reading
-        if (!fs.existsSync(pdfPath)) return res.status(404).json({ success: false, message: "PDF file not found on server." });
-        if (!fs.existsSync(sigPath)) return res.status(404).json({ success: false, message: "Signature file not found on server." });
+        if (!fs.existsSync(pdfPath)) return res.status(404).json({ success: false, message: "PDF missing on server." });
+        if (!fs.existsSync(sigPath)) return res.status(404).json({ success: false, message: "Signature missing on server." });
 
         const existingPdfBytes = fs.readFileSync(pdfPath);
         const signatureImageBytes = fs.readFileSync(sigPath);
@@ -1301,13 +1479,18 @@ app.post('/api/admin/documents/:id/sign', ensureAdminHtml, async (req, res) => {
         const sigImage = await pdfDoc.embedPng(signatureImageBytes);
 
         const pages = pdfDoc.getPages();
-        const firstPage = pages[0];
-        const { width, height } = firstPage.getSize();
+        
+        // --- THE FIX: Select the correct page (Array is 0-indexed) ---
+        // Default to page 0 if no page is provided, or if the page exceeds the document length
+        const targetPageIndex = (page && page > 0 && page <= pages.length) ? (page - 1) : 0; 
+        const targetPage = pages[targetPageIndex];
+        
+        const { width, height } = targetPage.getSize();
 
         const pdfX = (x / 100) * width;
         const pdfY = height - ((y / 100) * height);
 
-        firstPage.drawImage(sigImage, {
+        targetPage.drawImage(sigImage, {
             x: pdfX - 75,
             y: pdfY - 25,
             width: 150,
@@ -1326,7 +1509,7 @@ app.post('/api/admin/documents/:id/sign', ensureAdminHtml, async (req, res) => {
         doc.resolvedAt = new Date();
         await doc.save();
 
-        res.json({ success: true, message: "Document signed and approved!" });
+        res.json({ success: true, message: `Document signed on Page ${targetPageIndex + 1}!` });
 
     } catch (error) {
         console.error("Signing Error:", error);

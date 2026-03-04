@@ -61,7 +61,12 @@ async function loadFollowedClubs() {
 }
 
 async function unfollowClub(clubName, cardId) {
-    if (!confirm(`Unfollow ${clubName}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Unfollow Club",
+        `Unfollow ${clubName}?`,
+        "Unfollow"
+    );
+    if (!isConfirmed) return;
 
     try {
         const res = await fetch(`/api/users/unfollow/${encodeURIComponent(clubName)}`, { method: 'PUT' });
@@ -78,10 +83,10 @@ async function unfollowClub(clubName, cardId) {
                 }
             }, 300);
         } else {
-            alert("Failed to unfollow.");
+            window.showtoast("Failed to unfollow.", "error");
         }
     } catch (e) {
         console.error(e);
-        alert("Network error.");
+        window.showtoast("Network error.", "error");
     }
 }   

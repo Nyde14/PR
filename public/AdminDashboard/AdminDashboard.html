@@ -258,16 +258,37 @@
 
 
 <div id="DocsSection" class="table-card" style="display:none;">
-    <div class="table-actions" style="justify-content: space-between; align-items: center;">
+    <div class="table-actions" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
         <h3 style="margin:0; color:#555;">Document Review Queue</h3>
-        <button onclick="loadAdminDocs()" class="btn-cancel" style="font-size:0.9rem;">Refresh Queue</button>
+        
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <input type="text" id="DocSearchInput" class="modal-input" placeholder="Search club, file, purpose..." 
+                   style="margin:0; width: 220px; padding: 8px;" onkeyup="filterAndSortDocs()">
+            
+            <select id="DocStatusFilter" class="modal-input" style="margin:0; width: 140px; padding: 8px;" onchange="filterAndSortDocs()">
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+            
+            <select id="DocSortBy" class="modal-input" style="margin:0; width: 150px; padding: 8px;" onchange="filterAndSortDocs()">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name_asc">Club Name (A-Z)</option>
+            </select>
+
+            <button onclick="loadAdminDocs()" class="btn-cancel" style="font-size:0.9rem; margin:0; padding: 8px 15px;">
+                <i class='bx bx-refresh'></i> Refresh
+            </button>
+        </div>
     </div>
 
     <table class="admin-table">
         <thead>
             <tr>
                 <th>Club Name</th>
-                <th>Purpose</th>
+                <th>Purpose / File</th>
                 <th>Submitted By</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -474,6 +495,7 @@
     </div>
 </div>
     <script src="/Global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="AdminDashboard.js"></script>
 </body>
 </html>

@@ -25,6 +25,9 @@ const MessageSchema = new mongoose.Schema({
     deletedBy: { type: String, default: null },
     deletedAt: { type: Date, default: null },
     
+    isRead: { type: Boolean, default: false },
+    readBy: { type: [String], default: [] }, // Array of usernames who have read this message
+    
     timestamp: { type: Date, default: Date.now }
 });
 

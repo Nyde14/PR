@@ -42,6 +42,7 @@ const announceId = urlParams.get('announceId');
 // MAIN FEED LOGIC
 // ==========================================
 let currentGlobalPost = null;
+
 async function loadFeed() {
     const mainContainer = document.getElementById('FeedContainer');
     const globalZone = document.getElementById('GlobalAnnouncementZone');
@@ -56,30 +57,119 @@ async function loadFeed() {
         mainContainer.innerHTML = "";
         globalZone.style.display = "none";
 
-        // 1. Handle Global Post (Top Zone)
-        const globalPost = posts.find(p => p.isGlobal === true);
+        // 1. Handle the Absolute Newest Global Post (Top Pinned Zone)
+        const globalPosts = posts.filter(p => p.isGlobal === true);
+        const globalPost = globalPosts.length > 0 ? globalPosts[0] : null;
+
         if (globalPost) {
             currentGlobalPost = globalPost;
             document.getElementById('GlobalTitlePreview').innerText = globalPost.title;
-            document.getElementById('GlobalSnippet').innerText = globalPost.content.substring(0, 100) + "...";
+            const previewText = globalPost.content ? globalPost.content.substring(0, 100) : "View announcement details...";
+            document.getElementById('GlobalSnippet').innerText = previewText + "...";
             globalZone.style.display = "block"; 
         }
 
-        // 2. Render Regular Feed (Filtered)
-        posts.filter(p => !p.isGlobal).forEach(post => {
-            const card = createPostCard(post, currentUser);
-            
-            // THE CRITICAL CHECK: Only append if card is NOT null
-            if (card) {
-                mainContainer.appendChild(card);
+        // 2. Remove the pinned global post from the sorting pool. 
+        const feedPosts = posts.filter(p => p._id !== (globalPost ? globalPost._id : null));
+
+        // --- THE NEW SORTING ALGORITHM ---
+
+        // Get user data for filtering
+        const userClub = currentUser ? currentUser.club : null;
+        const following = (currentUser && currentUser.following) ? currentUser.following : [];
+        const userInterests = (currentUser && currentUser.interests) ? currentUser.interests : [];
+        
+        // --- NEW FEATURE: Small Club Boost for New Users ---
+        // Determine if the user is unaffiliated
+        const isNewUser = !userClub || userClub === 'none' || userClub === 'Pending';
+        let smallestClubs = [];
+
+        if (isNewUser) {
+            try {
+                // Fetch all clubs to find the ones that need the most help recruiting
+                const clubsRes = await fetch('/api/clubs');
+                if (clubsRes.ok) {
+                    const allClubs = await clubsRes.json();
+                    
+                    // Sort by memberCount (lowest first), grab the top 3, and save their names
+                    smallestClubs = allClubs
+                        .sort((a, b) => (a.memberCount || 0) - (b.memberCount || 0))
+                        .slice(0, 3)
+                        .map(c => c.clubname);
+                }
+            } catch (e) {
+                console.error("Failed to fetch clubs for new user priority", e);
+            }
+        }
+        
+        // Get 'seen' history from local browser memory
+        let seenPosts = JSON.parse(localStorage.getItem('seenPostsHistory') || '[]');
+        let newSeenPosts = new Set(seenPosts);
+
+        let unseenGroup1 = [];
+        let seenGroup1 = [];
+        let group2 = [];
+
+        // Bucket the posts
+        feedPosts.forEach(post => {
+            const isMyClub = post.clubname === userClub;
+            const isFollowed = following.includes(post.clubname);
+            const isAnnouncement = post.isGlobal === true || 
+                                   post.isGlobal === "true" || 
+                                   post.clubname === "UE University Admin";
+            const postCategory = post.category || post.clubCategory || "";
+            const postTags = Array.isArray(post.tags) ? post.tags : [];
+            const isInteresting = userInterests.includes(postCategory) || postTags.some(tag => userInterests.includes(tag));
+
+            // THE FIX: Check if this post is from one of the 3 smallest clubs (only applies if isNewUser is true)
+            const isFromSmallestClub = isNewUser && smallestClubs.includes(post.clubname);
+
+            // Bucket 1: My Club OR Followed OR Customized interests OR Admin Announcements OR Smallest Clubs
+            if (isMyClub || isFollowed || isInteresting || isAnnouncement || isFromSmallestClub) {
+                if (!seenPosts.includes(post._id)) {
+                    unseenGroup1.push(post); // Priority 1 (Unseen)
+                } else {
+                    seenGroup1.push(post);   // Priority 2 (Seen)
+                }
+            } else {
+                // Bucket 2: Unrelated random posts
+                group2.push(post);           // Priority 3
             }
         });
+
+        // Helper Function: Randomize array (Fisher-Yates Shuffle)
+        const shuffleArray = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        };
+
+        // Combine arrays in exact priority order
+        const finalFeedSequence = [
+            ...shuffleArray(unseenGroup1), // Highest Priority: Unseen Group 1
+            ...shuffleArray(seenGroup1),   // Medium Priority: Seen Group 1
+            ...shuffleArray(group2)        // Lowest Priority: Random Group 2
+        ];
+
+        // 3. Render the Feed
+        finalFeedSequence.forEach(post => {
+            const card = createPostCard(post, currentUser);
+            if (card) {
+                mainContainer.appendChild(card);
+                newSeenPosts.add(post._id); // Mark as seen
+            }
+        });
+
+        // Save updated 'seen' list
+        localStorage.setItem('seenPostsHistory', JSON.stringify(Array.from(newSeenPosts).slice(-500)));
         
         checkSharedPost();
-    } catch (error) { console.error("Feed Error:", error); }
+    } catch (error) { 
+        console.error("Feed Error:", error); 
+    }
 }
-// --- NEW: Global Modal Logic ---
-
 function openGlobalModal() {
     if (!currentGlobalPost) return;
 
@@ -367,7 +457,12 @@ async function submitReply(postId, commentId) {
 
 // 3. Delete Comment
 async function deleteComment(postId, commentId) {
-    if (!confirm("Delete this comment?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Delete Comment",
+        "Delete this comment?",
+        "Delete"
+    );
+    if (!isConfirmed) return;
     try {
         const response = await fetch(`/api/posts/comment/${postId}/${commentId}`, { method: 'DELETE' });
         const data = await response.json();
@@ -439,7 +534,7 @@ function sharePost(postId) {
 
     // 2. Copy to Clipboard
     navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("Link copied! When people open it, this post will be highlighted.");
+        window.showtoast("Link copied! When people open it, this post will be highlighted.");
     }).catch(err => {
         console.error('Failed to copy text: ', err);
     });
@@ -497,7 +592,12 @@ function togglePostMenu(id) {
 }
 
 async function hidePost(postId) {
-    if(!confirm("Hide this post?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Hide Post",
+        "Hide this post?",
+        "Hide"
+    );
+    if (!isConfirmed) return;
     try {
         const res = await fetch(`/api/users/hide-post/${postId}`, { method: 'PUT' });
         if(res.ok) {
@@ -507,14 +607,19 @@ async function hidePost(postId) {
 }
 
 async function deletePost(postId) {
-    if (!confirm("Are you sure you want to delete this post?")) return;
+    const isConfirmed = await window.showConfirm(
+        "Delete Post",
+        "Are you sure you want to delete this post?",
+        "Delete"
+    );
+    if (!isConfirmed) return;
     try {
         const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
         if (response.ok) {
             const postElement = document.getElementById(`post-${postId}`);
             if (postElement) postElement.remove();
         } else {
-            alert("Failed to delete.");
+            window.showtoast("Failed to delete.", "error");
         }
     } catch (error) { console.error(error); }
 }
@@ -535,13 +640,13 @@ async function reportContent(type, id) {
         console.log("Report response:", data);
         
         if (res.ok) {
-            alert("✅ Report submitted successfully.");
+            window.showtoast("✅ Report submitted successfully.");
         } else {
-            alert("❌ Failed to submit report: " + data.message);
+            window.showtoast("❌ Failed to submit report: " + data.message, "error");
         }
     } catch(e) { 
         console.error("Report error:", e);
-        alert("❌ Failed to submit report: " + e.message); 
+        window.showtoast("❌ Failed to submit report: " + e.message, "error"); 
     }
 }
 function openShareModal(postId, title) {
@@ -705,7 +810,12 @@ function renderShareList(items, type) {
 
 // 6. EXECUTE SHARE (API CALL)
 async function executeShare(type, targetName, link, title) {
-    if (!confirm(`Send this post to ${targetName}?`)) return;
+    const isConfirmed = await window.showConfirm(
+        "Share Post",
+        `Send this post to ${targetName}?`,
+        "Send"
+    );
+    if (!isConfirmed) return;
 
     try {
         const payload = {
@@ -728,20 +838,20 @@ async function executeShare(type, targetName, link, title) {
         });
 
         if (res.ok) {
-            alert("Sent successfully!");
+            window.showtoast("Sent successfully!");
             document.querySelector('.modal-overlay').remove(); // Close modal
         } else {
-            alert("Failed to send.");
+            window.showtoast("Failed to send.", "error");
         }
 
     } catch (e) {
         console.error(e);
-        alert("Network error.");
+        window.showtoast("Network error.", "error");
     }
 }
 
 function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => alert("Link copied!"));
+    navigator.clipboard.writeText(text).then(() => window.showtoast("Link copied!"));
 }
 function checkGlobalAnchor() {
     if (window.location.hash === "#GlobalAnnouncementZone") {
