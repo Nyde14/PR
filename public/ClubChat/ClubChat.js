@@ -114,91 +114,130 @@ async function loadMessages() {
         const messages = await res.json();
         const shouldScroll = isFirstLoad || (container.scrollTop + container.clientHeight >= container.scrollHeight - 100);
 
+        // Create placeholders for lazy loading
         container.innerHTML = messages.map(msg => {
-            const isMe = msg.sender === 'Me' || msg.sender === myName;
-
-            // --- PERMISSION LOGIC ---
-            // Checks if user is Admin or the Teacher assigned to this specific club
-            const isAdmin = globalUserType === 'Admin';
-            const isAdviserOfThisClub = globalUserType === 'Teacher' && chatRoom === (msg.clubname || chatRoom);
-            const canDelete = isMe || isAdmin || isAdviserOfThisClub;
-
-            // 1. Identify Role and Assign Border Class
-            const role = msg.officerRole || 'Member';
-            const roleKey = role.toLowerCase().replace(/\s+/g, '-');
-            const borderClass = (role !== 'Member' && role !== 'Student') ? `border-${roleKey}` : '';
-
-            // 2. Fixed Profile Picture Fallback
-            const avatarSrc = (msg.senderAvatar && msg.senderAvatar.trim() !== "") 
-                ? msg.senderAvatar 
-                : `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender)}&background=random&color=fff&size=64`;
-
-            // --- DELETED MESSAGE LOGIC ---
-            if (msg.isDeleted) {
-                return `<div class="message-row ${isMe ? 'me' : 'others'}">
-                            <div class="message-bubble deleted"><i class='bx bx-block'></i> Message removed</div>
-                        </div>`;
-            }
-
-            // --- MEDIA RENDERING ---
-            let mediaHTML = "";
-            let approvalUI = "";
-            if (msg.mediaUrl) {
-                if (msg.mediaType === 'image') {
-                    mediaHTML = `<img src="${msg.mediaUrl}" class="chat-media" onclick="window.open(this.src)">`;
-                } else if (msg.mediaType === 'video') {
-                    mediaHTML = `<video src="${msg.mediaUrl}" controls class="chat-media"></video>`;
-                } else {
-                    let fileName = "Attachment";
-                    try { fileName = decodeURIComponent(msg.mediaUrl.split('/').pop().split('?')[0]).replace(/^\d+-/, ''); } catch(e) {}
-                    mediaHTML = `
-                    <a href="${msg.mediaUrl}" download target="_blank" class="file-attachment-card">
-                        <div class="file-icon-box"><i class='bx bx-file'></i></div>
-                        <div class="file-details"><span class="file-name">${fileName}</span></div>
-                    </a>`;
-                }
-            }
-
-            const msgDate = new Date(msg.timestamp);
-            const date = msgDate.toLocaleDateString([], {month: 'short', day: 'numeric'});
-            const time = msgDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const timestamp = `${date} ${time}`;
-            const contentHTML = linkify(msg.content);
-
-            // --- ACTION BUTTONS (Delete & Report) ---
-            const deleteBtn = canDelete ? `<button class="delete-btn" onclick="deleteMessage('${msg._id}')"><i class='bx bx-trash'></i></button>` : '';
-            const reportBtn = (!isMe) ? `<button class="msg-report-btn" onclick="reportContent('Message', '${msg._id}')" title="Report"><i class='bx bx-flag'></i></button>` : '';
-
-            // 3. RENDER MESSAGE
-            return `
-            <div class="message-row ${isMe ? 'me' : 'others'}" id="msg-${msg._id}">
-                ${!isMe ? `
-                    <img src="${avatarSrc}" 
-                         class="chat-avatar ${borderClass}" 
-                         onclick="viewUserProfile('${msg.sender}')" 
-                         title="${role}">
-                ` : ''}
-                
-                <div class="msg-content-wrapper"> 
-                    ${chatType === 'group' && !isMe ? `<div class="sender-name">${msg.sender}${reportBtn}</div>` : ''}
-                    
-                    <div class="message-bubble ${isMe ? 'me' : 'others'}">
-                        ${mediaHTML}
-                        ${contentHTML ? `<div class="message-text">${contentHTML}</div>` : ''}
-                        ${approvalUI}
-                    </div>
-                    
-                    ${deleteBtn}
-                    <div class="msg-footer" style="text-align:${isMe ? 'right' : 'left'};">${timestamp}</div>
-                </div>
-            </div>`;
+            const placeholder = document.createElement('div');
+            placeholder.className = 'message-placeholder';
+            placeholder.id = `placeholder-${msg._id}`;
+            placeholder.style.minHeight = '60px';
+            placeholder.style.marginBottom = '10px';
+            placeholder.dataset.messageData = JSON.stringify(msg);
+            placeholder.dataset.isMe = (msg.sender === 'Me' || msg.sender === myName) ? 'true' : 'false';
+            return placeholder.outerHTML;
         }).join('');
+
+        // Setup lazy loading for messages
+        setupChatMessageLazyLoading(messages);
 
         if (shouldScroll) { container.scrollTop = container.scrollHeight; isFirstLoad = false; }
         checkAndHighlightMessage(); // Call the highlight logic after rendering
 
     } catch (e) { console.error("Load Msg Error:", e); }
 }
+
+// ==========================================
+// SETUP CHAT MESSAGE LAZY LOADING
+// ==========================================
+function setupChatMessageLazyLoading(messages) {
+    if ('IntersectionObserver' in window) {
+        const messageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const placeholder = entry.target;
+                    const msg = JSON.parse(placeholder.dataset.messageData);
+                    const isMe = placeholder.dataset.isMe === 'true';
+
+                    // --- PERMISSION LOGIC ---
+                    const isAdmin = globalUserType === 'Admin';
+                    const isAdviserOfThisClub = globalUserType === 'Teacher' && chatRoom === (msg.clubname || chatRoom);
+                    const canDelete = isMe || isAdmin || isAdviserOfThisClub;
+
+                    // 1. Identify Role and Assign Border Class
+                    const role = msg.officerRole || 'Member';
+                    const roleKey = role.toLowerCase().replace(/\s+/g, '-');
+                    const borderClass = (role !== 'Member' && role !== 'Student') ? `border-${roleKey}` : '';
+
+                    // 2. Fixed Profile Picture Fallback
+                    const avatarSrc = (msg.senderAvatar && msg.senderAvatar.trim() !== "") 
+                        ? msg.senderAvatar 
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender)}&background=random&color=fff&size=64`;
+
+                    // --- DELETED MESSAGE LOGIC ---
+                    if (msg.isDeleted) {
+                        placeholder.outerHTML = `<div class="message-row ${isMe ? 'me' : 'others'}">
+                                    <div class="message-bubble deleted"><i class='bx bx-block'></i> Message removed</div>
+                                </div>`;
+                        messageObserver.unobserve(placeholder);
+                        return;
+                    }
+
+                    // --- MEDIA RENDERING ---
+                    let mediaHTML = "";
+                    if (msg.mediaUrl) {
+                        if (msg.mediaType === 'image') {
+                            mediaHTML = `<img src="${msg.mediaUrl}" class="chat-media" loading="lazy" onclick="window.open(this.src)">`;
+                        } else if (msg.mediaType === 'video') {
+                            mediaHTML = `<video src="${msg.mediaUrl}" controls class="chat-media"></video>`;
+                        } else {
+                            let fileName = "Attachment";
+                            try { fileName = decodeURIComponent(msg.mediaUrl.split('/').pop().split('?')[0]).replace(/^\d+-/, ''); } catch(e) {}
+                            mediaHTML = `
+                            <a href="${msg.mediaUrl}" download target="_blank" class="file-attachment-card">
+                                <div class="file-icon-box"><i class='bx bx-file'></i></div>
+                                <div class="file-details"><span class="file-name">${fileName}</span></div>
+                            </a>`;
+                        }
+                    }
+
+                    const msgDate = new Date(msg.timestamp);
+                    const date = msgDate.toLocaleDateString([], {month: 'short', day: 'numeric'});
+                    const time = msgDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const timestamp = `${date} ${time}`;
+                    const contentHTML = linkify(msg.content);
+
+                    // --- ACTION BUTTONS (Delete & Report) ---
+                    const deleteBtn = canDelete ? `<button class="delete-btn" onclick="deleteMessage('${msg._id}')"><i class='bx bx-trash'></i></button>` : '';
+                    const reportBtn = (!isMe) ? `<button class="msg-report-btn" onclick="reportContent('Message', '${msg._id}')" title="Report"><i class='bx bx-flag'></i></button>` : '';
+
+                    // 3. RENDER MESSAGE
+                    const messageHTML = `
+                    <div class="message-row ${isMe ? 'me' : 'others'}" id="msg-${msg._id}">
+                        ${!isMe ? `
+                            <img src="${avatarSrc}" 
+                                 class="chat-avatar ${borderClass}" 
+                                 loading="lazy"
+                                 onclick="viewUserProfile('${msg.sender}')" 
+                                 title="${role}">
+                        ` : ''}
+                        
+                        <div class="msg-content-wrapper"> 
+                            ${chatType === 'group' && !isMe ? `<div class="sender-name">${msg.sender}${reportBtn}</div>` : ''}
+                            
+                            <div class="message-bubble ${isMe ? 'me' : 'others'}">
+                                ${mediaHTML}
+                                ${contentHTML ? `<div class="message-text">${contentHTML}</div>` : ''}
+                            </div>
+                            
+                            ${deleteBtn}
+                            <div class="msg-footer" style="text-align:${isMe ? 'right' : 'left'};">${timestamp}</div>
+                        </div>
+                    </div>`;
+
+                    placeholder.outerHTML = messageHTML;
+                    messageObserver.unobserve(placeholder);
+                }
+            });
+        }, {
+            rootMargin: '200px' // Start rendering 200px before entering viewport
+        });
+
+        // Observe all message placeholders
+        document.querySelectorAll('.message-placeholder').forEach(placeholder => {
+            messageObserver.observe(placeholder);
+        });
+    }
+}
+
 // ==========================================
 // 4. ACTION FUNCTIONS
 // ==========================================

@@ -140,7 +140,10 @@ async function openClubModal(id = null, name = '', adviser = 'none') {
     const select = document.getElementById('EditClubAdviser');
     select.innerHTML = '<option value="">-- Keep Unchanged --</option>';
     
-    const staff = allUsers.filter(u => u.usertype === 'Teacher' || u.usertype === 'Admin');
+    const staff = allUsers.filter(u => 
+        (u.usertype && u.usertype.toLowerCase() === 'teacher') || 
+        (u.usertype && u.usertype.toLowerCase() === 'admin')
+    );
     staff.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.name;
@@ -862,7 +865,10 @@ function openCreateClubModal() {
     select.innerHTML = '<option value="">-- Optional: Select Later --</option>';
     
     // Filter for staff members who can lead a club
-    const staff = allUsers.filter(u => u.usertype === 'Teacher' || u.usertype === 'Admin');
+    const staff = allUsers.filter(u => 
+        (u.usertype && u.usertype.toLowerCase() === 'teacher') || 
+        (u.usertype && u.usertype.toLowerCase() === 'admin')
+    );
     staff.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.name;
@@ -1002,7 +1008,7 @@ window.filterAndSortDocs = function() {
     // 2. Apply Sorting
     filteredDocs.sort((a, b) => {
         if (sortBy === 'newest') return new Date(b.createdAt || 0) < new Date(a.createdAt || 0) ? 1 : -1;
-        if (sortBy === 'oldest') return new Date(a.createdAt || 0) < new Date(b.createdAt || 0) ? 1 : -1;
+        if (sortBy === 'oldest') return new Date(a.createdAt || 0) < new Date(b.createdAt || 0) ? -1 : 1;
         if (sortBy === 'name_asc') return a.clubName.localeCompare(b.clubName);
         return 0;
     });

@@ -49,7 +49,7 @@ async function loadFeed() {
     
     try {
         const authRes = await fetch('/api/auth/me');
-        const currentUser = authRes.ok ? await authRes.json() : null;
+        currentUser = authRes.ok ? await authRes.json() : null;
 
         const response = await fetch('/api/posts/feed');
         const posts = await response.json();
@@ -58,7 +58,7 @@ async function loadFeed() {
         globalZone.style.display = "none";
 
         // 1. Handle the Absolute Newest Global Post (Top Pinned Zone)
-        const globalPosts = posts.filter(p => p.isGlobal === true);
+        const globalPosts = posts.filter(p => p.isGlobal === true || p.isGlobal === "true");
         const globalPost = globalPosts.length > 0 ? globalPosts[0] : null;
 
         if (globalPost) {
@@ -106,9 +106,11 @@ async function loadFeed() {
         let seenPosts = JSON.parse(localStorage.getItem('seenPostsHistory') || '[]');
         let newSeenPosts = new Set(seenPosts);
 
+        // Define our 4 Buckets
         let unseenGroup1 = [];
         let seenGroup1 = [];
-        let group2 = [];
+        let unseenGroup2 = [];
+        let seenGroup2 = [];
 
         // Bucket the posts
         feedPosts.forEach(post => {
@@ -116,24 +118,25 @@ async function loadFeed() {
             const isFollowed = following.includes(post.clubname);
             const isAnnouncement = post.isGlobal === true || 
                                    post.isGlobal === "true" || 
-                                   post.clubname === "UE University Admin";
+                                   post.clubname === "UE University Admin" ||
+                                   post.author === "UE university Admin"; // Added author check for safety
+                                   
             const postCategory = post.category || post.clubCategory || "";
             const postTags = Array.isArray(post.tags) ? post.tags : [];
             const isInteresting = userInterests.includes(postCategory) || postTags.some(tag => userInterests.includes(tag));
 
-            // THE FIX: Check if this post is from one of the 3 smallest clubs (only applies if isNewUser is true)
+            // Check if this post is from one of the 3 smallest clubs (only applies if isNewUser is true)
             const isFromSmallestClub = isNewUser && smallestClubs.includes(post.clubname);
+            const alreadySeen = seenPosts.includes(post._id);
 
             // Bucket 1: My Club OR Followed OR Customized interests OR Admin Announcements OR Smallest Clubs
             if (isMyClub || isFollowed || isInteresting || isAnnouncement || isFromSmallestClub) {
-                if (!seenPosts.includes(post._id)) {
-                    unseenGroup1.push(post); // Priority 1 (Unseen)
-                } else {
-                    seenGroup1.push(post);   // Priority 2 (Seen)
-                }
+                if (!alreadySeen) unseenGroup1.push(post); // Priority 1 (Unseen)
+                else seenGroup1.push(post);                // Priority 2 (Seen)
             } else {
                 // Bucket 2: Unrelated random posts
-                group2.push(post);           // Priority 3
+                if (!alreadySeen) unseenGroup2.push(post); // Priority 3 (Unseen Discovery)
+                else seenGroup2.push(post);                // Priority 4 (Seen Discovery)
             }
         });
 
@@ -146,30 +149,40 @@ async function loadFeed() {
             return array;
         };
 
-        // Combine arrays in exact priority order
+        // Combine arrays in exact 4-tier priority order
         const finalFeedSequence = [
-            ...shuffleArray(unseenGroup1), // Highest Priority: Unseen Group 1
-            ...shuffleArray(seenGroup1),   // Medium Priority: Seen Group 1
-            ...shuffleArray(group2)        // Lowest Priority: Random Group 2
+            ...shuffleArray(unseenGroup1), // 1. Highest Priority: Unseen Group 1
+            ...shuffleArray(seenGroup1),   // 2. Medium Priority: Seen Group 1
+            ...shuffleArray(unseenGroup2), // 3. Discovery Priority: Unseen Group 2
+            ...shuffleArray(seenGroup2)    // 4. Lowest Priority: Seen Group 2
         ];
 
-        // 3. Render the Feed
-        finalFeedSequence.forEach(post => {
-            const card = createPostCard(post, currentUser);
-            if (card) {
-                mainContainer.appendChild(card);
-                newSeenPosts.add(post._id); // Mark as seen
-            }
+        // 3. Render all posts with lazy loading (entire post card)
+        finalFeedSequence.forEach((post, index) => {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'post-placeholder';
+            placeholder.id = `placeholder-${post._id}`;
+            placeholder.style.minHeight = '200px';
+            placeholder.dataset.postId = post._id;
+            placeholder.dataset.postData = JSON.stringify(post);
+            mainContainer.appendChild(placeholder);
+            newSeenPosts.add(post._id); // Mark as seen
         });
 
         // Save updated 'seen' list
         localStorage.setItem('seenPostsHistory', JSON.stringify(Array.from(newSeenPosts).slice(-500)));
+        
+        // Setup lazy loading for post cards
+        setupPostCardLazyLoading(currentUser);
         
         checkSharedPost();
     } catch (error) { 
         console.error("Feed Error:", error); 
     }
 }
+
+ 
+
 function openGlobalModal() {
     if (!currentGlobalPost) return;
 
@@ -212,10 +225,40 @@ window.addEventListener('click', (e) => {
 });
 
 // ==========================================
+// SETUP POST CARD LAZY LOADING (entire div)
+// ==========================================
+function setupPostCardLazyLoading(currentUser) {
+    if ('IntersectionObserver' in window) {
+        const cardObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const placeholder = entry.target;
+                    const postId = placeholder.dataset.postId;
+                    const post = JSON.parse(placeholder.dataset.postData);
+                    
+                    // Create and render the actual post card
+                    const card = createPostCard(post, currentUser);
+                    if (card) {
+                        placeholder.replaceWith(card);
+                    }
+                    
+                    cardObserver.unobserve(placeholder);
+                }
+            });
+        }, {
+            rootMargin: '300px' // Start rendering 300px before it enters viewport
+        });
+
+        // Observe all post placeholders
+        document.querySelectorAll('.post-placeholder').forEach(placeholder => {
+            cardObserver.observe(placeholder);
+        });
+    }
+}
+
+// ==========================================
 // CARD GENERATOR
 // ==========================================
-// ClubPortalFeed.js - Full Integrated Function
-
 function createPostCard(post, currentUser) {
     const currentUserName = currentUser ? currentUser.name : "";
     const isAdmin = currentUser && currentUser.usertype === 'Admin';
@@ -294,7 +337,7 @@ function createPostCard(post, currentUser) {
 
         return `
         <div class="comment-item" id="comment-${c._id}" style="display:flex; gap:10px; margin-bottom:15px;">
-            <img src="${avatarUrl}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+            <img src="${avatarUrl}" loading="lazy" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
             <div style="flex:1;">
                 <div class="comment-bubble"> 
                     <div class="comment-header">
@@ -319,11 +362,11 @@ function createPostCard(post, currentUser) {
     card.innerHTML = `
         <div class="post-header" style="position:relative;">
             <a href="${profileLink}" class="header-left" style="display:flex; align-items:center; text-decoration:none;">
-                <img src="${clubLogo}" class="club-avatar" onerror="this.onerror=null; this.src='${fallbackImage}'" style="width:45px; height:45px; border-radius:50%; margin-right:12px; border:2px solid ${post.isGlobal ? '#fa3737' : '#eee'}; object-fit:cover;">
+                <img src="${clubLogo}" loading="lazy" class="club-avatar" onerror="this.onerror=null; this.src='${fallbackImage}'" style="width:45px; height:45px; border-radius:50%; margin-right:12px; border:2px solid ${post.isGlobal ? '#fa3737' : '#eee'}; object-fit:cover;">
                 <div class="header-info">
                     <span class="club-name-link" style="font-weight:bold; color:${post.isGlobal ? '#fa3737' : '#333'};">${clubName} ${post.isGlobal ? '📢' : ''}</span>
                     <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
-                        <img src="${authorPfp}" style="width:18px; height:18px; border-radius:50%; object-fit:cover;">
+                        <img src="${authorPfp}" loading="lazy" style="width:18px; height:18px; border-radius:50%; object-fit:cover;">
                         <span class="post-author-name" style="font-size:0.8rem; color:#666;">${authorName} • ${date}</span>
                     </div>
                 </div>
@@ -341,7 +384,7 @@ function createPostCard(post, currentUser) {
         <h3 class="post-title" style="margin:12px 0;">${post.title}</h3>
         <div class="post-content">${post.content}</div>
         
-        ${post.mediaUrl ? `<img src="${post.mediaUrl}" class="post-image" style="width:100%; border-radius:8px; margin:10px 0;">` : ""}
+        ${post.mediaUrl ? `<img src="${post.mediaUrl}" loading="lazy" class="post-image" style="width:100%; border-radius:8px; margin:10px 0;">` : ""}
         
         <div class="post-actions" style="display:flex; gap:20px; padding-top:15px; border-top:1px solid #eee; margin-top:10px;">
             <button class="action-btn" onclick="toggleLike('${post._id}', this)">

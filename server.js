@@ -857,6 +857,7 @@ app.post('/api/clubs/submit-document', ensureAuthenticatedHtml, async (req, res)
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const user = await User.findById(decoded.userId);
+            const admins = await User.find({ usertype: 'Admin' });
 
             const newDoc = new DocumentSubmission({
                 clubName: req.body.clubname,
@@ -866,6 +867,17 @@ app.post('/api/clubs/submit-document', ensureAuthenticatedHtml, async (req, res)
                 submittedBy: user.name,
                 uploaderRole: user.usertype
             });
+            const adminNotifications = admins.map(admin => ({
+    recipient: admin._id,
+    sender: req.body.clubname || "Club Portal", // Shows which club sent it
+    message: "Submitted a new document for your review.",
+    link: "/AdminDashboard/AdminDashboard.html", // Clicking it takes them to the dashboard
+    isRead: false,
+    timestamp: new Date()
+}));
+            if (adminNotifications.length > 0) {
+    await Notification.insertMany(adminNotifications);
+}
 
             await newDoc.save();
             res.json({ success: true, message: "Document submitted successfully!" });

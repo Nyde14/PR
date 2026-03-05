@@ -815,3 +815,23 @@ img.chat-avatar.border-active-member { border: 3px solid #00ced1 !important; }
     margin-top: 4px;
     display: block;
 }
+
+/* =========================================
+   MESSAGE LAZY LOADING
+   ========================================= */
+.message-placeholder {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: chat-loading 1.5s infinite;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+@keyframes chat-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}

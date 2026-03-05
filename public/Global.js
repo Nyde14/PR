@@ -7,8 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     checkNotifications();
     injectFullProfileModal();   // For "My Settings"
     injectPublicProfileModal(); // For "View Others"
-    
-    setInterval(checkNotifications, 30000);
+    checkNotifications(); // Initial check on load
 });
 let selectedAvatarFile = null;
 let globalInterests = new Set();
@@ -217,53 +216,26 @@ function getBellHTML() {
 // --- B. FETCH & UPDATE LOGIC ---
 async function checkNotifications() {
     const listContainer = document.getElementById('NotifList');
-    if (!listContainer) return; // Safety check
+    if (!listContainer) return; 
 
     try {
-        // 1. Prepare Headers (Try to find a token)
-        const token = localStorage.getItem('token'); 
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        // 2. Make Request
+        // Use the 'credentials: include' to ensure the session cookie is sent
         const response = await fetch('/api/notifications', {
             method: 'GET',
-            headers: headers,
+            headers: { 'Content-Type': 'application/json' },
             credentials: 'include' 
         });
         
-        // 3. Handle ALL Errors
-        if (!response.ok) {
-            console.error(`Notification Error: ${response.status} ${response.statusText}`);
-            
-            if (response.status === 401) {
-                // Not Logged In
-                listContainer.innerHTML = `
-                    <div style="padding:20px; text-align:center;">
-                        <p style="color:#666; margin-bottom:10px;">Please log in.</p>
-                        <a href="/Login/Login.html" style="color:#fa3737; font-weight:bold;">Login</a>
-                    </div>`;
-            } else {
-                // Any other error (404, 500, etc.)
-                listContainer.innerHTML = `<p class="empty-notif">Error ${response.status}: Retrying...</p>`;
-            }
-            return; 
+        if (response.status === 401) return; // Silent return if not logged in
+
+        if (response.ok) {
+            const data = await response.json();
+            updateNotifUI(data.notifications, data.unread);
         }
-
-        // 4. Success: Update UI
-        const data = await response.json();
-        
-        // Debugging: Check if data is actually coming back
-        // console.log("Notif Data:", data); 
-
-        updateNotifUI(data.notifications, data.unread);
-
     } catch (error) {
-        console.error("Notif fetch failed:", error);
-        listContainer.innerHTML = '<p class="empty-notif">Connection Failed.</p>';
+        console.error("Notification check skipped (offline or server error)");
     }
 }
-
 function updateNotifUI(list, unreadCount) {
     const badge = document.getElementById('NotifBadge');
     const container = document.getElementById('NotifList');
@@ -1556,3 +1528,6 @@ window.reportContent = function(type, id) {
         }
     };
 };
+window.addEventListener('focus', () => {
+    checkNotifications(); // Refresh badges when user returns to the app
+});

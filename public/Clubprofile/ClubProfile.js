@@ -130,9 +130,19 @@ async function loadClubPosts(clubName) {
             return;
         }
 
+        // Create placeholders for lazy loading
         posts.forEach(post => {
-            container.appendChild(createPostCard(post, currentUser));
+            const placeholder = document.createElement('div');
+            placeholder.className = 'post-placeholder';
+            placeholder.id = `placeholder-${post._id}`;
+            placeholder.style.minHeight = '200px';
+            placeholder.dataset.postData = JSON.stringify(post);
+            placeholder.dataset.currentUser = JSON.stringify(currentUser);
+            container.appendChild(placeholder);
         });
+
+        // Setup lazy loading for posts
+        setupClubPostLazyLoading();
     } catch (error) {
         console.error("Error loading posts:", error);
     }
@@ -242,7 +252,39 @@ function updateFollowVisuals(btn, isFollowing) {
 }
 
 // ==========================================
-// 3. FULL POST CARD GENERATOR
+// 3. SETUP CLUB POST LAZY LOADING
+// ==========================================
+function setupClubPostLazyLoading() {
+    if ('IntersectionObserver' in window) {
+        const postObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const placeholder = entry.target;
+                    const post = JSON.parse(placeholder.dataset.postData);
+                    const currentUser = JSON.parse(placeholder.dataset.currentUser);
+                    
+                    // Create and render the actual post card
+                    const card = createPostCard(post, currentUser);
+                    if (card) {
+                        placeholder.replaceWith(card);
+                    }
+                    
+                    postObserver.unobserve(placeholder);
+                }
+            });
+        }, {
+            rootMargin: '300px' // Start rendering 300px before it enters viewport
+        });
+
+        // Observe all post placeholders
+        document.querySelectorAll('.post-placeholder').forEach(placeholder => {
+            postObserver.observe(placeholder);
+        });
+    }
+}
+
+// ==========================================
+// 4. FULL POST CARD GENERATOR
 // ==========================================
 
 function createPostCard(post, currentUser) {
@@ -272,7 +314,7 @@ function createPostCard(post, currentUser) {
              const rAvatar = r.userProfile || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.author)}&background=random&color=fff&size=64`;
              return `
              <div class="reply-item" style="display:flex; align-items:flex-start; margin-top:8px; gap:8px;">
-                <img src="${rAvatar}" 
+                <img src="${rAvatar}" loading="lazy"
      onclick="viewUserProfile('${r.author}')" 
      style="width:24px; height:24px; border-radius:50%; object-fit:cover; flex-shrink:0; cursor:pointer;">
                 <div>
@@ -284,7 +326,7 @@ function createPostCard(post, currentUser) {
         
         return `
            <div class="comment-item" id="comment-${c._id}" style="display:flex; gap:10px; margin-bottom:15px;">
-    <img src="${avatarUrl}" onclick="viewUserProfile('${c.author}')" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer;">
+    <img src="${avatarUrl}" loading="lazy" onclick="viewUserProfile('${c.author}')" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer;">
     <div style="flex:1;">
         <div class="comment-bubble"> <div class="comment-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <span class="comment-author">${c.author}</span>
@@ -328,7 +370,8 @@ function createPostCard(post, currentUser) {
         <div class="post-header" style="position:relative;">
             <a href="${profileLink}" class="header-left">
                 <img src="${logoUrl}" 
-                     class="club-avatar" 
+                     class="club-avatar"
+                     loading="lazy"
                      onerror="this.onerror=null; this.src='${fallbackImage}'" 
                      style="width:40px; height:40px; border-radius:50%; margin-right:10px; object-fit:cover;">
                 <div class="header-info">
@@ -341,7 +384,7 @@ function createPostCard(post, currentUser) {
         
         <h3 class="post-title">${post.title}</h3>
         <div class="post-content">${post.content}</div>
-        ${post.mediaUrl ? `<img src="${post.mediaUrl}" class="post-image">` : ""}
+        ${post.mediaUrl ? `<img src="${post.mediaUrl}" class="post-image" loading="lazy">` : ""}
 
         <div class="post-actions" style="margin-top:15px; border-top:1px solid #eee; padding-top:10px; display:flex; gap:20px; align-items:center;">
             <button class="action-btn" onclick="toggleLike('${post._id}', this)" style="display:flex; align-items:center;">

@@ -21,8 +21,19 @@ const getUser = async (req) => {
 // 1. SUBMIT A REPORT
 router.post('/submit', async (req, res) => {
     try {
-        const { targetType, targetId, reason } = req.body;
+        const {targetId, reason } = req.body;
+        const targetType = req.body.targetType || "Content";
+        const admins = await User.find({ usertype: 'Admin' });
         
+        const reportNotifications = admins.map(admin => ({
+    recipient: admin._id,
+    sender: "System Alert",
+    message: `A new ${targetType} report requires your review.`,
+    link: "/AdminDashboard/AdminDashboard.html", 
+    isRead: false,
+    timestamp: new Date()
+}));
+
         // Validate inputs
         if (!targetType || !targetId || !reason) {
             return res.status(400).json({ message: "Missing required fields" });
@@ -42,6 +53,9 @@ router.post('/submit', async (req, res) => {
         });
 
         const saved = await newReport.save();
+        if (reportNotifications.length > 0) {
+    await Notification.insertMany(reportNotifications);
+}   
         console.log("Report saved successfully:", saved._id);
         
         res.json({ message: "Report submitted. Admins will review it shortly.", reportId: saved._id });
