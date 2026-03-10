@@ -8,6 +8,37 @@ const Otp = require('../Schematics/OtpSchema.js');
 const crypto = require('crypto');
 require('dotenv').config();
 
+// ==========================================
+// CAPTCHA VERIFICATION HELPER
+// ==========================================
+async function verifyCaptcha(token) {
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    
+    // If secret key is not set, skip verification (for development)
+    if (!secretKey) {
+        console.warn("⚠️ RECAPTCHA_SECRET_KEY not set in .env - skipping CAPTCHA verification");
+        return true;
+    }
+
+    try {
+        const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `secret=${secretKey}&response=${token}`
+        });
+
+        const data = await response.json();
+        
+        // Return true if score > 0.5 (for v3) or success is true (for v2)
+        return data.success && (data.score > 0.5 || !('score' in data));
+    } catch (error) {
+        console.error("CAPTCHA Verification Error:", error);
+        return false;
+    }
+}
+
 // EMAIL CONFIG
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -62,7 +93,7 @@ router.post('/send-otp', async (req, res) => {
 // ==========================================
 router.post('/register', async (req, res) => {
     try {
-        // We add usertype, club, and skipVerification to the destructuring
+        // We add usertype, club, skipVerification to the destructuring
         const { name, email, password, otp, usertype, club, skipVerification } = req.body;
 
         // --- A. CONDITIONAL OTP VERIFICATION ---

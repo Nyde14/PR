@@ -1,5 +1,8 @@
 let allUsers = []; // Store users locally for filtering
 let currentTargetId = null;
+let selectedAdviser = ''; // Store selected adviser for club modal
+let selectedAdviserName = ''; // Store display name of selected adviser
+let allStaff = []; // Store all advisers and admins
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
@@ -9,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const user = await response.json();
 
         if (user.usertype !== 'Admin') {
-            window.showtoast("Access Denied: Admins Only.", "error");
+            window.showToast("Access Denied: Admins Only.", "error");
             window.location.href = "/ClubPortalFeed/ClubPortalFeed.html";
             return;
         }
@@ -136,21 +139,26 @@ async function openClubModal(id = null, name = '', adviser = 'none') {
     }
     previewImg.src = currentLogo; 
 
-    // Populate adviser dropdown with both Teachers and Admins
-    const select = document.getElementById('EditClubAdviser');
-    select.innerHTML = '<option value="">-- Keep Unchanged --</option>';
-    
-    const staff = allUsers.filter(u => 
+    // Get and store staff list for adviser modal
+    allStaff = allUsers.filter(u => 
         (u.usertype && u.usertype.toLowerCase() === 'teacher') || 
         (u.usertype && u.usertype.toLowerCase() === 'admin')
     );
-    staff.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.name;
-        opt.innerText = `${s.name} (${s.usertype})`; 
-        if (s.name === adviser) opt.selected = true;
-        select.appendChild(opt);
-    });
+    
+    // Set initial adviser selection
+    if (adviser && adviser !== '') {
+        selectedAdviser = adviser;
+        selectedAdviserName = `${adviser} (${allStaff.find(s => s.name === adviser)?.usertype || 'Unknown'})`;
+    } else {
+        selectedAdviser = '';
+        selectedAdviserName = 'Keep Unchanged';
+    }
+    
+    // Update the display field
+    document.getElementById('CurrentAdviserDisplay').value = selectedAdviserName;
+    
+    // Populate the adviser modal list
+    populateAdviserList();
 
     document.getElementById('ClubEditModal').style.display = 'block';
 }
@@ -160,22 +168,98 @@ function closeClubModal() {
     editingClubId = null;
 }
 
+// ==========================================
+// ADVISER SELECTION MODAL
+// ==========================================
+
+function openAdviserModal() {
+    populateAdviserList();
+    document.getElementById('SetAdviserModal').style.display = 'block';
+    document.getElementById('AdviserSearchInput').value = '';
+}
+
+function closeAdviserModal() {
+    document.getElementById('SetAdviserModal').style.display = 'none';
+}
+
+function populateAdviserList() {
+    const container = document.getElementById('AdviserListContainer');
+    
+    if (allStaff.length === 0) {
+        container.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">No advisers available</div>';
+        return;
+    }
+    
+    container.innerHTML = allStaff.map(staff => `
+        <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;" 
+             onmouseover="this.style.background='#f0f0f0'" 
+             onmouseout="this.style.background='white'"
+             onclick="selectAdviser('${staff.name}', '${staff.name} (${staff.usertype})')">
+            <i class='bx ${staff.usertype === 'Teacher' ? 'bx-user' : 'bx-shield-alt'}' style="color: #666; margin-right: 8px; font-size: 1.1rem;"></i>
+            <strong>${staff.name}</strong>
+            <small style="color: #aaa; display: block; font-size: 0.85rem; margin-left: 28px;">
+                ${staff.usertype === 'Teacher' ? 'Adviser' : 'Administrator'}
+            </small>
+        </div>
+    `).join('');
+}
+
+function filterAdviserList() {
+    const searchTerm = document.getElementById('AdviserSearchInput').value.toLowerCase();
+    const container = document.getElementById('AdviserListContainer');
+    
+    const filtered = allStaff.filter(staff => 
+        staff.name.toLowerCase().includes(searchTerm)
+    );
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">No matching advisers found</div>';
+        return;
+    }
+    
+    container.innerHTML = filtered.map(staff => `
+        <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;" 
+             onmouseover="this.style.background='#f0f0f0'" 
+             onmouseout="this.style.background='white'"
+             onclick="selectAdviser('${staff.name}', '${staff.name} (${staff.usertype})')">
+            <i class='bx ${staff.usertype === 'Teacher' ? 'bx-user' : 'bx-shield-alt'}' style="color: #666; margin-right: 8px; font-size: 1.1rem;"></i>
+            <strong>${staff.name}</strong>
+            <small style="color: #aaa; display: block; font-size: 0.85rem; margin-left: 28px;">
+                ${staff.usertype === 'Teacher' ? 'Adviser' : 'Administrator'}
+            </small>
+        </div>
+    `).join('');
+}
+
+function selectAdviser(value, displayName) {
+    selectedAdviser = value;
+    selectedAdviserName = displayName;
+    document.getElementById('CurrentAdviserDisplay').value = displayName;
+    closeAdviserModal();
+}
+
 // 4. Save Club Data
 async function saveClubData() {
     
 
     const clubName = document.getElementById('EditClubName').value;
-    const adviser = document.getElementById('EditClubAdviser').value;
+    const adviser = selectedAdviser; // Use selected adviser from modal
     const logoFile = document.getElementById('EditClubLogo').files[0];
 
     const formData = new FormData();
     formData.append('clubId', editingClubId);
     formData.append('clubname', clubName);
     
-    // Only send adviser if one was selected (not empty/unchanged)
-    if (adviser && adviser.trim()) {
+    // Handle adviser selection
+    if (adviser === '__UNASSIGN__') {
+        // Explicitly unassign the adviser with a flag
+        formData.append('unassignAdviser', 'true');
+        formData.append('adviser', '');
+    } else if (adviser && adviser.trim()) {
+        // Send the selected adviser
         formData.append('adviser', adviser);
     }
+    // If adviser is empty string, keep unchanged (don't send adviser field)
     
     // Save category as a single string (first selected tag)
     const categoriesArray = Array.from(currentClubCategory);
@@ -187,16 +271,16 @@ async function saveClubData() {
     try {
         const res = await fetch('/api/clubs/update-branding', { method: 'PATCH', body: formData });
         if (res.ok) {
-            window.showtoast("✅ Club updated!");
+            window.showToast("✅ Club updated!");
             closeClubModal();
             loadClubManagementList();
         } else {
             const error = await res.json();
-            window.showtoast(`❌ Error: ${error.message || 'Failed to update club'}`, "error");
+            window.showToast(`❌ Error: ${error.message || 'Failed to update club'}`, "error");
         }
     } catch (e) { 
         console.error(e);
-        window.showtoast(`❌ Error: ${e.message}`, "error");
+        window.showToast(`❌ Error: ${e.message}`, "error");
     }
 }
 
@@ -221,8 +305,15 @@ async function loadAllUsers() {
     }
 }
 
+// Virtual Scrolling Variables
+let currentFilteredUsers = [];
+let visibleUserRange = { start: 0, end: 20 };
+const USERS_PER_PAGE = 20;
+const USER_ROW_HEIGHT = 65; // Approximate height of each row in pixels
+
 function renderTable(users) {
     const tbody = document.getElementById('UserTableBody');
+    const table = tbody.parentElement;
     tbody.innerHTML = "";
 
     if (users.length === 0) {
@@ -230,7 +321,42 @@ function renderTable(users) {
         return;
     }
 
-    users.forEach(user => {
+    // Store filtered users globally for virtual scrolling
+    currentFilteredUsers = users;
+    visibleUserRange = { start: 0, end: USERS_PER_PAGE };
+
+    // Setup virtual scrolling wrapper
+    const wrapper = table.parentElement;
+    if (!wrapper.classList.contains('user-table-scroll-wrapper')) {
+        wrapper.classList.add('user-table-scroll-wrapper');
+        wrapper.style.position = 'relative';
+        wrapper.style.maxHeight = '700px';
+        wrapper.style.overflow = 'auto';
+        wrapper.addEventListener('scroll', debounceUserScroll);
+    }
+
+    // Render initial batch
+    renderUserBatch();
+}
+
+function renderUserBatch() {
+    const tbody = document.getElementById('UserTableBody');
+    const { start, end } = visibleUserRange;
+    
+    // Clear all rows
+    tbody.innerHTML = "";
+    
+    // Add top spacer
+    const topSpacerRow = document.createElement('tr');
+    topSpacerRow.className = 'spacer-top';
+    topSpacerRow.style.height = (start * USER_ROW_HEIGHT) + 'px';
+    topSpacerRow.innerHTML = '<td colspan="6"></td>';
+    tbody.appendChild(topSpacerRow);
+
+    // Render visible batch
+    const batchUsers = currentFilteredUsers.slice(start, Math.min(end, currentFilteredUsers.length));
+    
+    batchUsers.forEach((user) => {
         const isBanned = user.isRestricted;
         const statusBadge = isBanned 
             ? `<span class="badge badge-restricted">Restricted</span>`
@@ -244,6 +370,7 @@ function renderTable(users) {
             : `<button onclick="openRestrictModal('${user._id}', '${user.name}')" class="btn-action btn-restrict">Restrict</button>`;
 
         const row = document.createElement('tr');
+        row.style.height = USER_ROW_HEIGHT + 'px';
         row.innerHTML = `
             <td><strong>${user.name}</strong></td>
             <td>${user.email}</td>
@@ -254,7 +381,35 @@ function renderTable(users) {
         `;
         tbody.appendChild(row);
     });
+
+    // Add bottom spacer
+    const totalHeight = currentFilteredUsers.length;
+    const bottomSpacerRow = document.createElement('tr');
+    bottomSpacerRow.className = 'spacer-bottom';
+    const bottomHeight = Math.max(0, (totalHeight - end) * USER_ROW_HEIGHT);
+    bottomSpacerRow.style.height = bottomHeight + 'px';
+    bottomSpacerRow.innerHTML = '<td colspan="6"></td>';
+    tbody.appendChild(bottomSpacerRow);
 }
+
+const debounceUserScroll = (() => {
+    let timeout;
+    return function() {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            const table = document.getElementById('UserTableBody').parentElement;
+            const wrapper = table.parentElement;
+            const scrollTop = wrapper.scrollTop;
+            const visibleStart = Math.max(0, Math.floor(scrollTop / USER_ROW_HEIGHT) - 5);
+            const visibleEnd = visibleStart + USERS_PER_PAGE + 10;
+
+            if (visibleStart !== visibleUserRange.start || visibleEnd !== visibleUserRange.end) {
+                visibleUserRange = { start: visibleStart, end: visibleEnd };
+                renderUserBatch();
+            }
+        }, 100);
+    };
+})();
 
 function filterUsers() {
     const term = document.getElementById('SearchInput').value.toLowerCase();
@@ -349,14 +504,22 @@ async function viewReportedContent(reportId) {
     try {
         const res = await fetch(`/api/reports/${reportId}/view`);
         const result = await res.json();
+        
+        console.log("Report View Response:", result); // Debug logging
 
         if (result.type === 'Deleted') {
-            window.showtoast(result.message);
+            window.showToast(result.message);
             return;
         }
 
         if (result.type === 'Post') {
-            window.open(result.url, '_blank');
+            if (!result.data) {
+                console.error("Post data missing from response:", result);
+                window.showToast("Error: Post data missing from server response.", "error");
+                return;
+            }
+            // Always show modal for posts - never redirect
+            openPostModal(result.data);
         } 
         else if (result.type === 'Message') {
             openMessageModal(result.data);
@@ -366,7 +529,10 @@ async function viewReportedContent(reportId) {
             openCommentModal(result.data, result.type);
         }
 
-    } catch (e) { console.error(e); window.showtoast("Error retrieving content.", "error"); }
+    } catch (e) { 
+        console.error("viewReportedContent error:", e); 
+        window.showToast("Error retrieving content.", "error"); 
+    }
 }
 
 // --- NEW MODAL FOR COMMENTS/REPLIES ---
@@ -407,13 +573,107 @@ async function deleteReportedComment(postId, commentId, replyId, type) {
     try {
         const res = await fetch(url, { method: 'DELETE' });
         if (res.ok) {
-            window.showtoast("Deleted successfully.");
+            window.showToast("Deleted successfully.");
             closeReviewModal();
             loadReports(); // Refresh table
         } else {
-            window.showtoast("Failed to delete.", "error");
+            window.showToast("Failed to delete.", "error");
         }
     } catch (e) { console.error(e); }
+}
+
+// ==========================================
+// POST MODAL PREVIEW
+// ==========================================
+
+function openPostModal(data) {
+    // Safety check: data must be defined
+    if (!data) {
+        window.showToast("Error: Post data is missing.", "error");
+        console.error("openPostModal called with undefined data");
+        return;
+    }
+
+    console.log("Opening post modal with data:", data); // Debug
+
+    // 1. Fill Post Data
+    document.getElementById('PostTitle').innerText = data.title || 'Untitled Post';
+    document.getElementById('PostAuthor').innerText = data.author || 'Unknown Author';
+    document.getElementById('PostClub').innerText = data.clubname || 'Club';
+    document.getElementById('PostDate').innerText = new Date(data.timestamp).toLocaleString();
+    document.getElementById('PostContent').innerText = data.content || '(No content)';
+    document.getElementById('PostLikes').innerText = data.likes || 0;
+    document.getElementById('PostComments').innerText = data.commentsCount || 0;
+
+    // 2. Handle Author Profile Picture
+    const authorPic = document.getElementById('PostAuthorPic');
+    if (data.authorProfile) {
+        authorPic.src = data.authorProfile;
+        authorPic.style.display = 'inline-block';
+    } else {
+        authorPic.style.display = 'none';
+    }
+
+    // 3. Handle Media
+    const mediaContainer = document.getElementById('PostMediaContainer');
+    const imgElement = document.getElementById('PostMediaImage');
+    const videoElement = document.getElementById('PostMediaVideo');
+    
+    mediaContainer.style.display = 'none';
+    imgElement.style.display = 'none';
+    videoElement.style.display = 'none';
+
+    if (data.mediaUrl) {
+        mediaContainer.style.display = 'block';
+        if (data.mediaType === 'image') {
+            imgElement.src = data.mediaUrl;
+            imgElement.style.display = 'block';
+        } else if (data.mediaType === 'video') {
+            videoElement.src = data.mediaUrl;
+            videoElement.style.display = 'block';
+        }
+    }
+
+    // 4. Setup Delete Button
+    const deleteBtn = document.getElementById('BtnDeletePost');
+    deleteBtn.onclick = () => deleteReportedPost(data.postId);
+
+    // 5. Show Modal - ALWAYS DISPLAY BLOCK
+    const modal = document.getElementById('PostModal');
+    modal.style.display = 'block';
+    
+    console.log("Post modal displayed:", modal.style.display); // Debug
+}
+
+function closePostModal() {
+    document.getElementById('PostModal').style.display = 'none';
+}
+
+async function deleteReportedPost(postId) {
+    const isConfirmed = await window.showConfirm(
+        "Delete Post",
+        "Are you sure you want to permanently delete this post? This action cannot be undone.",
+        "Delete"
+    );
+    if (!isConfirmed) return;
+
+    try {
+        const res = await fetch(`/api/posts/${postId}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            window.showToast("Post deleted successfully.");
+            closePostModal();
+            loadReports(); // Refresh the reports table
+        } else {
+            const error = await res.json();
+            window.showToast("Failed to delete: " + error.message, "error");
+        }
+    } catch (e) {
+        console.error(e);
+        window.showToast("Error deleting post.", "error");
+    }
 }
 
 // ==========================================
@@ -479,7 +739,7 @@ async function submitRestriction() {
     const duration = document.getElementById('RestrictDuration').value;
     const reason = document.getElementById('RestrictReason').value;
 
-    if (!reason.trim()) return window.showtoast("Reason is required.", "error");
+    if (!reason.trim()) return window.showToast("Reason is required.", "error");
 
     try {
         const res = await fetch(`/api/users/restrict/${currentTargetId}`, {
@@ -490,11 +750,11 @@ async function submitRestriction() {
         
         const data = await res.json();
         if (res.ok) {
-            window.showtoast(data.message);
+            window.showToast(data.message);
             closeRestrictModal();
             loadAllUsers(); 
         } else {
-            window.showtoast(data.message, "error");
+            window.showToast(data.message, "error");
         }
     } catch (e) {
         console.error(e);
@@ -512,10 +772,10 @@ async function unrestrictUser(id, name) {
         const res = await fetch(`/api/users/unrestrict/${id}`, { method: 'PUT' });
         const data = await res.json();
         if (res.ok) {
-            window.showtoast(data.message);
+            window.showToast(data.message);
             loadAllUsers();
         } else {
-            window.showtoast(data.message, "error");
+            window.showToast(data.message, "error");
         }
     } catch (e) { console.error(e); }
 }
@@ -536,16 +796,16 @@ async function deleteReportedMessage(messageId) {
         const result = await res.json();
 
         if (res.ok) {
-            window.showtoast("Message deleted successfully.");
+            window.showToast("Message deleted successfully.");
             closeMessageModal();
             // Optional: Reload reports if you want to reflect changes, 
             // though the report itself still exists (just pointing to deleted content now)
         } else {
-            window.showtoast("Failed to delete: " + result.message, "error");
+            window.showToast("Failed to delete: " + result.message, "error");
         }
     } catch (e) {
         console.error(e);
-        window.showtoast("Network error while deleting.", "error");
+        window.showToast("Network error while deleting.", "error");
     }
 }
 function openAnnouncementModal() {
@@ -604,16 +864,16 @@ async function submitAnnouncement() {
         });
 
         if (res.ok) {
-            window.showtoast("Global Announcement Posted!");
+            window.showToast("Global Announcement Posted!");
             closeAnnouncementModal();
             // Optional: Reload feed if on the same page
         } else {
             const data = await res.json();
-            window.showtoast("Failed: " + data.message, "error");
+            window.showToast("Failed: " + data.message, "error");
         }
     } catch (e) { 
         console.error(e); 
-        window.showtoast("Error posting announcement.", "error");
+        window.showToast("Error posting announcement.", "error");
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
@@ -628,15 +888,57 @@ async function submitAnnouncement() {
 // 1. Toggle Club Dropdown (Admins don't need clubs)
 function toggleClubSelect() {
     const role = document.getElementById('NewRole').value;
-    const container = document.getElementById('ClubSelectContainer');
+    const clubContainer = document.getElementById('ClubSelectContainer');
+    const adminContainer = document.getElementById('AdminSelectContainer');
+    
     // Hide club selection if creating an Admin
     if (role === 'Admin') {
-        container.style.opacity = '0.5';
+        clubContainer.style.display = 'none';
+        adminContainer.style.display = 'block';
         document.getElementById('NewClub').disabled = true;
         document.getElementById('NewClub').value = 'none';
+        loadAdminUsers(); // Load admin users when Admin role is selected
     } else {
-        container.style.opacity = '1';
-        document.getElementById('NewClub').disabled = false;
+        clubContainer.style.display = 'block';
+        adminContainer.style.display = 'none';
+        document.getElementById('NewAdminSupervisor').value = '';
+    }
+}
+
+// Load and populate admin users dropdown
+async function loadAdminUsers() {
+    const select = document.getElementById('NewAdminSupervisor');
+    
+    try {
+        // Filter existing allUsers array for admins
+        const admins = allUsers.filter(u => 
+            u.usertype && u.usertype.toLowerCase() === 'admin'
+        );
+        
+        // Clear existing options except the first one
+        select.innerHTML = '<option value="">-- Select Admin --</option>';
+        
+        // Add current user first if they're an admin
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+            const currentUser = await res.json();
+            if (currentUser.usertype === 'Admin') {
+                const opt = document.createElement('option');
+                opt.value = currentUser.name;
+                opt.innerText = `${currentUser.name} (Current Admin)`;
+                select.appendChild(opt);
+            }
+        }
+        
+        // Add other admins
+        admins.forEach(admin => {
+            const opt = document.createElement('option');
+            opt.value = admin.name;
+            opt.innerText = admin.name;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("Error loading admin users:", e);
     }
 }
 
@@ -681,6 +983,11 @@ async function handleCreateUser(e) {
         usertype: document.getElementById('NewRole').value,
         club: document.getElementById('NewClub').value,
         
+        // Add admin supervisor if creating an Admin account
+        ...(document.getElementById('NewRole').value === 'Admin' && {
+            adminSupervisor: document.getElementById('NewAdminSupervisor').value
+        }),
+        
         // --- BYPASS FLAG ---
         // This tells the backend to skip sending/checking OTP codes
         skipVerification: true 
@@ -697,16 +1004,16 @@ async function handleCreateUser(e) {
         const data = await res.json();
 
         if (res.ok) {
-            window.showtoast(`✅ Account Created Successfully!\nVerification bypassed for ${userData.name}.`);
+            window.showToast(`✅ Account Created Successfully!\nVerification bypassed for ${userData.name}.`);
             document.getElementById('CreateUserForm').reset();
             toggleClubSelect(); 
         } else {
-            window.showtoast("Registration Failed: " + data.message, "error");
+            window.showToast("Registration Failed: " + data.message, "error");
         }
 
     } catch (error) {
         console.error("Admin Registration Error:", error);
-        window.showtoast("Network Error: Could not reach the registration server.", "error");
+        window.showToast("Network Error: Could not reach the registration server.", "error");
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -727,7 +1034,7 @@ function previewClubLogo(input) {
 async function deleteClub(id, name, memberCount) {
     // 1. Safety Check: Don't delete clubs with members
     if (memberCount > 0) {
-        window.showtoast(`Cannot delete "${name}". You must remove or reassign the ${memberCount} members first.`, "error");
+        window.showToast(`Cannot delete "${name}". You must remove or reassign the ${memberCount} members first.`, "error");
         return;
     }
 
@@ -745,15 +1052,15 @@ async function deleteClub(id, name, memberCount) {
         });
 
         if (res.ok) {
-            window.showtoast(`✅ Club "${name}" has been removed.`);
+            window.showToast(`✅ Club "${name}" has been removed.`);
             loadClubManagementList(); // Refresh the table
         } else {
             const data = await res.json();
-            window.showtoast("Delete failed: " + data.message, "error");
+            window.showToast("Delete failed: " + data.message, "error");
         }
     } catch (e) {
         console.error("Delete Error:", e);
-        window.showtoast("Server error occurred while deleting the club.", "error");
+        window.showToast("Server error occurred while deleting the club.", "error");
     }
 }
 let currentClubCategory = new Set(); // Temporarily hold tags for the current modal
@@ -799,7 +1106,7 @@ async function openProfileSettings() {
         document.getElementById('ProfileSettingsModal').style.display = 'flex';
     } catch (error) {
         console.error("Error opening profile settings:", error);
-        window.showtoast("Failed to load profile.", "error");
+        window.showToast("Failed to load profile.", "error");
     }
 }
 
@@ -810,7 +1117,7 @@ function closeProfileSettings() {
 async function uploadProfilePicture() {
     const fileInput = document.getElementById('ProfilePictureInput');
     if (!fileInput.files || fileInput.files.length === 0) {
-        window.showtoast("Please select an image.", "error");
+        window.showToast("Please select an image.", "error");
         return;
     }
 
@@ -834,13 +1141,13 @@ async function uploadProfilePicture() {
         // Update preview
         document.getElementById('ProfilePreview').src = data.newUrl + '?t=' + Date.now();
         
-        window.showtoast("✅ Profile picture updated! Your announcements will use this new picture.");
+        window.showToast("✅ Profile picture updated! Your announcements will use this new picture.");
         
         // Close modal
         closeProfileSettings();
     } catch (error) {
         console.error("Upload error:", error);
-        window.showtoast("❌ Failed to upload picture: " + error.message, "error");
+        window.showToast("❌ Failed to upload picture: " + error.message, "error");
     } finally {
         const btn = event.target;
         btn.disabled = false;
@@ -852,12 +1159,14 @@ async function uploadProfilePicture() {
 window.addEventListener('click', (e) => {
     const modal = document.getElementById('ProfileSettingsModal');
     const previewFull = document.getElementById('DocPreviewFull');
+    const postModal = document.getElementById('PostModal');
     
     // THE FIX: If the user is clicking INSIDE the preview container, do NOT close
     if (e.target.closest('#PreviewContainer')) return; 
 
     if (e.target === modal) closeProfileSettings();
     if (e.target === previewFull) window.closeDocPreview();
+    if (e.target === postModal) closePostModal();
 });
 function openCreateClubModal() {
     // 1. Populate Adviser Dropdown from the global allUsers array
@@ -891,7 +1200,7 @@ async function submitNewClub(e) {
     const category = document.getElementById('CreateClubCategory').value;
     const adviser = document.getElementById('CreateClubAdviser').value || null;
 
-    if (!clubname) return window.showtoast("Please provide a club name.", "error");
+    if (!clubname) return window.showToast("Please provide a club name.", "error");
 
     const btn = e.target.querySelector('button[type="submit"]');
     btn.innerText = "Creating...";
@@ -907,15 +1216,15 @@ async function submitNewClub(e) {
         const data = await res.json();
 
         if (res.ok) {
-            window.showtoast("✅ Organization created successfully!");
+            window.showToast("✅ Organization created successfully!");
             closeCreateClubModal();
             loadClubManagementList(); // Refresh the table
         } else {
-            window.showtoast("❌ Failed: " + (data.message || "Unknown error"), "error");
+            window.showToast("❌ Failed: " + (data.message || "Unknown error"), "error");
         }
     } catch (error) {
         console.error("Create Club Error:", error);
-        window.showtoast("Server error. Check console.", "error");
+        window.showToast("Server error. Check console.", "error");
     } finally {
         btn.innerText = "Create Organization";
         btn.disabled = false;
@@ -938,7 +1247,7 @@ async function submitResetStudentClubs() {
     const confirmText = document.getElementById('ResetConfirmInput').value;
     
     if (confirmText.toLowerCase() !== 'reset all') {
-        window.showtoast("❌ Please type 'reset all' to confirm this action.", "error");
+        window.showToast("❌ Please type 'reset all' to confirm this action.", "error");
         return;
     }
 
@@ -955,15 +1264,15 @@ async function submitResetStudentClubs() {
         const data = await res.json();
 
         if (res.ok) {
-            window.showtoast(`✅ ${data.studentsRemoved} students have been removed from all organizations!\n\nAdvisers and moderators were NOT affected.`);
+            window.showToast(`✅ ${data.studentsRemoved} students have been removed from all organizations!\n\nAdvisers and moderators were NOT affected.`);
             closeResetStudentClubsModal();
             loadClubManagementList(); // Refresh the club list
         } else {
-            window.showtoast("❌ Error: " + (data.message || "Failed to reset clubs"), "error");
+            window.showToast("❌ Error: " + (data.message || "Failed to reset clubs"), "error");
         }
     } catch (error) {
         console.error("Reset Error:", error);
-        window.showtoast("❌ Server error: " + error.message, "error");
+        window.showToast("❌ Server error: " + error.message, "error");
     } finally {
         btn.innerText = "Confirm Reset";
         btn.disabled = false;
@@ -1205,10 +1514,10 @@ window.saveAdminSignature = async function() {
     try {
         const res = await fetch('/api/admin/save-signature', { method: 'POST', body: formData });
         if (res.ok) {
-            window.showtoast("✅ Signature saved successfully!");
+            window.showToast("✅ Signature saved successfully!");
             closeSignatureModal();
         } else {
-            window.showtoast("❌ Failed to save signature.", "error");
+            window.showToast("❌ Failed to save signature.", "error");
         }
     } catch (e) {
         console.error(e);
@@ -1223,7 +1532,7 @@ window.processDocument = async function(docId, status) {
         const user = await authRes.json();
         
         if (!user.hasSignature) {
-            window.showtoast("❌ You haven't set a signature yet.", "error");
+            window.showToast("❌ You haven't set a signature yet.", "error");
             window.openSignatureModal();
             return;
         }
@@ -1241,7 +1550,7 @@ window.processDocument = async function(docId, status) {
 function startSignaturePlacement(docId, sigUrl) {
     // Select ALL generated pages instead of just one
     const wrappers = document.querySelectorAll('.pdf-page-wrapper');
-    if (wrappers.length === 0) return window.showtoast("❌ Error: Document pages not found.", "error");
+    if (wrappers.length === 0) return window.showToast("❌ Error: Document pages not found.", "error");
 
     const cleanSigUrl = sigUrl.startsWith('/public') ? sigUrl.replace('/public', '') : sigUrl;
 
@@ -1318,15 +1627,15 @@ async function finalizeSignature(docId, x, y, pageNum) {
 
         const data = await res.json();
         if (data.success) {
-            window.showtoast("✅ " + data.message);
+            window.showToast("✅ " + data.message);
             window.closeDocPreview();
             loadAdminDocs(); 
         } else {
-            window.showtoast("❌ Error: " + data.message, "error");
+            window.showToast("❌ Error: " + data.message, "error");
         }
     } catch (err) {
         console.error("Finalize Error:", err);
-        window.showtoast("Failed to finalize document.", "error");
+        window.showToast("Failed to finalize document.", "error");
     }
 }
 function updatePreviewFromCanvas() {

@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 // If they aren't an admin and the URL doesn't match their assigned club, kick them out.
                 if (!isAdmin && !isMyClub) {
-                    window.showtoast("Access Denied: You are not a member of this organization.", "error");
+                    window.showToast("Access Denied: You are not a member of this organization.", "error");
                     window.location.href = '/ClubPortalFeed/ClubPortalFeed.html';
                     return;
                 }
@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             // General check for users without any club
             if (!chatRoom || chatRoom === "none" || chatRoom === "Pending") {
-                window.showtoast("Access Denied: You must be assigned to an organization to view this chat.", "error");
+                window.showToast("Access Denied: You must be assigned to an organization to view this chat.", "error");
                 window.location.href = '/ClubPortalFeed/ClubPortalFeed.html';
                 return;
             }
@@ -264,7 +264,7 @@ async function updateDocStatus(msgId, status) {
         if (res.ok) {
             loadMessages(); // Refresh UI immediately
         } else {
-            window.showtoast("Failed to update status.", "error");
+            window.showToast("Failed to update status.", "error");
         }
     } catch (e) {
         console.error(e);
@@ -282,7 +282,7 @@ async function sendMessage() {
     const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 
     if (file && file.size > MAX_SIZE) {
-        window.showtoast("File is too large! Max 100MB.", "error");
+        window.showToast("File is too large! Max 100MB.", "error");
         clearFile();
         return;
     }
@@ -352,7 +352,7 @@ async function sendMessage() {
 
     } catch (error) {
         console.error("Send Failed:", error);
-        window.showtoast("Failed to send message.", "error");
+        window.showToast("Failed to send message.", "error");
         if(document.getElementById(tempId)) document.getElementById(tempId).remove();
     }
 }

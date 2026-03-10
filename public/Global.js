@@ -334,14 +334,14 @@ async function uploadAvatar() {
             const headerIcon = document.getElementById('ProfilePicture');
             if(headerIcon) headerIcon.src = data.newUrl;
 
-            window.showtoast("Profile picture updated!");
+            window.showToast("Profile picture updated!");
         } else {
             throw new Error(data.message);
         }
 
     } catch (error) {
         console.error("Upload Error:", error);
-        window.showtoast("Failed to upload: " + error.message, "error");
+        window.showToast("Failed to upload: " + error.message, "error");
         imgElement.src = originalSrc; // Revert on error
     } finally {
         imgElement.style.opacity = '1'; // Restore opacity
@@ -384,15 +384,15 @@ window.uploadHeaderAvatar = async function() {
         if (response.ok) {
             // Update the image immediately on screen
             img.src = data.newUrl;
-            window.showtoast("Profile picture updated!");
+            window.showToast("Profile picture updated!");
             toggleProfileDropdown(); // Close menu
         } else {
-            window.showtoast("Upload failed: " + data.message, "error");
+            window.showToast("Upload failed: " + data.message, "error");
             img.src = originalSrc;
         }
     } catch (error) {
         console.error("Upload Error:", error);
-        window.showtoast("Error uploading image.", "error");
+        window.showToast("Error uploading image.", "error");
         img.src = originalSrc;
     } finally {
         img.style.opacity = '1';

@@ -1,6 +1,90 @@
 document.addEventListener('DOMContentLoaded', function() {
     
     // ==========================================
+    // 0. CUSTOM CAPTCHA SETUP
+    // ==========================================
+    const canvas = document.getElementById('captchaCanvas');
+    let generatedCaptcha = '';
+
+    // Function to generate random jumbled characters
+    function generateJumbledCharacters() {
+        const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    // Function to draw CAPTCHA on canvas
+    function drawCaptcha() {
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Clear canvas
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw random lines (noise)
+        ctx.strokeStyle = '#ddd';
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(Math.random() * width, Math.random() * height);
+            ctx.lineTo(Math.random() * width, Math.random() * height);
+            ctx.stroke();
+        }
+
+        // Draw random dots (noise) - lighter
+        for (let i = 0; i < 10; i++) {
+            ctx.fillStyle = '#e0e0e0';
+            ctx.beginPath();
+            ctx.arc(Math.random() * width, Math.random() * height, 1.5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // Generate new CAPTCHA text
+        generatedCaptcha = generateJumbledCharacters();
+
+        // Draw text with various styles and rotations
+        ctx.font = 'bold 40px Arial';
+        ctx.fillStyle = '#333';
+        ctx.textBaseline = 'middle';
+
+        for (let i = 0; i < generatedCaptcha.length; i++) {
+            ctx.save();
+            
+            // Random rotation
+            const angle = (Math.random() - 0.5) * 0.4;
+            const x = 30 + i * 40;
+            const y = height / 2 + (Math.random() - 0.5) * 20;
+
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillText(generatedCaptcha[i], 0, 0);
+            
+            ctx.restore();
+        }
+
+        // Clear the captcha input field
+        document.getElementById('captchaInput').value = '';
+    }
+
+    // Draw CAPTCHA on page load
+    drawCaptcha();
+
+    // Refresh button event listener
+    const refreshBtn = document.getElementById('refreshCaptcha');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            drawCaptcha();
+        });
+    }
+
+    // ==========================================
     // 1. VIDEO INTRO LOGIC
     // ==========================================
     const video = document.getElementById('IntroVideo');
@@ -42,8 +126,21 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.innerText = "Logging in...";
 
             const email = document.getElementById('EmailInput').value;
-            const password = document.getElementById('password').value; 
-           
+            const password = document.getElementById('password').value;
+            const captchaInput = document.getElementById('captchaInput').value.trim().toUpperCase();
+            
+            // Validate CAPTCHA (case-insensitive)
+            if (captchaInput !== generatedCaptcha) {
+                msgBox.style.color = "#721c24";
+                msgBox.style.backgroundColor = "#f8d7da";
+                msgBox.style.borderColor = "#f5c6cb";
+                msgBox.innerText = "CAPTCHA verification failed. Please try again.";
+                msgBox.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = originalText;
+                drawCaptcha(); // Refresh CAPTCHA
+                return;
+            }
 
             try {
                 const res = await fetch('/api/auth/login', {
@@ -184,7 +281,7 @@ window.resetPassword = async function() {
         const data = await res.json();
 
         if (res.ok) {
-            window.showtoast("Password Reset Successful! You can now log in.");
+            window.showToast("Password Reset Successful! You can now log in.");
             closeModal();
         } else {
             msgBox.innerText = data.message;
@@ -202,7 +299,8 @@ window.resetPassword = async function() {
     
     // 2. Optional: Clear the console immediately if they aren't quick enough
     // setInterval(() => console.clear(), 2000); 
-})()
+})();
+
 (function(){
     window.unlockConsole = function(passcode) {
         // Use a specific developer passcode (Do NOT use your actual admin account password here)

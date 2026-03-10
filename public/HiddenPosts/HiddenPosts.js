@@ -85,7 +85,7 @@ async function unhidePost(postId) {
                 setTimeout(loadHiddenPosts, 300); // Reload empty state
             }
         } else {
-            window.showtoast("Failed to unhide.", "error");
+            window.showToast("Failed to unhide.", "error");
             if(btn) {
                 btn.disabled = false;
                 btn.innerText = "👁️ Unhide Post";
@@ -93,6 +93,6 @@ async function unhidePost(postId) {
         }
     } catch (e) {
         console.error(e);
-        window.showtoast("Network error.", "error");
+        window.showToast("Network error.", "error");
     }
 } 

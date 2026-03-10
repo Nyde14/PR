@@ -6,7 +6,6 @@
     <title>UE Club Portal | Log in</title>
     <link rel="icon" type="image/png" href="/public/favicon.png">
     <link rel="stylesheet" href="../Login/Login.css">
-    
 </head>
 <body>
     <body>
@@ -30,6 +29,16 @@
         <input type="text" id="EmailInput" class="input-field" placeholder="Your UE Gmail" required>
         
         <input type="password" id="password" class="input-field" placeholder="Password" required>
+        
+        <!-- Custom CAPTCHA Section -->
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border: 1px solid #dee2e6;">
+            <p style="margin: 0 0 10px 0; font-size: 0.9rem; color: #495057;"><strong>Anti-Bot Verification:</strong> Type the characters shown below</p>
+            <canvas id="captchaCanvas" width="280" height="80" style="border: 1px solid #ccc; background: white; display: block; margin: 0 auto 10px; border-radius: 4px;"></canvas>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="captchaInput" class="input-field" placeholder="Enter the characters" style="flex: 1; margin: 0;" required>
+                <button type="button" id="refreshCaptcha" style="padding: 10px 15px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; min-width: 80px;">↻ Refresh</button>
+            </div>
+        </div>
         
         <a href="" id="forgotpass">Forgot password?</a>
         <div id="LoginMessage" style="display:none; color: #dc3545; background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin-bottom: 15px; border-radius: 5px; text-align: center; font-size: 0.9rem;"></div>

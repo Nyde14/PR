@@ -83,10 +83,10 @@ async function unfollowClub(clubName, cardId) {
                 }
             }, 300);
         } else {
-            window.showtoast("Failed to unfollow.", "error");
+            window.showToast("Failed to unfollow.", "error");
         }
     } catch (e) {
         console.error(e);
-        window.showtoast("Network error.", "error");
+        window.showToast("Network error.", "error");
     }
 }   

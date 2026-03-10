@@ -5,6 +5,7 @@ const User = require('../Schematics/UserSchema');
 const ClubPost = require('../Schematics/ClubPostSchema');
 const Club = require('../Schematics/ClubSchema');
 const Message = require('../Schematics/MessageSchema');
+const Notification = require('../Schematics/NotificationSchema');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
@@ -151,12 +152,22 @@ router.get('/:id/view', async (req, res) => {
             const post = await ClubPost.findById(report.targetId);
             if (!post) return res.json({ type: 'Deleted', message: "This post has been deleted." });
 
-            const club = await Club.findOne({ clubname: post.clubname });
-            const slug = club ? club.urlSlug : 'general';
-            
-            return res.json({ 
-                type: 'Post', 
-                url: `/ClubProfile/ClubProfile.html?slug=${slug}&postId=${report.targetId}` 
+            // Return full post data instead of just URL
+            return res.json({
+                type: 'Post',
+                data: {
+                    postId: post._id,
+                    author: post.author,
+                    authorProfile: post.authorProfile,
+                    clubname: post.clubname,
+                    title: post.title,
+                    content: post.content,
+                    mediaUrl: post.mediaUrl,
+                    mediaType: post.mediaType,
+                    timestamp: post.timestamp,
+                    likes: post.likes?.length || 0,
+                    commentsCount: post.comments?.length || 0
+                }
             });
         }
 

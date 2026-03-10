@@ -185,7 +185,7 @@ async function handleAdminRedirect(myUserName) {
         try {
             // Logic to handle highlighting or finding the specific conversation
             // (Kept simple as per your previous file logic)
-             window.showtoast("Please find the conversation containing the reported message.");
+             window.showToast("Please find the conversation containing the reported message.");
         } catch (e) {
             console.error(e);
         }

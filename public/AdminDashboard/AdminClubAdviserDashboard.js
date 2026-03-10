@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (!slug) {
             console.error("No slug provided in URL");
-            window.showtoast("No club specified. Returning to club list.", "error");
+            window.showToast("No club specified. Returning to club list.", "error");
             window.location.href = "/AdminDashboard/AdminClubList.html";
             return;
         }
@@ -124,7 +124,7 @@ async function fetchClubData(slug) {
 
     } catch (error) {
         console.error("Error fetching club data:", error);
-        window.showtoast("Could not load club data. Returning to club list.", "error");
+        window.showToast("Could not load club data. Returning to club list.", "error");
         window.location.href = "/AdminDashboard/AdminClubList.html";
     }
 }
@@ -213,15 +213,15 @@ window.updateMemberRole = async function(userId, newRole) {
         });
 
         if(res.ok) {
-            window.showtoast("✅ Role updated successfully!");
+            window.showToast("✅ Role updated successfully!");
             fetchClubMembers(currentClubName);
         } else {
             const err = await res.json();
-            window.showtoast("❌ Failed: " + err.message, "error");
+            window.showToast("❌ Failed: " + err.message, "error");
         }
     } catch(e) { 
         console.error(e); 
-        window.showtoast("Network error updating role.", "error");
+        window.showToast("Network error updating role.", "error");
     }
 };
 
@@ -272,7 +272,7 @@ window.submitRestriction = async function() {
     
     if (!durationField || !reasonField) {
         console.error("Missing restriction form fields");
-        window.showtoast("Error: Form elements not found", "error");
+        window.showToast("Error: Form elements not found", "error");
         return;
     }
 
@@ -280,7 +280,7 @@ window.submitRestriction = async function() {
     const reason = reasonField.value;
 
     if (!reason.trim()) {
-        window.showtoast("Please provide a reason.", "error");
+        window.showToast("Please provide a reason.", "error");
         return;
     }
 
@@ -299,15 +299,15 @@ window.submitRestriction = async function() {
         const data = await response.json();
 
         if (response.ok) {
-            window.showtoast(data.message);
+            window.showToast(data.message);
             window.closeRestrictModal();
             fetchClubMembers(currentClubName);
         } else {
-            window.showtoast("Error: " + data.message, "error");
+            window.showToast("Error: " + data.message, "error");
         }
     } catch (e) {
-        console.error("Restriction error:", e);
-        window.showtoast("Network error.", "error");
+        console.error(e);
+        window.showToast("Network error.", "error");
     }
 };
 
@@ -324,14 +324,14 @@ window.unrestrictUser = async function(userId, userName) {
         const data = await response.json();
 
         if (response.ok) {
-            window.showtoast("User is now active.");
+            window.showToast("User is now active.");
             fetchClubMembers(currentClubName);
         } else {
-            window.showtoast("Error: " + data.message, "error");
+            window.showToast("Error: " + data.message, "error");
         }
     } catch (e) {
         console.error("Unrestrict error:", e);
-        window.showtoast("Network error.", "error");
+        window.showToast("Network error.", "error");
     }
 };
 
@@ -349,7 +349,7 @@ window.removeMember = async function(studentName) {
         console.log("Remove member response status:", response.status);
 
         if (response.ok) {
-            window.showtoast("Member removed.");
+            window.showToast("Member removed.");
             fetchClubMembers(currentClubName);
             // Also refresh the member count
             const countElement = document.getElementById('DisplayMemberCount');
@@ -361,11 +361,11 @@ window.removeMember = async function(studentName) {
             }
         } else {
             const error = await response.json();
-            window.showtoast("Error: " + error.message, "error");
+            window.showToast("Error: " + error.message, "error");
         }
     } catch (error) {
         console.error("Removal error:", error);
-        window.showtoast("Network error removing member.", "error");
+        window.showToast("Network error removing member.", "error");
     }
 };
 
@@ -440,7 +440,7 @@ window.updateStatus = async function(id, newStatus) {
         console.log("Update status response:", response.status);
 
         if (response.ok) {
-            window.showtoast(`Application ${newStatus}!`);
+            window.showToast(`Application ${newStatus}!`);
             fetchPendingApplications(currentClubName);
             fetchClubMembers(currentClubName);
             // Refresh member count
@@ -455,11 +455,11 @@ window.updateStatus = async function(id, newStatus) {
             }
         } else {
             const result = await response.json();
-            window.showtoast("Error: " + result.error, "error");
+            window.showToast("Error: " + result.error, "error");
         }
     } catch (error) {
-        console.error("Update status error:", error);
-        window.showtoast("Update failed: " + error.message, "error");
+        console.error("Error:", error);
+        window.showToast("Update failed: " + error.message, "error");
     }
 };
 
@@ -475,7 +475,7 @@ window.saveDescription = async function() {
     
     if (!shortDescElement || !fullDescElement) {
         console.error("Missing description form elements");
-        window.showtoast("Error: Form elements not found", "error");
+        window.showToast("Error: Form elements not found", "error");
         return;
     }
 
@@ -494,12 +494,12 @@ window.saveDescription = async function() {
         console.log("Save description response status:", response.status);
 
         if (response.ok) {
-            window.showtoast("✅ Club profile updated successfully!");
+            window.showToast("✅ Club profile updated successfully!");
         } else {
-            window.showtoast("❌ Update failed.", "error");
+            window.showToast("❌ Update failed.", "error");
         }
     } catch (error) { 
         console.error("Save description error:", error);
-        window.showtoast("Error: " + error.message, "error");
+        window.showToast("Error: " + error.message, "error");
     }
 };

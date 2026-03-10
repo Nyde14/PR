@@ -438,7 +438,7 @@ function toggleShareMenu(postId) {
 }
 
 function copyLink(url) {
-    navigator.clipboard.writeText(url).then(() => window.showtoast("Link copied!"));
+    navigator.clipboard.writeText(url).then(() => window.showToast("Link copied!"));
     document.querySelectorAll('.share-dropdown').forEach(el => el.style.display = 'none');
 }
 
@@ -467,8 +467,8 @@ async function reportContent(type, id) {
             body: JSON.stringify({ targetType: type, targetId: id, reason })
         });
         const data = await res.json();
-        window.showtoast(data.message);
-    } catch(e) { window.showtoast("Failed to submit report.", "error"); }
+        window.showToast(data.message);
+    } catch(e) { window.showToast("Failed to submit report.", "error"); }
 }
 
 async function deletePost(postId) {
@@ -620,13 +620,13 @@ function setupJoinButton(btn, studentName, clubName) {
                 body: JSON.stringify({ studentname: studentName, clubname: clubName })
             });
             if (response.ok) {
-                window.showtoast("Application submitted!");
+                window.showToast("Application submitted!");
                 location.reload(); 
             } else {
                 throw new Error("Failed to apply");
             }
         } catch (error) {
-            window.showtoast(error.message, "error");
+            window.showToast(error.message, "error");
             newBtn.innerText = "Join Club";
             newBtn.disabled = false;
         }

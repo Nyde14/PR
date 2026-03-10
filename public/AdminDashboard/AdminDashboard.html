@@ -167,6 +167,12 @@
                     <option value="none">-- Select Club --</option>
                     </select>
             </div>
+            <div id="AdminSelectContainer" style="display: none;">
+                <label class="form-label">Report to Admin</label>
+                <select id="NewAdminSupervisor" class="modal-input">
+                    <option value="">-- Select Admin --</option>
+                </select>
+            </div>
         </div>
 
 
@@ -245,9 +251,14 @@
 </div>
 
         <label class="form-label">Assign Adviser</label>
-        <select id="EditClubAdviser" class="modal-input">
-            <option value="">-- Keep Unchanged --</option>
-        </select>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="CurrentAdviserDisplay" class="modal-input" readonly 
+                   placeholder="Click button to select..." style="flex: 1;">
+            <button type="button" class="btn-broadcast" onclick="openAdviserModal()" 
+                    style="padding: 8px 15px; white-space: nowrap;">
+                <i class='bx bx-search'></i> Select Adviser
+            </button>
+        </div>
 
         <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
             <button onclick="closeClubModal()" class="btn-cancel">Cancel</button>
@@ -256,6 +267,45 @@
     </div>
 </div>
 
+<div id="SetAdviserModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close" onclick="closeAdviserModal()">&times;</span>
+        <h3 style="color: #fa3737; margin-top: 0;">👤 Select Adviser / Staff</h3>
+        
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="AdviserSearchInput" class="modal-input" placeholder="Search by name..." 
+                   onkeyup="filterAdviserList()" style="width: 100%;">
+        </div>
+
+        <div style="border: 1px solid #ddd; border-radius: 8px; max-height: 300px; overflow-y: auto; background: #f9f9f9;">
+            <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;" 
+                 onmouseover="this.style.background='#f0f0f0'" 
+                 onmouseout="this.style.background='white'"
+                 onclick="selectAdviser('', 'Keep Unchanged')">
+                <i class='bx bx-check' style="color: #666; margin-right: 8px;"></i>
+                <strong style="color: #666;">Keep Unchanged</strong>
+                <small style="color: #aaa; display: block; margin-left: 28px;">No changes to current assignment</small>
+            </div>
+            
+            <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;" 
+                 onmouseover="this.style.background='#f0f0f0'" 
+                 onmouseout="this.style.background='white'"
+                 onclick="selectAdviser('__UNASSIGN__', 'Unassign')">
+                <i class='bx bx-trash' style="color: #e74c3c; margin-right: 8px;"></i>
+                <strong style="color: #e74c3c;">Unassign</strong>
+                <small style="color: #aaa; display: block; margin-left: 28px;">Remove adviser from this club</small>
+            </div>
+
+            <div id="AdviserListContainer">
+                <div style="padding: 15px; text-align: center; color: #888;">Loading advisers...</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeAdviserModal()" class="btn-cancel">Cancel</button>
+        </div>
+    </div>
+</div>
 
 <div id="DocsSection" class="table-card" style="display:none;">
     <div class="table-actions" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
@@ -391,6 +441,42 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
             <button id="BtnReviewDelete" class="btn-confirm" style="background-color: #dc3545;">🗑️ Delete Content</button>
             <button onclick="closeReviewModal()" class="btn-cancel">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Post Preview Modal -->
+<div id="PostModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="close" onclick="closePostModal()">&times;</span>
+        <h3 id="PostTitle" style="color: #333; margin-top: 0;">Post Title</h3>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin: 15px 0;">
+            <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                <img id="PostAuthorPic" src="" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle; display: inline-block;">
+                <strong id="PostAuthor">Author Name</strong> • <span id="PostClub" style="color: #fa3737; font-weight: bold;">Club</span>
+                <br>
+                <small style="color: #999;">Posted in <span id="PostDate">date</span></small>
+            </div>
+            
+            <div id="PostContent" style="font-size: 1rem; color: #333; line-height: 1.6; white-space: pre-wrap; margin: 15px 0;">
+                Post content...
+            </div>
+            
+            <div id="PostMediaContainer" style="margin-top: 15px; display: none; text-align: center;">
+                <img id="PostMediaImage" src="" style="max-width: 100%; border-radius: 8px; max-height: 400px; object-fit: contain;" />
+                <video id="PostMediaVideo" controls style="max-width: 100%; border-radius: 8px; max-height: 400px; display: none;"></video>
+            </div>
+            
+            <div style="font-size: 0.85rem; color: #666; border-top: 1px solid #eee; padding-top: 10px; margin-top: 15px;">
+                <i class='bx bxs-like' style="color: #fa3737;"></i> <span id="PostLikes">0</span> Likes • 
+                <i class='bx bxs-comment' style="color: #17a2b8;"></i> <span id="PostComments">0</span> Comments
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+            <button id="BtnDeletePost" class="btn-confirm" style="background-color: #dc3545;">🗑️ Delete Post</button>
+            <button onclick="closePostModal()" class="btn-cancel">Close</button>
         </div>
     </div>
 </div>

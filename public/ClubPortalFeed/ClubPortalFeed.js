@@ -577,7 +577,7 @@ function sharePost(postId) {
 
     // 2. Copy to Clipboard
     navigator.clipboard.writeText(shareUrl).then(() => {
-        window.showtoast("Link copied! When people open it, this post will be highlighted.");
+        window.showToast("Link copied! When people open it, this post will be highlighted.");
     }).catch(err => {
         console.error('Failed to copy text: ', err);
     });
@@ -662,7 +662,7 @@ async function deletePost(postId) {
             const postElement = document.getElementById(`post-${postId}`);
             if (postElement) postElement.remove();
         } else {
-            window.showtoast("Failed to delete.", "error");
+            window.showToast("Failed to delete.", "error");
         }
     } catch (error) { console.error(error); }
 }
@@ -683,13 +683,13 @@ async function reportContent(type, id) {
         console.log("Report response:", data);
         
         if (res.ok) {
-            window.showtoast("✅ Report submitted successfully.");
+            window.showToast("✅ Report submitted successfully.");
         } else {
-            window.showtoast("❌ Failed to submit report: " + data.message, "error");
+            window.showToast("❌ Failed to submit report: " + data.message, "error");
         }
     } catch(e) { 
         console.error("Report error:", e);
-        window.showtoast("❌ Failed to submit report: " + e.message, "error"); 
+        window.showToast("❌ Failed to submit report: " + e.message, "error");
     }
 }
 function openShareModal(postId, title) {
@@ -881,20 +881,20 @@ async function executeShare(type, targetName, link, title) {
         });
 
         if (res.ok) {
-            window.showtoast("Sent successfully!");
+            window.showToast("Sent successfully!");
             document.querySelector('.modal-overlay').remove(); // Close modal
         } else {
-            window.showtoast("Failed to send.", "error");
+            window.showToast("Failed to send.", "error");
         }
 
     } catch (e) {
         console.error(e);
-        window.showtoast("Network error.", "error");
+        window.showToast("Network error.", "error");
     }
 }
 
 function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => window.showtoast("Link copied!"));
+    navigator.clipboard.writeText(text).then(() => window.showToast("Link copied!"));
 }
 function checkGlobalAnchor() {
     if (window.location.hash === "#GlobalAnnouncementZone") {

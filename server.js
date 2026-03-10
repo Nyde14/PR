@@ -1257,13 +1257,57 @@ app.get('/api/reports/:id/view', async (req, res) => {
 
         // 1. HANDLE POST REPORTS
         if (report.targetType === 'Post') {
-            const post = await Post.findById(report.targetId);
-            if (!post) return res.json({ type: 'Deleted', message: 'The reported post has already been removed.' });
+            console.log(`Fetching post with ID: ${report.targetId}`);
             
-            return res.json({
-                type: 'Post',
-                url: `/ClubProfile/ClubProfile.html?slug=${post.clubSlug}&postId=${post._id}`
+            // Import ObjectId if not already imported
+            const mongoose = require('mongoose');
+            
+            // Convert targetId to ObjectId if it's a string
+            let postId;
+            try {
+                postId = new mongoose.Types.ObjectId(report.targetId);
+            } catch (err) {
+                console.log(`Invalid ObjectId format: ${report.targetId}`);
+                return res.json({ type: 'Deleted', message: 'The reported post has already been removed.' });
+            }
+            
+            const post = await Post.findById(postId);
+            
+            if (!post) {
+                console.log(`Post not found for ID: ${report.targetId}`);
+                return res.json({ type: 'Deleted', message: 'The reported post has already been removed.' });
+            }
+            
+            console.log(`Found post:`, {
+                postId: post._id,
+                author: post.author,
+                clubname: post.clubname,
+                title: post.title,
+                hasContent: !!post.content,
+                hasMedia: !!post.mediaUrl,
+                likesCount: post.likes?.length || 0,
+                commentsCount: post.comments?.length || 0
             });
+            
+            const responseData = {
+                type: 'Post',
+                data: {
+                    postId: post._id,
+                    author: post.author,
+                    authorProfile: post.authorProfile,
+                    clubname: post.clubname,
+                    title: post.title,
+                    content: post.content,
+                    mediaUrl: post.mediaUrl,
+                    mediaType: post.mediaType,
+                    timestamp: post.timestamp,
+                    likes: post.likes?.length || 0,
+                    commentsCount: post.comments?.length || 0
+                }
+            };
+            
+            console.log(`Sending response:`, responseData);
+            return res.json(responseData);
         }
 
         // 2. HANDLE MESSAGE REPORTS
