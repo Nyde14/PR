@@ -3,6 +3,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==========================================
     // 0. CUSTOM CAPTCHA SETUP
     // ==========================================
+    const reminderModal = document.getElementById('RegisterReminderModal');
+    
+    if (reminderModal) {
+        // Check if the browser remembers seeing this
+        const hasSeenReminder = localStorage.getItem('hasSeenRegisterReminder');
+        
+        if (!hasSeenReminder) {
+            // Small 500ms delay so it doesn't jump-scare them the millisecond the page loads
+            setTimeout(() => {
+                reminderModal.style.display = 'flex';
+            }, 500);
+        }
+    }
+
+    // Function attached to the window so the HTML button can trigger it
+    window.closeReminderModal = function() {
+        document.getElementById('RegisterReminderModal').style.display = 'none';
+        
+        // Plant the flag! This browser will never see the modal again.
+        localStorage.setItem('hasSeenRegisterReminder', 'true');
+    };
     const canvas = document.getElementById('captchaCanvas');
     let generatedCaptcha = '';
 
