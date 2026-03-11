@@ -279,6 +279,7 @@ async function fetchPendingApplications(adviserClub) {
         console.error("Dashboard error:", error);
     }
 }
+let currentAdviserTags = new Set();
 async function fetchClubStats(clubName) {
     if (!clubName) return;
     try {
@@ -296,15 +297,46 @@ async function fetchClubStats(clubName) {
         if(document.getElementById('ShortDescInput')) document.getElementById('ShortDescInput').value = data.shortDescription || "";
         if(document.getElementById('FullDescInput')) document.getElementById('FullDescInput').value = data.fullDescription || "";
 
-        // 3. --- FIX: UPDATE THE LOGO ---
+        // 3. Update The Logo
         const logoImg = document.getElementById('DisplayClubLogo');
         if (logoImg) {
-            // Use the saved logo, or fallback to default if none exists
             if (data.branding && data.branding.logo) {
                 logoImg.src = data.branding.logo;
             } else {
                 logoImg.src = "/public/images/default-club.png";
             }
+        }
+
+        // 4. --- NEW: UPDATE TAGS ---
+        currentAdviserTags.clear();
+        // Handle both older string categories and newer array tags
+        let tagsArray = [];
+        if (Array.isArray(data.tags)) tagsArray = data.tags;
+        else if (data.category) tagsArray = [data.category];
+
+        const tagsContainer = document.getElementById('AdviserClubTags');
+        if (tagsContainer) {
+            // Unselect all default tags first
+            tagsContainer.querySelectorAll('.filter-tag').forEach(btn => btn.classList.remove('selected'));
+
+            tagsArray.forEach(tag => {
+                currentAdviserTags.add(tag);
+                
+                // Check if a button for this tag already exists
+                let existingBtn = Array.from(tagsContainer.querySelectorAll('.filter-tag')).find(b => b.innerText === tag);
+                
+                if (existingBtn) {
+                    existingBtn.classList.add('selected');
+                } else {
+                    // It's a custom tag from the DB! Create a new button for it
+                    const newBtn = document.createElement('button');
+                    newBtn.type = 'button';
+                    newBtn.className = 'filter-tag selected';
+                    newBtn.innerText = tag;
+                    newBtn.onclick = function() { window.toggleAdviserTag(this, tag); };
+                    tagsContainer.appendChild(newBtn);
+                }
+            });
         }
 
     } catch (error) {
@@ -635,3 +667,78 @@ if (uploadForm) {
         }
     });
 }
+window.toggleAdviserTag = function(btn, tag) {
+    if (currentAdviserTags.has(tag)) {
+        currentAdviserTags.delete(tag);
+        btn.classList.remove('selected');
+    } else {
+        currentAdviserTags.add(tag);
+        btn.classList.add('selected');
+    }
+};
+
+window.addCustomAdviserTag = function() {
+    const input = document.getElementById('CustomTagInput');
+    const tag = input.value.trim();
+    if (!tag) return;
+
+    // Prevent duplicates
+    if (currentAdviserTags.has(tag)) {
+        input.value = '';
+        return;
+    }
+
+    currentAdviserTags.add(tag);
+    
+    // Create new button visually
+    const container = document.getElementById('AdviserClubTags');
+    const newBtn = document.createElement('button');
+    newBtn.type = 'button';
+    newBtn.className = 'filter-tag selected';
+    newBtn.innerText = tag;
+    newBtn.onclick = function() { window.toggleAdviserTag(this, tag); };
+    container.appendChild(newBtn);
+
+    input.value = ''; // Clear input field
+};
+
+// --- UPDATED SAVE FUNCTION ---
+window.saveDescription = async function() {
+    const clubName = document.getElementById('DisplayClubName').innerText;
+    const shortDesc = document.getElementById('ShortDescInput').value;
+    const fullDesc = document.getElementById('FullDescInput').value;
+    
+    // Convert the Set to an Array for the database
+    const tagsArray = Array.from(currentAdviserTags);
+
+    const isConfirmed = await window.showConfirm(
+        "Update Profile",
+        "Update club description and tags?",
+        "Update"
+    );
+    if (!isConfirmed) return;
+
+    try {
+        const response = await fetch('/api/clubs/update-description', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                clubname: clubName, 
+                shortDescription: shortDesc, 
+                fullDescription: fullDesc,
+                tags: tagsArray,
+                // Fallback for older code logic: use the first tag as the primary "category"
+                category: tagsArray.length > 0 ? tagsArray[0] : "Organization" 
+            })
+        });
+
+        if (response.ok) {
+            window.showToast("✅ Club profile updated successfully!");
+        } else {
+            window.showToast("❌ Update failed.", "error");
+        }
+    } catch (error) { 
+        console.error(error); 
+        window.showToast("❌ Network error.", "error");
+    }
+};

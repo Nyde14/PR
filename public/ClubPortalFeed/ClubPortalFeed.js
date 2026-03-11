@@ -329,7 +329,7 @@ function createPostCard(post, currentUser) {
             return `
             <div class="reply-item">
                 <div style="display:flex; justify-content:space-between; width:100%;">
-                    <span><span class="comment-author" style="font-size:0.8rem;">${r.author}:</span> ${r.content}</span>
+                    <span><span class="comment-author" style="font-size:0.8rem;">${r.author}:</span> ${linkify(r.content)}</span>
                     ${replyAction}
                 </div>
             </div>`;
@@ -344,7 +344,7 @@ function createPostCard(post, currentUser) {
                         <span>${c.author}</span>
                         <div class="comment-actions">${actionBtn}</div>
                     </div>
-                    <div class="comment-text">${c.content}</div>
+                    <div class="comment-text">${linkify(c.content)}</div>
                 </div>
                 <div class="replies-list">${repliesHTML}</div>
                 <div style="margin-top:2px; margin-left:12px; font-size:0.8rem;">
@@ -382,7 +382,7 @@ function createPostCard(post, currentUser) {
         </div>
 
         <h3 class="post-title" style="margin:12px 0;">${post.title}</h3>
-        <div class="post-content">${post.content}</div>
+        <div class="post-content">${linkify(post.content)}</div>
         
         ${post.mediaUrl ? `<img src="${post.mediaUrl}" loading="lazy" class="post-image" style="width:100%; border-radius:8px; margin:10px 0;">` : ""}
         
@@ -905,4 +905,15 @@ function checkGlobalAnchor() {
             zone.style.animation = "flashHighlight 2s ease-out";
         }
     }
+}
+function linkify(inputText) {
+    if (!inputText) return "";
+    
+    // Regex to find URLs starting with http:// or https://
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    
+    return inputText.replace(urlRegex, function(url) {
+        // Wraps the URL in an anchor tag styled to match your theme
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #fa3737; text-decoration: underline; word-break: break-all;">${url}</a>`;
+    });
 }
