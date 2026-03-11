@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.disabled = true;
             btn.innerText = "Logging in...";
 
-            const email = document.getElementById('EmailInput').value;
+            const email = document.getElementById('EmailInput').value.trim().toLowerCase();
             const password = document.getElementById('password').value;
             const captchaInput = document.getElementById('captchaInput').value.trim().toUpperCase();
             
@@ -222,7 +222,7 @@ window.closeModal = function() {
 };
 
 window.requestOTP = async function() {
-    const email = document.getElementById('ForgotEmail').value;
+    const email = document.getElementById('ForgotEmail').value.trim().toLowerCase();
     const msgBox = document.getElementById('ModalMessage');
     const btn = document.getElementById('SendOtpBtn');
 
