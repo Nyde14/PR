@@ -835,3 +835,62 @@ img.chat-avatar.border-active-member { border: 3px solid #00ced1 !important; }
         background-position: -200% 0;
     }
 }
+.msg-reply-btn {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s, color 0.2s;
+}
+
+/* Show reply button when hovering the message row */
+.message-row:hover .msg-reply-btn {
+    opacity: 1;
+}
+
+.msg-reply-btn:hover {
+    color: #fa3737;
+}
+
+/* The quoted box inside the message bubble */
+.quoted-message {
+    background: rgba(0, 0, 0, 0.05);
+    border-left: 3px solid rgba(0, 0, 0, 0.2);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    opacity: 0.9;
+}
+
+.quoted-message:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* Make it look good inside the red "Me" bubbles */
+.message-bubble.me .quoted-message {
+    background: rgba(255, 255, 255, 0.15);
+    border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+.message-bubble.me .quoted-message:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Dark Mode Overrides */
+body.dark-mode .quoted-message {
+    background: rgba(255, 255, 255, 0.05);
+    border-left-color: rgba(255, 255, 255, 0.2);
+}
+body.dark-mode #ReplyIndicator {
+    background: #2c2c2c !important;
+    border-top-color: #444 !important;
+    color: #bbb !important;
+}

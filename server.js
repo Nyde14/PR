@@ -466,7 +466,7 @@ app.post('/api/chat/send', upload.single('media'), async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.userId);
         
-        const { clubname, recipient, content } = req.body; 
+        const { clubname, recipient, content, replyToId, replyToSender, replyToContent } = req.body; 
         
         let mediaUrl = null;
         let mediaType = 'none';
@@ -488,7 +488,10 @@ app.post('/api/chat/send', upload.single('media'), async (req, res) => {
             officerRole: user.clubPosition || 'Member', 
             content: content || "",
             mediaUrl,
-            mediaType
+            mediaType,
+            replyToId: replyToId || null,
+    replyToSender: replyToSender || null,
+    replyToContent: replyToContent || null
         });
 
         await newMessage.save();

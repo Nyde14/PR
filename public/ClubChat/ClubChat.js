@@ -9,6 +9,7 @@ let globalUserType = "";    // DB Usertype (Admin, Teacher, Student)
 let myClubPosition = "";    // Specific Officer role (President, etc.)
 let isFirstLoad = true;
 let currentPreviewURL = null; 
+let replyingToInfo = null; // Stores { id, sender, content }
 
 // ==========================================
 // 2. INITIALIZATION
@@ -194,6 +195,15 @@ function setupChatMessageLazyLoading(messages) {
                     const time = msgDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     const timestamp = `${date} ${time}`;
                     const contentHTML = linkify(msg.content);
+                    const replyBtn = `<button class="msg-reply-btn" onclick="window.startReply('${msg._id}', '${msg.sender}', '${encodeURIComponent(msg.content || 'Media Attachment')}')"><i class='bx bx-reply'></i> Reply</button>`;
+                    let quotedHTML = "";
+                    if (msg.replyToSender && msg.replyToContent) {
+                        quotedHTML = `
+                        <div class="quoted-message" onclick="window.scrollToMessage('${msg.replyToId}')">
+                            <strong style="display:block; margin-bottom:2px;">${msg.replyToSender}</strong>
+                            <span style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 250px;">${linkify(msg.replyToContent)}</span>
+                        </div>`;
+                    }
 
                     // --- ACTION BUTTONS (Delete & Report) ---
                     const deleteBtn = canDelete ? `<button class="delete-btn" onclick="deleteMessage('${msg._id}')"><i class='bx bx-trash'></i></button>` : '';
@@ -203,23 +213,24 @@ function setupChatMessageLazyLoading(messages) {
                     const messageHTML = `
                     <div class="message-row ${isMe ? 'me' : 'others'}" id="msg-${msg._id}">
                         ${!isMe ? `
-                            <img src="${avatarSrc}" 
-                                 class="chat-avatar ${borderClass}" 
-                                 loading="lazy"
-                                 onclick="viewUserProfile('${msg.sender}')" 
-                                 title="${role}">
+                            <img src="${avatarSrc}" class="chat-avatar ${borderClass}" loading="lazy" onclick="viewUserProfile('${msg.sender}')" title="${role}">
                         ` : ''}
                         
                         <div class="msg-content-wrapper"> 
                             ${chatType === 'group' && !isMe ? `<div class="sender-name">${msg.sender}${reportBtn}</div>` : ''}
                             
                             <div class="message-bubble ${isMe ? 'me' : 'others'}">
+                                ${quotedHTML}
                                 ${mediaHTML}
                                 ${contentHTML ? `<div class="message-text">${contentHTML}</div>` : ''}
                             </div>
                             
                             ${deleteBtn}
-                            <div class="msg-footer" style="text-align:${isMe ? 'right' : 'left'};">${timestamp}</div>
+                            <div class="msg-footer" style="display:flex; justify-content:${isMe ? 'flex-end' : 'flex-start'}; align-items:center; gap:8px;">
+                                ${!isMe ? replyBtn : ''}
+                                <span>${timestamp}</span>
+                                ${isMe ? replyBtn : ''}
+                            </div>
                         </div>
                     </div>`;
 
@@ -334,6 +345,15 @@ async function sendMessage() {
     } else {
         formData.append('clubname', chatRoom);
         formData.append('recipient', '');
+    }
+    
+    
+
+    // --- NEW: APPEND REPLY DATA ---
+    if (replyingToInfo) {
+        formData.append('replyToId', replyingToInfo.id);
+        formData.append('replyToSender', replyingToInfo.sender);
+        formData.append('replyToContent', replyingToInfo.content);
     }
 
     try {
@@ -478,3 +498,28 @@ function checkAndHighlightMessage() {
         }
     }
 }
+window.startReply = function(id, sender, encodedContent) {
+    const content = decodeURIComponent(encodedContent);
+    replyingToInfo = { id, sender, content };
+    
+    document.getElementById('ReplyToName').innerText = `Replying to ${sender}`;
+    document.getElementById('ReplyToText').innerText = content.substring(0, 80) + (content.length > 80 ? '...' : '');
+    document.getElementById('ReplyIndicator').style.display = 'block';
+    
+    document.getElementById('MessageInput').focus();
+};
+
+window.cancelReply = function() {
+    replyingToInfo = null;
+    const indicator = document.getElementById('ReplyIndicator');
+    if (indicator) indicator.style.display = 'none';
+};
+
+window.scrollToMessage = function(id) {
+    const el = document.getElementById(`msg-${id}`);
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('highlight-message');
+        setTimeout(() => el.classList.remove('highlight-message'), 2500);
+    }
+};  

@@ -28,7 +28,10 @@ const MessageSchema = new mongoose.Schema({
     isRead: { type: Boolean, default: false },
     readBy: { type: [String], default: [] }, // Array of usernames who have read this message
     
-    timestamp: { type: Date, default: Date.now }
+    timestamp: { type: Date, default: Date.now },
+    replyToId: { type: String, default: null },
+    replyToSender: { type: String, default: null },
+    replyToContent: { type: String, default: null }
 });
 
 module.exports = mongoose.model('Message', MessageSchema);

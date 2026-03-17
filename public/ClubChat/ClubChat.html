@@ -60,6 +60,15 @@
                 <input type="text" id="MessageInput" placeholder="Type a message..." autocomplete="off">
                 
                 <button id="SendBtn" onclick="sendMessage()">Send</button>
+                <div id="ReplyIndicator" style="display: none; background: #f0f0f0; padding: 10px 15px; border-left: 4px solid #fa3737; font-size: 0.85rem; color: #555; position: relative; border-top: 1px solid #ddd;">
+    <div style="font-weight: bold; color: #fa3737; margin-bottom: 3px;" id="ReplyToName">Replying to...</div>
+    <div id="ReplyToText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%;">Message preview</div>
+    <button onclick="cancelReply()" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #888;">&times;</button>
+</div>
+
+<div class="chat-input-area">
+    <input type="file" id="MediaInput" style="display: none;">
+    ```
             </div>
         </div>
     </main>

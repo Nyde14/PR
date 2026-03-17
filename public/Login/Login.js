@@ -1,8 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // ==========================================
-    // 0. CUSTOM CAPTCHA SETUP
-    // ==========================================
     const reminderModal = document.getElementById('RegisterReminderModal');
     
     if (reminderModal) {
@@ -21,13 +17,13 @@ document.addEventListener('DOMContentLoaded', function() {
     window.closeReminderModal = function() {
         document.getElementById('RegisterReminderModal').style.display = 'none';
         
-        // Plant the flag! This browser will never see the modal again.
+        // once set to true the user wont see the modal again
         localStorage.setItem('hasSeenRegisterReminder', 'true');
     };
     const canvas = document.getElementById('captchaCanvas');
     let generatedCaptcha = '';
 
-    // Function to generate random jumbled characters
+    // Function to generate random jumbled characters(for captcha)
     function generateJumbledCharacters() {
         const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
         let result = '';
@@ -45,13 +41,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const width = canvas.width;
         const height = canvas.height;
 
-        // Clear canvas
+        // Clear(white) canvas
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, width, height);
 
         // Draw random lines (noise)
         ctx.strokeStyle = '#ddd';
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 10; i++) {
             ctx.beginPath();
             ctx.moveTo(Math.random() * width, Math.random() * height);
             ctx.lineTo(Math.random() * width, Math.random() * height);
@@ -105,9 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ==========================================
-    // 1. VIDEO INTRO LOGIC
-    // ==========================================
+    //video intro
     const video = document.getElementById('IntroVideo');
     const overlay = document.getElementById('IntroOverlay');
 
@@ -124,17 +118,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 6000);
     }
 
-    // ==========================================
-    // 2. LOGIN FORM LOGIC (Fixed Error)
-    // ==========================================
+    //login form submission
     const loginForm = document.getElementById('login-form');
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-             localStorage.clear(); 
-    sessionStorage.clear();
-            // --- FIX: DEFINE THE VARIABLE HERE ---
+            localStorage.clear(); 
+            sessionStorage.clear();
             const msgBox = document.getElementById('LoginMessage'); 
             const btn = document.getElementById('loginbtn');
             
@@ -222,9 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ==========================================
-// 3. FORGOT PASSWORD MODAL LOGIC
-// ==========================================
+
 
 // Ensure button exists before adding listener to prevent null errors
 const forgotBtn = document.getElementById('forgotpass');
@@ -241,7 +230,7 @@ if (forgotBtn) {
 window.closeModal = function() {
     document.getElementById('ForgotModal').style.display = 'none';
 };
-
+// Function to request OTP for password reset
 window.requestOTP = async function() {
     const email = document.getElementById('ForgotEmail').value.trim().toLowerCase();
     const msgBox = document.getElementById('ModalMessage');
@@ -312,33 +301,11 @@ window.resetPassword = async function() {
         msgBox.innerText = "Error resetting password.";
     }
 };
-// Global.js - ADD TO VERY TOP
+
 (function deterConsoleSnoopers() {
-    // 1. Print a massive warning
+    // warning message for anyone trying to use the console for malicious activity
     console.log("%cSTOP!", "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0px black;");
     console.log("%cThis is a browser feature intended for developers. If someone told you to copy-paste something here to enable a feature or 'hack' an account, it is a scam and will give them access to your account.", "font-size: 18px; color: #333;");
     
-    // 2. Optional: Clear the console immediately if they aren't quick enough
-    // setInterval(() => console.clear(), 2000); 
 })();
 
-(function(){
-    window.unlockConsole = function(passcode) {
-        // Use a specific developer passcode (Do NOT use your actual admin account password here)
-        if (passcode === "MeowMeowhahaha") {
-            
-            // 3. If correct, attach the dev tools to the window so you can use them
-            window.NexusAdmin = devTools;
-            
-            console.clear();
-            console.log("%c🔓 CONSOLE UNLOCKED", "color: #28a745; font-size: 24px; font-weight: bold;");
-            console.log("%cDeveloper tools have been mounted to 'NexusAdmin'.", "color: #333; font-size: 14px;");
-            console.log("Type %cNexusAdmin.%c to see available commands.", "color: #fa3737; font-weight: bold;", "color: inherit;");
-            
-            return "Welcome back, Admin.";
-        } else {
-            console.log("%c❌ ACCESS DENIED", "color: #fa3737; font-size: 24px; font-weight: bold;");
-            return "Intruder logged.";
-        }
-    };
-})();
