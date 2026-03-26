@@ -888,7 +888,7 @@ async function handleCreateUser(e) {
     // 1. Gather form data
     const userData = {
         name: document.getElementById('NewName').value,
-        email: document.getElementById('NewEmail').value,
+        email: document.getElementById('NewEmail').value.trim().toLowerCase(),
         password: document.getElementById('NewPassword').value,
         usertype: document.getElementById('NewRole').value,
         club: document.getElementById('NewClub').value,

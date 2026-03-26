@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // A. Handle "Send Code" Click
 document.getElementById('sendOtpBtn').addEventListener('click', async function() {
-    const email = document.getElementById('regEmail').value.trim();
+    const email = document.getElementById('regEmail').value.trim().toLowerCase();
     const btn = this;
 
     // Basic check
