@@ -168,7 +168,7 @@
             </div>
 
             <div class="section-card">
-                <div class="section-title">📢 Create Announcement</div>
+                <div class="section-title">Create Post</div>
                 <form id="CreatePostForm" style="display:flex; flex-direction:column; gap:15px;">
                     <input type="text" id="postTitle" placeholder="Title of Announcement" required 
                            style="padding:10px; border:1px solid #ddd; border-radius:6px;">
@@ -189,7 +189,7 @@
                 </form>
             </div>
 
-            <div class="section-card">
+            <divclass="section-card">
                 <div class="section-title">✏️ Edit Club Profile</div>
                 <div style="display:grid; gap:15px;">
                     <div>
@@ -202,7 +202,7 @@
                     </div>
                     <button onclick="saveDescription()" class="btn-save" style="width:fit-content;">Save Changes</button>
                 </div>
-            </div>
+            </div> 
 
             <div class="section-card">
     <div class="section-title">👥 Club Members</div>
@@ -240,7 +240,23 @@
         </button>
     </form>
 </div>
-
+<div>
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">Club Categories & Tags</label>
+            <div id="AdviserClubTags" class="tags-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Academic')">Academic</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Sports')">Sports</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Social')">Social</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Arts')">Arts</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Performance')">Performance</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Tech')">Tech</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Leadership')">Leadership</button>
+            </div>
+            
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="text" id="CustomTagInput" placeholder="Add custom tag (e.g. Esports, Debate)..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                <button type="button" onclick="window.addCustomAdviserTag()" style="padding:8px 15px; background:#333; color:white; border:none; border-radius:6px; cursor:pointer;">+ Add Custom</button>
+            </div>
+        </div>
 <div class="section-card">
     <div class="section-title">📜 Document History & Status</div>
     <div class="table-container">
@@ -297,39 +313,7 @@
     <div id="PreviewContainer" style="flex:1; width:100%; background:#525659; overflow:auto; position:relative; display:flex; justify-content:center; align-items:flex-start; padding: 20px;">
         </div>
 </div>
-<div class="section-card">
-    <div class="section-title">✏️ Edit Club Profile</div>
-    <div style="display:grid; gap:15px;">
-        <div>
-            <label style="display:block; margin-bottom:5px; font-weight:bold;">Short Description</label>
-            <input type="text" id="ShortDescInput" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
-        </div>
-        <div>
-            <label style="display:block; margin-bottom:5px; font-weight:bold;">Full Description</label>
-            <textarea id="FullDescInput" rows="3" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"></textarea>
-        </div>
-        
-        <div>
-            <label style="display:block; margin-bottom:5px; font-weight:bold;">Club Categories & Tags</label>
-            <div id="AdviserClubTags" class="tags-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Academic')">Academic</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Sports')">Sports</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Social')">Social</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Arts')">Arts</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Performance')">Performance</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Tech')">Tech</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Leadership')">Leadership</button>
-            </div>
-            
-            <div style="display:flex; gap:10px; align-items:center;">
-                <input type="text" id="CustomTagInput" placeholder="Add custom tag (e.g. Esports, Debate)..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px;">
-                <button type="button" onclick="window.addCustomAdviserTag()" style="padding:8px 15px; background:#333; color:white; border:none; border-radius:6px; cursor:pointer;">+ Add Custom</button>
-            </div>
-        </div>
 
-        <button onclick="window.saveDescription()" class="btn-save" style="width:fit-content; margin-top:10px;">Save Changes</button>
-    </div>
-</div>
 
     <script src="/public/Global.js"></script>
     <script src="/public/TeacherDashboard/ClubAdviserDashboard.js"></script>

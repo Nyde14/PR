@@ -12,7 +12,7 @@ const ClubSchema = new mongoose.Schema({
         themeColor: String
     },
     memberCount: Number,
-    adviser: String
+    advisers: [{ type: String }],
 }, { collection: 'Clubs' });
 
 module.exports = mongoose.model('club', ClubSchema, 'Clubs');

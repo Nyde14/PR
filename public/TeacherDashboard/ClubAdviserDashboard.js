@@ -2,7 +2,7 @@
 let currentTargetId = null;
 let currentAdviserName = ""; 
 let selectedClubLogoFile = null;
-
+let currentClubId = null;
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         const response = await fetch('/api/auth/me');
@@ -287,7 +287,7 @@ async function fetchClubStats(clubName) {
         const data = await response.json();
 
         if (!data) return;
-
+        currentClubId = data._id;
         // 1. Update Member Count
         if(document.getElementById('DisplayMemberCount')) {
             document.getElementById('DisplayMemberCount').innerText = (data.membercount !== undefined) ? data.membercount : 0;
@@ -419,7 +419,7 @@ window.saveBranding = async function() {
     formData.append('clubname', clubName);
     if (logoFile) formData.append('logo', logoFile);
     if (bannerFile) formData.append('banner', bannerFile);
-
+    formData.append('clubId', currentClubId);
     try {
         const response = await fetch('/api/clubs/update-branding', { method: 'PATCH', body: formData });
         if (response.ok) {
@@ -548,6 +548,7 @@ window.saveClubLogo = async function() {
     const formData = new FormData();
     formData.append('clubname', clubName);
     formData.append('logo', selectedClubLogoFile);
+    formData.append('clubId', currentClubId);
 
     try {
         const response = await fetch('/api/clubs/update-branding', {

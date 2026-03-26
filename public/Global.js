@@ -140,7 +140,7 @@ async function loadUserHeader() {
 
             const imgSrc = user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
             const isAdviser = user.usertype === 'Teacher' || user.usertype === 'Admin';
-            const roleLabel = isAdviser ? 'FACULTY ADVISER' : (user.clubPosition || 'MEMBER').toUpperCase();
+            const roleLabel = isAdviser ? 'CLUB ADVISER' : (user.clubPosition || 'MEMBER').toUpperCase();
 
             // 1. Clear and Build Header
             profileContainer.innerHTML = ''; 
@@ -761,7 +761,7 @@ window.openFullProfileModal = async function() {
             } 
             // Adviser Badge
             else if (user.usertype === 'Teacher') {
-                badgesHTML += '<span class="role-badge badge-adviser" style="background:#fa3737; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">Faculty Adviser</span>';
+                badgesHTML += '<span class="role-badge badge-adviser" style="background:#fa3737; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">Club Adviser</span>';
             } 
             // Officer Badge (President, VP, etc.) - Use role colors
             else if (position !== 'Member' && position !== 'Active Member') {
@@ -1046,7 +1046,7 @@ window.viewUserProfile = async function(userName) {
         } 
         // Adviser Badge
         else if (user.usertype === 'Teacher') {
-            badgesHTML += '<span class="role-badge badge-adviser" style="background:#fa3737; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">Faculty Adviser</span>';
+            badgesHTML += '<span class="role-badge badge-adviser" style="background:#fa3737; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:bold;">CLUB Adviser</span>';
         } 
         // Officer Badge (President, VP, etc.) - Use role colors
         else if (position !== 'Member' && position !== 'Active Member') {

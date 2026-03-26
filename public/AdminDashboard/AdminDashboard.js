@@ -1,8 +1,9 @@
 let allUsers = []; // Store users locally for filtering
 let currentTargetId = null;
-let selectedAdviser = ''; // Store selected adviser for club modal
+let selectedAdvisers = []; // Store selected adviser for club modal
 let selectedAdviserName = ''; // Store display name of selected adviser
 let allStaff = []; // Store all advisers and admins
+let activeAdviserTarget = 'edit'; // Tracks which modal opened the selector ('edit' or 'create')
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
@@ -61,6 +62,7 @@ function switchTab(tabName) {
 
 async function loadClubManagementList() {
     const tbody = document.getElementById('ClubTableBody');
+    
     if (!tbody) return;
 
     try {
@@ -70,29 +72,49 @@ async function loadClubManagementList() {
         allClubs = await res.json(); 
 
         tbody.innerHTML = allClubs.map(club => {
-            const logo = (club.branding && club.branding.logo) 
-                ? club.branding.logo 
-                : (club.logo || '/uploads/default_pfp.png');
-            
-            const memberCount = club.memberCount || 0;
-            const categoryText = club.category || 'No Category';
+    const logo = (club.branding && club.branding.logo) 
+        ? club.branding.logo 
+        : (club.logo || '/uploads/default_pfp.png');
+    
+    const memberCount = club.memberCount || 0;
+    const categoryText = club.category || 'No Category';
 
-            return `
+    // --- THE FIX: Catch all 3 database variations ---
+    let clubAdvisers = [];
+    
+    if (club.advisers && Array.isArray(club.advisers) && club.advisers.length > 0) {
+        clubAdvisers = club.advisers;             // Catches the new array
+    } else if (club.adviser) {
+        clubAdvisers = [club.adviser];            // Catches lowercase string
+    } else if (club.Adviser) {
+        clubAdvisers = [club.Adviser];            // Catches uppercase string
+    }
+
+    // Clean out any weird nulls or blank strings just in case
+    clubAdvisers = clubAdvisers.filter(a => a && a.trim() !== "");
+
+    const advisersDisplay = clubAdvisers.length > 0 
+        ? clubAdvisers.join('<br>') 
+        : '<span style="color:#888;">Unassigned</span>';
+
+    const advisersJson = encodeURIComponent(JSON.stringify(clubAdvisers));
+
+    return `
             <tr>
-                <td><img src="${logo}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #eee;"></td>
-                <td>
-                    <strong>${club.clubname}</strong><br>
-                    <small style="color:#888;">${categoryText}</small>
-                </td>
-                <td>${club.adviser || '<span style="color:#888;">Unassigned</span>'}</td>
-                <td><span class="badge badge-active">${memberCount} Members</span></td>
-                <td>
-                    <button onclick="openClubModal('${club._id}', '${club.clubname}', '${club.adviser}')" 
-                            class="btn-action btn-unrestrict">Edit</button>
-                    <button onclick="deleteClub('${club._id}', '${club.clubname}', ${memberCount})" 
-                            class="btn-action btn-restrict" style="margin-left:5px;">Delete</button>
-                </td>
-            </tr>`;
+    <td><img src="${logo}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #eee;"></td>
+    <td>
+        <strong>${club.clubname}</strong><br>
+        <small style="color:#888;">${categoryText}</small>
+    </td>
+    <td style="font-size: 0.85rem;">${advisersDisplay}</td>
+    <td><span class="badge badge-active">${memberCount} Members</span></td>
+    <td>
+        <button onclick="openClubModal('${club._id}', '${club.clubname}', '${advisersJson}')" 
+                class="btn-action btn-unrestrict">Edit</button>
+        <button onclick="deleteClub('${club._id}', '${club.clubname}', ${memberCount})" 
+                class="btn-action btn-restrict" style="margin-left:5px;">Delete</button>
+    </td>
+</tr>`;
         }).join('');
     } catch (e) { 
         console.error("Failed to load clubs:", e); 
@@ -100,66 +122,30 @@ async function loadClubManagementList() {
     }
 }
 // 3. Open Modal for Create or Edit
-async function openClubModal(id = null, name = '', adviser = 'none') {
+async function openClubModal(id = null, name = '', advisersJson = '[]') {
     editingClubId = id;
-    
     document.getElementById('ClubModalTitle').innerText = id ? 'Edit Club Settings' : 'Add New Organization';
     document.getElementById('EditClubName').value = name;
     
-    // Find club data in the global array
+    // Setup categories...
     const clubData = allClubs.find(c => c._id === id);
-    
-    // Clear and reset category
     currentClubCategory.clear();
-    
     if (clubData && clubData.category) {
-        // Handle category as a string (not array)
-        if (typeof clubData.category === 'string') {
-            currentClubCategory.add(clubData.category);
-        } else if (Array.isArray(clubData.category)) {
-            clubData.category.forEach(cat => currentClubCategory.add(cat));
-        }
+        if (typeof clubData.category === 'string') currentClubCategory.add(clubData.category);
+        else if (Array.isArray(clubData.category)) clubData.category.forEach(cat => currentClubCategory.add(cat));
     }
     
     document.querySelectorAll('#EditClubTags .filter-tag').forEach(btn => {
-        if (currentClubCategory.has(btn.innerText)) {
-            btn.classList.add('selected');
-        } else {
-            btn.classList.remove('selected');
-        }
+        btn.classList.toggle('selected', currentClubCategory.has(btn.innerText));
     });
+
     const previewImg = document.getElementById('ClubModalPreview');
-    
-    // THE FIX: Direct fallback logic for the preview
-    let currentLogo = '/uploads/default_pfp.png';
-    if (clubData) {
-        currentLogo = (clubData.branding && clubData.branding.logo) 
-            ? clubData.branding.logo 
-            : (clubData.logo || currentLogo);
-    }
-    previewImg.src = currentLogo; 
+    previewImg.src = clubData?.branding?.logo || clubData?.logo || '/uploads/default_pfp.png'; 
 
-    // Get and store staff list for adviser modal
-    allStaff = allUsers.filter(u => 
-        (u.usertype && u.usertype.toLowerCase() === 'teacher') || 
-        (u.usertype && u.usertype.toLowerCase() === 'admin')
-    );
+    // Load Advisers
+    selectedAdvisers = JSON.parse(decodeURIComponent(advisersJson));
+    renderAdviserTags('edit');
     
-    // Set initial adviser selection
-    if (adviser && adviser !== '') {
-        selectedAdviser = adviser;
-        selectedAdviserName = `${adviser} (${allStaff.find(s => s.name === adviser)?.usertype || 'Unknown'})`;
-    } else {
-        selectedAdviser = '';
-        selectedAdviserName = 'Keep Unchanged';
-    }
-    
-    // Update the display field
-    document.getElementById('CurrentAdviserDisplay').value = selectedAdviserName;
-    
-    // Populate the adviser modal list
-    populateAdviserList();
-
     document.getElementById('ClubEditModal').style.display = 'block';
 }
 
@@ -172,94 +158,18 @@ function closeClubModal() {
 // ADVISER SELECTION MODAL
 // ==========================================
 
-function openAdviserModal() {
-    populateAdviserList();
-    document.getElementById('SetAdviserModal').style.display = 'block';
-    document.getElementById('AdviserSearchInput').value = '';
-}
-
-function closeAdviserModal() {
-    document.getElementById('SetAdviserModal').style.display = 'none';
-}
-
-function populateAdviserList() {
-    const container = document.getElementById('AdviserListContainer');
-    
-    if (allStaff.length === 0) {
-        container.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">No advisers available</div>';
-        return;
-    }
-    
-    container.innerHTML = allStaff.map(staff => `
-        <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;" 
-             onmouseover="this.style.background='#f0f0f0'" 
-             onmouseout="this.style.background='white'"
-             onclick="selectAdviser('${staff.name}', '${staff.name} (${staff.usertype})')">
-            <i class='bx ${staff.usertype === 'Teacher' ? 'bx-user' : 'bx-shield-alt'}' style="color: #666; margin-right: 8px; font-size: 1.1rem;"></i>
-            <strong>${staff.name}</strong>
-            <small style="color: #aaa; display: block; font-size: 0.85rem; margin-left: 28px;">
-                ${staff.usertype === 'Teacher' ? 'Adviser' : 'Administrator'}
-            </small>
-        </div>
-    `).join('');
-}
-
-function filterAdviserList() {
-    const searchTerm = document.getElementById('AdviserSearchInput').value.toLowerCase();
-    const container = document.getElementById('AdviserListContainer');
-    
-    const filtered = allStaff.filter(staff => 
-        staff.name.toLowerCase().includes(searchTerm)
-    );
-    
-    if (filtered.length === 0) {
-        container.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">No matching advisers found</div>';
-        return;
-    }
-    
-    container.innerHTML = filtered.map(staff => `
-        <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;" 
-             onmouseover="this.style.background='#f0f0f0'" 
-             onmouseout="this.style.background='white'"
-             onclick="selectAdviser('${staff.name}', '${staff.name} (${staff.usertype})')">
-            <i class='bx ${staff.usertype === 'Teacher' ? 'bx-user' : 'bx-shield-alt'}' style="color: #666; margin-right: 8px; font-size: 1.1rem;"></i>
-            <strong>${staff.name}</strong>
-            <small style="color: #aaa; display: block; font-size: 0.85rem; margin-left: 28px;">
-                ${staff.usertype === 'Teacher' ? 'Adviser' : 'Administrator'}
-            </small>
-        </div>
-    `).join('');
-}
-
-function selectAdviser(value, displayName) {
-    selectedAdviser = value;
-    selectedAdviserName = displayName;
-    document.getElementById('CurrentAdviserDisplay').value = displayName;
-    closeAdviserModal();
-}
 
 // 4. Save Club Data
 async function saveClubData() {
-    
-
     const clubName = document.getElementById('EditClubName').value;
-    const adviser = selectedAdviser; // Use selected adviser from modal
     const logoFile = document.getElementById('EditClubLogo').files[0];
 
     const formData = new FormData();
     formData.append('clubId', editingClubId);
     formData.append('clubname', clubName);
     
-    // Handle adviser selection
-    if (adviser === '__UNASSIGN__') {
-        // Explicitly unassign the adviser with a flag
-        formData.append('unassignAdviser', 'true');
-        formData.append('adviser', '');
-    } else if (adviser && adviser.trim()) {
-        // Send the selected adviser
-        formData.append('adviser', adviser);
-    }
-    // If adviser is empty string, keep unchanged (don't send adviser field)
+    // Attach the array of advisers
+    formData.append('advisers', JSON.stringify(selectedAdvisers));
     
     // Save category as a single string (first selected tag)
     const categoriesArray = Array.from(currentClubCategory);
@@ -305,7 +215,7 @@ async function loadAllUsers() {
     }
 }
 
-// Virtual Scrolling Variables
+// Virtual Scrolling Variaviser)bles
 let currentFilteredUsers = [];
 let visibleUserRange = { start: 0, end: 20 };
 const USERS_PER_PAGE = 20;
@@ -1169,22 +1079,8 @@ window.addEventListener('click', (e) => {
     if (e.target === postModal) closePostModal();
 });
 function openCreateClubModal() {
-    // 1. Populate Adviser Dropdown from the global allUsers array
-    const select = document.getElementById('CreateClubAdviser');
-    select.innerHTML = '<option value="">-- Optional: Select Later --</option>';
-    
-    // Filter for staff members who can lead a club
-    const staff = allUsers.filter(u => 
-        (u.usertype && u.usertype.toLowerCase() === 'teacher') || 
-        (u.usertype && u.usertype.toLowerCase() === 'admin')
-    );
-    staff.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.name;
-        opt.innerText = `${s.name} (${s.usertype})`;
-        select.appendChild(opt);
-    });
-
+    selectedAdvisers = [];
+    renderAdviserTags('create');
     document.getElementById('ClubCreateModal').style.display = 'block';
 }
 
@@ -1210,7 +1106,7 @@ async function submitNewClub(e) {
         const res = await fetch('/api/clubs/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clubname, category, adviser })
+            body: JSON.stringify({ clubname, category, advisers: selectedAdvisers })
         });
 
         const data = await res.json();
@@ -1694,4 +1590,67 @@ window.clearSignaturePad = function() {
     ctx.clearRect(0, 0, signaturePad.width, signaturePad.height);
     // THE FIX: Correct path
     document.getElementById('CurrentSignaturePreview').src = "/uploads/no-signature.png"; 
+};
+window.openAdviserModal = function(target) {
+    activeAdviserTarget = target; // 'edit' or 'create'
+    allStaff = allUsers.filter(u => u.usertype === 'Teacher' || u.usertype === 'Admin');
+    
+    populateAdviserList();
+    document.getElementById('SetAdviserModal').style.display = 'block';
+    document.getElementById('AdviserSearchInput').value = '';
+};
+
+function closeAdviserModal() { document.getElementById('SetAdviserModal').style.display = 'none'; }
+function populateAdviserList(searchTerm = '') {
+    const container = document.getElementById('AdviserListContainer');
+    const filtered = allStaff.filter(staff => staff.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    if (filtered.length === 0) return container.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">No staff found</div>';
+    
+    container.innerHTML = filtered.map(staff => {
+        const isSelected = selectedAdvisers.includes(staff.name);
+        return `
+        <div style="padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; background: ${isSelected ? '#ffeeee' : 'white'}; display: flex; align-items: center;" 
+             onclick="toggleAdviser('${staff.name}')">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} style="margin-right: 15px; pointer-events: none; width: 18px; height: 18px;">
+            <div>
+                <strong style="color: ${isSelected ? '#fa3737' : '#333'}">${staff.name}</strong>
+                <small style="color: #aaa; display: block; font-size: 0.8rem;">${staff.usertype}</small>
+            </div>
+        </div>
+    `}).join('');
+}
+
+window.filterAdviserList = function() { populateAdviserList(document.getElementById('AdviserSearchInput').value); };
+
+window.toggleAdviser = function(name) {
+    if(selectedAdvisers.includes(name)) {
+        selectedAdvisers = selectedAdvisers.filter(n => n !== name);
+    } else {
+        selectedAdvisers.push(name);
+    }
+    populateAdviserList(document.getElementById('AdviserSearchInput').value); // Re-render visually
+};
+
+window.confirmAdviserSelection = function() {
+    renderAdviserTags(activeAdviserTarget);
+    closeAdviserModal();
+};
+
+function renderAdviserTags(target) {
+    const container = document.getElementById(target === 'edit' ? 'EditAdvisersList' : 'CreateAdvisersList');
+    if (selectedAdvisers.length === 0) {
+        container.innerHTML = '<span style="color:#888; font-size: 0.9rem;">No advisers selected...</span>';
+        return;
+    }
+    container.innerHTML = selectedAdvisers.map(name => `
+        <span class="badge" style="background: #fa3737; color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.85rem; display:flex; align-items:center; gap:8px;">
+            ${name} <i class='bx bx-x' style="cursor:pointer; font-size: 1.2rem;" onclick="removeAdviserTag('${name}', '${target}')"></i>
+        </span>
+    `).join('');
+}
+
+window.removeAdviserTag = function(name, target) {
+    selectedAdvisers = selectedAdvisers.filter(n => n !== name);
+    renderAdviserTags(target);
 };

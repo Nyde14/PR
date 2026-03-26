@@ -297,7 +297,7 @@ app.get('/api/users/contacts', async (req, res) => {
         else if (currentUser.club && currentUser.club !== 'none' && currentUser.club !== 'Pending') {
             const escapedClub = currentUser.club.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             
-            // --- FIX START: Allow Advisers to see Admins ---
+            
             if (currentUser.usertype === 'Teacher') {
                 query = { 
                     $or: [
@@ -806,7 +806,8 @@ app.get('/api/clubs', async (req, res) => {
         {
             $project: {
                 clubname: 1,
-                adviser: 1,
+                adviser:1,
+                advisers: 1,
                 branding: 1, 
                 logo: 1, 
                 // Use category as-is, fallback to "Organization" if missing
@@ -1032,10 +1033,14 @@ app.patch('/api/clubs/update-description', async (req, res) => {
 
 app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount: 1 }]), async (req, res) => {
     try {
-        const { clubId, clubname, adviser, category } = req.body; 
+        console.log("--- UPDATE BRANDING TRIGGERED ---");
+        console.log("Request Body:", req.body); // If this is empty, it's a FormData issue (#3)
+        console.log("Uploaded Files:", req.files);
+        // 1. Extract the new array parameter
+        const { clubId, clubname, category, advisers } = req.body; 
         const updateData = {};
         
-        // 1. Fetch the existing club FIRST to detect changes
+        // 2. Fetch the existing club FIRST to detect changes
         const currentClub = await Club.findById(clubId || req.body.id);
         if (!currentClub) return res.status(404).json({ message: "Club not found" });
 
@@ -1043,10 +1048,9 @@ app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount:
         const newClubName = (clubname && clubname.trim()) ? clubname.trim() : oldClubName;
         const isRenaming = oldClubName !== newClubName;
 
-        // 2. Prepare Update Data
+        // 3. Prepare Update Data
         if (isRenaming) {
             updateData['clubname'] = newClubName;
-            // Also update URL slug for routing
             updateData['urlSlug'] = newClubName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
         }
 
@@ -1054,59 +1058,50 @@ app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount:
         if (req.files && req.files['logo']) {
             updateData['branding.logo'] = `/uploads/${req.files['logo'][0].filename}`;
         }
-        if (adviser && adviser.trim()) updateData['adviser'] = adviser;
 
-        const oldAdviserName = currentClub.adviser;
+        // 4. Safely parse the incoming Advisers Array
+        let newAdvisers = [];
+        if (advisers) {
+            try { 
+                newAdvisers = JSON.parse(advisers); 
+            } catch (e) { 
+                newAdvisers = []; 
+            }
+        }
+        updateData['advisers'] = newAdvisers;
 
-        // 3. Update the Club Document
+        // 5. ACTUALLY UPDATE THE DATABASE (This was missing!)
         const updatedClub = await Club.findByIdAndUpdate(
             currentClub._id, 
             { $set: updateData }, 
             { new: true }
         );
 
-        // --- ADVISER SYNC LOGIC ---
-        if (adviser && oldAdviserName && oldAdviserName !== adviser) {
-            await User.findOneAndUpdate({ name: oldAdviserName }, { club: 'none' });
+        // 6. ADVISER SYNC LOGIC (Handles old string format vs new array format)
+        const oldAdvisers = currentClub.advisers && currentClub.advisers.length > 0 
+            ? currentClub.advisers 
+            : (currentClub.adviser ? [currentClub.adviser] : []);
+
+        const removedAdvisers = oldAdvisers.filter(a => a && !newAdvisers.includes(a));
+        const addedAdvisers = newAdvisers.filter(a => a && !oldAdvisers.includes(a));
+
+        if (removedAdvisers.length > 0) {
+            await User.updateMany({ name: { $in: removedAdvisers } }, { club: 'none' });
         }
-        if (adviser) {
-            await User.findOneAndUpdate({ name: adviser }, { club: updatedClub.clubname });
+        if (addedAdvisers.length > 0) {
+            await User.updateMany({ name: { $in: addedAdvisers } }, { club: updatedClub.clubname });
         }
 
-        // --- CASCADING MIGRATION LOGIC ---
+        // 7. CASCADING MIGRATION LOGIC
         if (isRenaming) {
             console.log(`Migrating data from "${oldClubName}" to "${newClubName}"...`);
             const newSlug = updatedClub.urlSlug;
 
-            // A. Migrate all Users (Members & Officers)
-            await User.updateMany(
-                { club: oldClubName }, 
-                { $set: { club: newClubName } }
-            );
-
-            // B. Migrate all Posts
-            await Post.updateMany(
-                { club: oldClubName }, 
-                { $set: { club: newClubName, clubSlug: newSlug } }
-            );
-
-            // C. Migrate all Chat Messages
-            await Message.updateMany(
-                { clubname: oldClubName }, 
-                { $set: { clubname: newClubName } }
-            );
-
-            // D. Migrate Pending Applications
-            await Application.updateMany(
-                { clubname: oldClubName }, 
-                { $set: { clubname: newClubName } }
-            );
-
-            // E. Migrate Document Review Queue
-            await DocumentSubmission.updateMany(
-                { clubName: oldClubName }, 
-                { $set: { clubName: newClubName } }
-            );
+            await User.updateMany({ club: oldClubName }, { $set: { club: newClubName } });
+            await Post.updateMany({ club: oldClubName }, { $set: { club: newClubName, clubSlug: newSlug } });
+            await Message.updateMany({ clubname: oldClubName }, { $set: { clubname: newClubName } });
+            await Application.updateMany({ clubname: oldClubName }, { $set: { clubname: newClubName } });
+            await DocumentSubmission.updateMany({ clubName: oldClubName }, { $set: { clubName: newClubName } });
             
             console.log(`Migration complete for ${newClubName}`);
         }
@@ -1114,10 +1109,9 @@ app.patch('/api/clubs/update-branding', upload.fields([{ name: 'logo', maxCount:
         res.json({ message: "Updated successfully", club: updatedClub });
     } catch (error) {
         console.error("Update Branding Error:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 });
-
 // --- APPLICATIONS ---
 app.post('/api/applications/apply', async (req, res) => {
     try {
@@ -1380,7 +1374,7 @@ app.get('/api/reports/:id/view', async (req, res) => {
 });
 app.post('/api/clubs/create', async (req, res) => {
     try {
-        const { clubname, category, adviser } = req.body;
+        const { clubname, category, advisers } = req.body;
 
         // 1. Validate Input - only clubname is required
         if (!clubname) {
@@ -1404,7 +1398,7 @@ app.post('/api/clubs/create', async (req, res) => {
         // 4. Create initial entry
         const newClub = new Club({
             clubname: clubname.trim(),
-            adviser: adviser || null,
+            advisers: advisers || [],
             category: Array.isArray(category) ? category : [category || "Organization"],
             urlSlug,
             branding: {
@@ -1413,9 +1407,14 @@ app.post('/api/clubs/create', async (req, res) => {
             },
             memberCount: 0
         });
-
+        
         await newClub.save();
-        res.status(201).json({ message: "Organization created successfully", club: newClub });
+        if (advisers && advisers.length > 0) {
+        await User.updateMany({ name: { $in: advisers } }, { club: newClub.clubname });
+}
+
+
+        res.status(201).json({ message: "Club created successfully", club: newClub });
 
     } catch (error) {
         // This will print the exact error in your VS Code/Terminal console
@@ -1584,6 +1583,42 @@ app.get('/api/admin/fix-database-paths', ensureAdminHtml, async (req, res) => {
         }
         res.send(`Fixed ${users.length} users.`);
     } catch (e) { res.status(500).send(e.message); }
+});
+app.get('/api/admin/clean-advisers', ensureAdminHtml, async (req, res) => {
+    try {
+        const clubs = await Club.find({});
+        let fixedCount = 0;
+
+        for (let club of clubs) {
+            let needsSave = false;
+            let finalAdvisers = club.advisers && Array.isArray(club.advisers) ? [...club.advisers] : [];
+
+            // Salvage data from old fields
+            if (club.get('adviser') && typeof club.get('adviser') === 'string') {
+                if (!finalAdvisers.includes(club.get('adviser'))) finalAdvisers.push(club.get('adviser'));
+                needsSave = true;
+            }
+            if (club.get('Adviser') && typeof club.get('Adviser') === 'string') {
+                if (!finalAdvisers.includes(club.get('Adviser'))) finalAdvisers.push(club.get('Adviser'));
+                needsSave = true;
+            }
+
+            if (needsSave || !club.advisers) {
+                // Update the array and physically delete the old ghosts from MongoDB
+                await Club.updateOne(
+                    { _id: club._id }, 
+                    { 
+                        $set: { advisers: finalAdvisers },
+                        $unset: { adviser: "", Adviser: "" } 
+                    }
+                );
+                fixedCount++;
+            }
+        }
+        res.json({ message: `Database cleaned! Fixed ${fixedCount} clubs.` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 // ============================================
 // 5. HTML PAGE ROUTES

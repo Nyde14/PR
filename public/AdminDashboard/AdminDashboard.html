@@ -151,7 +151,7 @@
         </div>
 
         <label class="form-label">Password</label>
-        <input type="password" id="NewPassword" class="modal-input" required placeholder="Min. 6 characters">
+        <input type="password" id="NewPassword" class="modal-input" required placeholder="Recommended 8-12 characters">
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div>
@@ -250,15 +250,15 @@
     <button type="button" class="filter-tag" onclick="toggleClubTag(this, 'Leadership')">Leadership</button>
 </div>
 
-        <label class="form-label">Assign Adviser</label>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="CurrentAdviserDisplay" class="modal-input" readonly 
-                   placeholder="Click button to select..." style="flex: 1;">
-            <button type="button" class="btn-broadcast" onclick="openAdviserModal()" 
-                    style="padding: 8px 15px; white-space: nowrap;">
-                <i class='bx bx-search'></i> Select Adviser
-            </button>
-        </div>
+        <label class="form-label">Manage Advisers</label>
+<div style="display: flex; gap: 10px; align-items: flex-start; flex-direction: column;">
+    <div id="EditAdvisersList" style="display: flex; flex-wrap: wrap; gap: 5px; min-height: 38px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 100%; background: #f9f9f9;">
+        <span style="color:#888; font-size: 0.9rem;">No advisers selected...</span>
+    </div>
+    <button type="button" class="btn-broadcast" onclick="openAdviserModal('edit')" style="padding: 8px 15px; width: 100%;">
+        <i class='bx bx-user-plus'></i> Select Advisers
+    </button>
+</div>
 
         <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
             <button onclick="closeClubModal()" class="btn-cancel">Cancel</button>
@@ -270,39 +270,23 @@
 <div id="SetAdviserModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
         <span class="close" onclick="closeAdviserModal()">&times;</span>
-        <h3 style="color: #fa3737; margin-top: 0;">👤 Select Adviser / Staff</h3>
+        <h3 style="color: #fa3737; margin-top: 0;">👤 Select Advisers / Staff</h3>
         
         <div style="margin-bottom: 15px;">
             <input type="text" id="AdviserSearchInput" class="modal-input" placeholder="Search by name..." 
                    onkeyup="filterAdviserList()" style="width: 100%;">
         </div>
 
-        <div style="border: 1px solid #ddd; border-radius: 8px; max-height: 300px; overflow-y: auto; background: #f9f9f9;">
-            <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;" 
-                 onmouseover="this.style.background='#f0f0f0'" 
-                 onmouseout="this.style.background='white'"
-                 onclick="selectAdviser('', 'Keep Unchanged')">
-                <i class='bx bx-check' style="color: #666; margin-right: 8px;"></i>
-                <strong style="color: #666;">Keep Unchanged</strong>
-                <small style="color: #aaa; display: block; margin-left: 28px;">No changes to current assignment</small>
-            </div>
-            
-            <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;" 
-                 onmouseover="this.style.background='#f0f0f0'" 
-                 onmouseout="this.style.background='white'"
-                 onclick="selectAdviser('__UNASSIGN__', 'Unassign')">
-                <i class='bx bx-trash' style="color: #e74c3c; margin-right: 8px;"></i>
-                <strong style="color: #e74c3c;">Unassign</strong>
-                <small style="color: #aaa; display: block; margin-left: 28px;">Remove adviser from this club</small>
-            </div>
-
-            <div id="AdviserListContainer">
-                <div style="padding: 15px; text-align: center; color: #888;">Loading advisers...</div>
-            </div>
+        <div id="AdviserListContainer" style="border: 1px solid #ddd; border-radius: 8px; max-height: 300px; overflow-y: auto; background: #f9f9f9;">
+            <div style="padding: 15px; text-align: center; color: #888;">Loading advisers...</div>
         </div>
 
-        <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
-            <button onclick="closeAdviserModal()" class="btn-cancel">Cancel</button>
+        <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <small style="color: #888;">Select one or multiple.</small>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeAdviserModal()" class="btn-cancel">Cancel</button>
+                <button onclick="confirmAdviserSelection()" class="btn-confirm">Confirm Selection</button>
+            </div>
         </div>
     </div>
 </div>
@@ -522,11 +506,15 @@
                 <option value="Performance">Performance</option>
                 <option value = "Leadership">Leadership</option>
             </select>
-
-            <label class="form-label">Assigned Moderator (Adviser)</label>
-            <select id="CreateClubAdviser" class="modal-input">
-                <option value="">-- Optional: Select Later --</option>
-            </select>
+           <label class="form-label">Assign Advisers</label>
+<div style="display: flex; gap: 10px; align-items: flex-start; flex-direction: column;">
+    <div id="CreateAdvisersList" style="display: flex; flex-wrap: wrap; gap: 5px; min-height: 38px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 100%; background: #f9f9f9; box-sizing: border-box;">
+        <span style="color:#888; font-size: 0.9rem;">No advisers selected...</span>
+    </div>
+    <button type="button" class="btn-broadcast" onclick="openAdviserModal('create')" style="padding: 8px 15px; width: 100%;">
+        <i class='bx bx-user-plus'></i> Select Advisers
+    </button>
+</div>
 
             <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
                 <button type="button" class="btn-cancel" onclick="closeCreateClubModal()">Cancel</button>
