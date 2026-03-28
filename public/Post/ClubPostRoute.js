@@ -29,7 +29,24 @@ const getUser = async (req) => {
         return await User.findById(decoded.userId);
     } catch (e) { return null; }
 };
-
+const sendLiveNotification = async (req, recipientName, senderName, message, type = 'info', link = '#') => {
+    try {
+        const newNotif = new Notification({
+            recipient: recipientName,
+            sender: senderName,
+            message: message,
+            type: type,
+            link: link
+        });
+        await newNotif.save();
+        const io = req.app.get('io');
+        const activeUsers = req.app.get('activeUsers');
+        if (io && activeUsers) {
+            const socketId = activeUsers.get(recipientName);
+            if (socketId) io.to(socketId).emit('new_notification', newNotif);
+        }
+    } catch (err) { console.error("Live Notif Error:", err); }
+};
 router.post('/create', upload.single('media'), async (req, res) => {
     try {
         const token = req.session?.token || req.headers['authorization']?.split(' ')[1];
@@ -258,6 +275,7 @@ router.put('/like/:id', async (req, res) => {
         } else {
             post.likes.splice(index, 1);
         }
+        
 
         await post.save();
         
@@ -325,7 +343,16 @@ router.delete('/comment/:postId/:commentId', async (req, res) => {
         if (comment.author !== user.name && user.usertype !== 'Admin' && user.usertype !== 'Teacher') {
             return res.status(403).json({ message: "You can only delete your own comments." });
         }
-
+        if (post.author !== user.name) {
+            await sendLiveNotification(
+                req,
+                post.author,
+                user.name,
+                `${user.name} commented on your post: "${post.title}"`,
+                'info',
+                '/ClubPortalFeed/ClubPortalFeed.html'
+            );
+        }
         post.comments.pull(commentId);
         await post.save();
 
@@ -361,6 +388,16 @@ router.post('/comment/reply/:postId/:commentId', async (req, res) => {
             content: content,
             timestamp: new Date()
         });
+        if (comment.author !== user.name) {
+            await sendLiveNotification(
+                req,
+                comment.author,
+                user.name,
+                `${user.name} replied to your comment on post: "${post.title}"`,
+                'info',
+                '/ClubPortalFeed/ClubPortalFeed.html'
+            );
+        }
 
         await post.save();
         res.json({ success: true, comments: post.comments });
@@ -510,6 +547,43 @@ router.get('/club/:clubname', async (req, res) => {
     } catch (error) {
         console.error("Club Posts Error:", error);
         res.status(500).json({ message: "Server error" });
+    }
+});
+router.post('/:postId/like', async (req, res) => {
+    try {
+        const user = await getUser(req);
+        if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+        const post = await ClubPost.findById(req.params.postId);
+        if (!post) return res.status(404).json({ message: "Post not found" });
+
+        const userId = user._id.toString();
+        const likeIndex = post.likes.indexOf(userId);
+
+        if (likeIndex === -1) {
+            // Add Like
+            post.likes.push(userId);
+            
+            // LIVE NOTIF: Only notify if the liker is NOT the post author
+            if (post.author !== user.name) {
+                await sendLiveNotification(
+                    req, 
+                    post.author, 
+                    user.name, 
+                    `${user.name} liked your post: "${post.title}"`, 
+                    'info', 
+                    '/ClubPortalFeed/ClubPortalFeed.html'
+                );
+            }
+        } else {
+            // Remove Like (Unlike)
+            post.likes.splice(likeIndex, 1);
+        }
+
+        await post.save();
+        res.json({ success: true, likesCount: post.likes.length, isLiked: likeIndex === -1 });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 module.exports = router;

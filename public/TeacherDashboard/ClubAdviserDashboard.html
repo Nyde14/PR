@@ -203,7 +203,27 @@
                     <button onclick="saveDescription()" class="btn-save" style="width:fit-content;">Save Changes</button>
                 </div>
             </div> 
+<div class="section-card">
+            <div class="section-title"> Manage Club Tags</div>
+            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Select categories that describe your club to help students find you on the feed.</p>
+            
+            <div id="AdviserClubTags" class="tags-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px;">
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Academic')">Academic</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Sports')">Sports</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Social')">Social</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Arts')">Arts</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Performance')">Performance</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Tech')">Tech</button>
+                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Leadership')">Leadership</button>
+            </div>
+            
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom: 20px;">
+                <input type="text" id="CustomTagInput" placeholder="Add custom tag (e.g. Esports, Debate)..." style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                <button type="button" onclick="window.addCustomAdviserTag()" class="btn-save" style="background:#333;">+ Add Custom</button>
+            </div>
 
+            <button onclick="window.saveTags()" class="btn-save">💾 Save Tags</button>
+        </div>
             <div class="section-card">
     <div class="section-title">👥 Club Members</div>
     <table class="admin-table">
@@ -240,23 +260,7 @@
         </button>
     </form>
 </div>
-<div>
-            <label style="display:block; margin-bottom:5px; font-weight:bold;">Club Categories & Tags</label>
-            <div id="AdviserClubTags" class="tags-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Academic')">Academic</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Sports')">Sports</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Social')">Social</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Arts')">Arts</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Performance')">Performance</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Tech')">Tech</button>
-                <button type="button" class="filter-tag" onclick="window.toggleAdviserTag(this, 'Leadership')">Leadership</button>
-            </div>
-            
-            <div style="display:flex; gap:10px; align-items:center;">
-                <input type="text" id="CustomTagInput" placeholder="Add custom tag (e.g. Esports, Debate)..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px;">
-                <button type="button" onclick="window.addCustomAdviserTag()" style="padding:8px 15px; background:#333; color:white; border:none; border-radius:6px; cursor:pointer;">+ Add Custom</button>
-            </div>
-        </div>
+
 <div class="section-card">
     <div class="section-title">📜 Document History & Status</div>
     <div class="table-container">

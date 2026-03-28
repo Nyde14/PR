@@ -26,14 +26,16 @@ router.post('/submit', async (req, res) => {
         const targetType = req.body.targetType || "Content";
         const admins = await User.find({ usertype: 'Admin' });
         
-        const reportNotifications = admins.map(admin => ({
-    recipient: admin._id,
-    sender: "System Alert",
-    message: `A new ${targetType} report requires your review.`,
-    link: "/AdminDashboard/AdminDashboard.html", 
-    isRead: false,
-    timestamp: new Date()
-}));
+        for (const admin of admins) {
+            await sendLiveNotification(
+                req,
+                admin.name, 
+                "System Alert",
+                `⚠️ New ${targetType} report submitted by ${user.name}.`,
+                'alert',
+                '/AdminDashboard/AdminDashboard.html'
+            );
+        }
 
         // Validate inputs
         if (!targetType || !targetId || !reason) {
@@ -240,6 +242,35 @@ router.get('/:id/view', async (req, res) => {
     } catch (error) {
         console.error("View Error:", error);
         res.status(500).json({ message: "Server error" });
+    }
+});
+router.patch('/:reportId/status', async (req, res) => {
+    try {
+        const user = await getUser(req); // Use your existing getUser helper
+        if (!user || user.usertype !== 'Admin') {
+            return res.status(403).json({ message: "Only admins can update reports." });
+        }
+
+        const { status } = req.body; // e.g., 'resolved' or 'dismissed'
+        const report = await Report.findById(req.params.reportId);
+        if (!report) return res.status(404).json({ message: "Report not found" });
+
+        report.status = status;
+        await report.save();
+
+        // LIVE NOTIF: Tell the person who filed the report what happened
+        await sendLiveNotification(
+            req,
+            report.reporterName, 
+            "System",
+            `Your report regarding ${report.targetType} has been ${status}.`,
+            status === 'resolved' ? 'success' : 'info',
+            '/ClubPortalFeed/ClubPortalFeed.html'
+        );
+
+        res.json({ success: true, message: `Report marked as ${status}.` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 

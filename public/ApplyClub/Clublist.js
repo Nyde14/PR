@@ -33,7 +33,7 @@ function renderClubs(clubs) {
     const container = document.getElementById('ClubsGrid');
     container.innerHTML = "";
 
-    if (!clubs || clubs.length === 0) {
+    if (!clubs || clubs.length === 0) {                  
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align:center; padding:40px; color:#888;">
                 <p>No clubs found matching your search.</p>
@@ -53,10 +53,11 @@ function renderClubs(clubs) {
         // Handle category - could be string or array, default to Organization
         let categoryDisplay = 'Organization';
         if (club.category) {
-            if (typeof club.category === 'string' && club.category.trim() !== '') {
+            if (Array.isArray(club.category) && club.category.length > 0) {
+                // Joins multiple tags like: "Tech • Academic • Social"
+                categoryDisplay = club.category.join(' &bull; '); 
+            } else if (typeof club.category === 'string' && club.category.trim() !== '') {
                 categoryDisplay = club.category;
-            } else if (Array.isArray(club.category) && club.category.length > 0) {
-                categoryDisplay = club.category[0];
             }
         }
 

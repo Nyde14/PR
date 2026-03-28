@@ -124,15 +124,46 @@ function setupDarkMode() {
 // ==========================================
 // 3. HEADER & LOGOUT
 // ==========================================
+let socket = null; // For future real-time features
+let currentUserName = null; // Store current user's name for socket events
+(function initSocketIO() {
+    if (!document.querySelector('script[src*="socket.io.js"]')) {
+        const script = document.createElement('script');
+        script.src = '/socket.io/socket.io.js';
+        script.onload = () => {
+            socket = io(); // Connect to the server
+            
+            // If the user header loaded before the script, register them now
+            if (currentUserName) socket.emit('register_user', currentUserName);
+
+            // LISTEN FOR LIVE NOTIFICATIONS
+            socket.on('new_notification', (notif) => {
+                // 1. Show a Live Toast Alert!
+                window.showToast(`🔔 ${notif.message}`, 'info');
+                
+                // 2. Play a subtle "ding" sound (Optional, uncomment if you add a sound file)
+                // new Audio('/public/sounds/ding.mp3').play().catch(e => {});
+
+                // 3. Refresh the dropdown list and red badge instantly
+                checkNotifications(); 
+            });
+        };
+        document.head.appendChild(script);
+    }
+})();
 async function loadUserHeader() {
     try {
         const res = await fetch('/api/auth/me');
         if (!res.ok) return;
         const user = await res.json(); 
 
+        currentUserName = user.name;
+        
+        // Register user for WebSockets if socket is already loaded
+        if (socket) socket.emit('register_user', currentUserName);
+
         const profileContainer = document.getElementById('UserProfile');
         if (profileContainer) {
-            // Fix the gap: Use flex gap instead of margins
             profileContainer.style.display = 'flex';
             profileContainer.style.alignItems = 'center';
             profileContainer.style.gap = '10px'; 
@@ -142,13 +173,9 @@ async function loadUserHeader() {
             const isAdviser = user.usertype === 'Teacher' || user.usertype === 'Admin';
             const roleLabel = isAdviser ? 'CLUB ADVISER' : (user.clubPosition || 'MEMBER').toUpperCase();
 
-            // 1. Clear and Build Header
             profileContainer.innerHTML = ''; 
-
-            // 2. Inject Bell first
             createNotificationBell(profileContainer);
 
-            // 3. Inject Profile Picture (Added z-index to ensure clickability)
             const profileWrapper = document.createElement('div');
             profileWrapper.className = 'header-profile-wrapper';
             profileWrapper.style.position = 'relative';
@@ -161,7 +188,6 @@ async function loadUserHeader() {
             `;
             profileContainer.appendChild(profileWrapper);
 
-            // 4. Update Name and Fetch Notifications
             const nameEl = document.getElementById('Name');
             if (nameEl) nameEl.innerText = `${user.name} (${roleLabel})`;
             
@@ -175,9 +201,9 @@ function createNotificationBell(container) {
 
     const wrapper = document.createElement('div');
     wrapper.className = 'notification-wrapper';
-    // Removed large margin-right to fix the gap
     wrapper.style.display = "flex";
     wrapper.style.alignItems = "center";
+    wrapper.style.position = "relative";
     
     wrapper.innerHTML = `
         <button id="NotifBtn" onclick="toggleNotifDropdown()">
@@ -193,7 +219,6 @@ function createNotificationBell(container) {
 
     container.appendChild(wrapper);
 }
-
 function logout() {
     // Clear session/token
     fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
@@ -219,45 +244,45 @@ async function checkNotifications() {
     if (!listContainer) return; 
 
     try {
-        // Use the 'credentials: include' to ensure the session cookie is sent
         const response = await fetch('/api/notifications', {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include' 
         });
         
-        if (response.status === 401) return; // Silent return if not logged in
+        if (response.status === 401) return; 
 
         if (response.ok) {
             const data = await response.json();
-            updateNotifUI(data.notifications, data.unread);
+            // Pass both the list and the UNSEEN count
+            updateNotifUI(data.notifications, data.unseen); 
         }
     } catch (error) {
         console.error("Notification check skipped (offline or server error)");
     }
 }
-function updateNotifUI(list, unreadCount) {
+function updateNotifUI(list, unseenCount) {
     const badge = document.getElementById('NotifBadge');
     const container = document.getElementById('NotifList');
     if(!badge || !container) return;
 
-    // Update Badge
-    if (unreadCount > 0) {
+    // Update Badge based on UNSEEN count
+    if (unseenCount > 0) {
         badge.style.display = 'block';
-        badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+        badge.innerText = unseenCount > 9 ? '9+' : unseenCount;
     } else {
         badge.style.display = 'none';
     }
 
-    // Update List
     if (!list || list.length === 0) {
         container.innerHTML = '<p class="empty-notif">No notifications.</p>';
         return;
     }
 
+    // Notice we check `notif.isRead` for the CSS class (highlighted background)
     container.innerHTML = list.map(notif => `
         <div class="notif-item ${notif.isRead ? 'read' : 'unread'}" 
-             onclick="window.location.href='${notif.link}'">
+             onclick="handleNotificationClick('${notif._id}', '${notif.link}')">
             <div class="notif-sender">${notif.sender}</div>
             <div class="notif-message">${notif.message}</div>
             <div class="notif-time">
@@ -266,25 +291,38 @@ function updateNotifUI(list, unreadCount) {
         </div>
     `).join('');
 }
-
 // --- C. INTERACTION ---
 window.toggleNotifDropdown = async function() {
     const dd = document.getElementById('NotifDropdown');
+    const badge = document.getElementById('NotifBadge');
     if (!dd) return;
     
     const isClosed = dd.style.display === 'none' || dd.style.display === '';
     dd.style.display = isClosed ? 'block' : 'none';
 
-    if (isClosed) await markAllRead();
+    if (isClosed && badge && badge.style.display === 'block') {
+        // Clear the red dot immediately
+        badge.style.display = 'none';
+        
+        // Tell the server we SAW them (but didn't necessarily read them)
+        try {
+            await fetch('/api/notifications/mark-seen', { method: 'PUT' });
+        } catch (e) { console.error("Failed to mark seen", e); }
+    }
+};
+
+window.handleNotificationClick = async function(notifId, link) {
+    // When they actually click a specific notification, mark everything read
+    // Alternatively, you could make a route to mark just ONE as read
+    await markAllRead();
+    window.location.href = link;
 };
 
 window.markAllRead = async function() {
     try {
         await fetch('/api/notifications/mark-read', { method: 'PUT' });
-        const badge = document.getElementById('NotifBadge');
-        if(badge) badge.style.display = 'none';
         
-        // Visually mark items as read immediately
+        // Visually clear the blue highlights immediately
         document.querySelectorAll('.notif-item.unread').forEach(el => {
             el.classList.remove('unread');
             el.classList.add('read');

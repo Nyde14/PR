@@ -311,9 +311,13 @@ async function fetchClubStats(clubName) {
         currentAdviserTags.clear();
         // Handle both older string categories and newer array tags
         let tagsArray = [];
-        if (Array.isArray(data.tags)) tagsArray = data.tags;
-        else if (data.category) tagsArray = [data.category];
-
+        if (Array.isArray(data.category)) {
+            tagsArray = data.category;
+        } else if (data.category && typeof data.category === 'string') {
+            tagsArray = [data.category]; // Wrap it in an array ONLY if it's a single string
+        } else if (Array.isArray(data.tags)) {
+            tagsArray = data.tags; // Fallback for old schema
+        }
         const tagsContainer = document.getElementById('AdviserClubTags');
         if (tagsContainer) {
             // Unselect all default tags first
@@ -383,25 +387,47 @@ window.saveDescription = async function() {
     const shortDesc = document.getElementById('ShortDescInput').value;
     const fullDesc = document.getElementById('FullDescInput').value;
 
-    const isConfirmed = await window.showConfirm(
-        "Update Description",
-        "Update club description?",
-        "Update"
-    );
+    const isConfirmed = await window.showConfirm("Update Profile", "Update club description?", "Update");
     if (!isConfirmed) return;
 
     try {
         const response = await fetch('/api/clubs/update-description', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clubname: clubName, shortDescription: shortDesc, fullDescription: fullDesc })
+            body: JSON.stringify({ 
+                clubname: clubName, 
+                shortDescription: shortDesc, 
+                fullDescription: fullDesc 
+                // Notice we DO NOT send 'category' here anymore
+            })
         });
 
-        if (response.ok) window.showToast("Club profile updated successfully!");
-        else window.showToast("Update failed.", "error");
-    } catch (error) { console.error(error); }
+        if (response.ok) window.showToast("✅ Description updated successfully!");
+        else window.showToast("❌ Update failed.", "error");
+    } catch (error) { window.showToast("❌ Network error.", "error"); }
 };
+window.saveTags = async function() {
+    const clubName = document.getElementById('DisplayClubName').innerText;
+    const tagsArray = Array.from(currentAdviserTags);
 
+    const isConfirmed = await window.showConfirm("Update Tags", "Save these tags for your club?", "Save");
+    if (!isConfirmed) return;
+
+    try {
+        const response = await fetch('/api/clubs/update-description', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                clubname: clubName, 
+                category: tagsArray.length > 0 ? tagsArray : ["Organization"] 
+                // Notice we ONLY send 'category' here
+            })
+        });
+
+        if (response.ok) window.showToast("✅ Tags updated successfully!");
+        else window.showToast("❌ Update failed.", "error");
+    } catch (error) { window.showToast("❌ Network error.", "error"); }
+};
 window.saveBranding = async function() {
     const clubName = document.getElementById('DisplayClubName').innerText;
     const logoFile = document.getElementById('LogoInput').files[0];

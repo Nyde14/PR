@@ -8,6 +8,8 @@ const multer = require('multer');
 const fs = require('fs');
 const { PDFDocument } = require('pdf-lib');
 require('dotenv').config();
+const { Server } = require('socket.io'); 
+const http = require('http');
 
 // --- ROUTE IMPORTS ---
 const authRoutes = require('./public/Login/LoginRoute.js');
@@ -25,7 +27,36 @@ const Post = require('./public/Schematics/ClubPostSchema.js');
 const Notification = require('./public/Schematics/NotificationSchema.js');
 const DocumentSubmission = require('./public/Schematics/DocumentSchema.js');
 
+
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: '*', methods: ['GET', 'POST'] }
+});
+
+const activeUsers = new Map();
+
+io.on('connection', (socket) => {
+    console.log('A user connected via WebSocket:', socket.id);
+
+    socket.on('register_user', (username) => {
+        activeUsers.set(username, socket.id);
+        console.log(`${username} is online.`);
+    });
+
+    socket.on('disconnect', () => {
+        for (let [username, id] of activeUsers.entries()) {
+            if (id === socket.id) {
+                activeUsers.delete(username);
+                console.log(`${username} went offline.`);
+                break;
+            }
+        }
+    });
+});
+
+app.set('io', io);
+app.set('activeUsers', activeUsers);
 
 // Connect to database
 connectDB();
@@ -128,6 +159,30 @@ const protectPublicFolders = (req, res, next) => {
         return ensureAuthenticatedHtml(req, res, next);
     }
     next(); 
+};
+const sendLiveNotification = async (req, recipientName, senderName, message, type = 'info', link = '#') => {
+    try {
+        const newNotif = new Notification({
+            recipient: recipientName,
+            sender: senderName,
+            message: message,
+            type: type,
+            link: link
+        });
+        await newNotif.save();
+
+        const io = req.app.get('io');
+        const activeUsers = req.app.get('activeUsers');
+        
+        if (io && activeUsers) {
+            const socketId = activeUsers.get(recipientName);
+            if (socketId) {
+                io.to(socketId).emit('new_notification', newNotif);
+            }
+        }
+    } catch (err) {
+        console.error("Live Notification Failed:", err);
+    }
 };
 
 // --- ROOT REDIRECT ---
@@ -524,14 +579,14 @@ app.patch('/api/chat/delete/:id', async (req, res) => {
 
         // Notify user if a moderator deleted their message
         if (!isSender && (isAdmin || isAdviser)) {
-            const newNotif = new Notification({
-                recipient: msg.sender,
-                sender: "System",
-                type: 'alert',
-                message: `A message you sent in ${msg.clubname || 'Private Chat'} was removed by a moderator.`,
-                link: msg.clubname ? '/ClubChat/ClubChat.html' : '/ChatInbox/ChatInbox.html'
-            });
-            await newNotif.save();
+            await sendLiveNotification(
+                req,
+                msg.sender,
+                "System",
+                `A message you sent in ${msg.clubname || 'Private Chat'} was removed by a moderator.`,
+                'alert',
+                msg.clubname ? '/ClubChat/ClubChat.html' : '/ChatInbox/ChatInbox.html'
+            );
         }
 
         msg.isDeleted = true;
@@ -879,9 +934,16 @@ app.post('/api/clubs/submit-document', ensureAuthenticatedHtml, async (req, res)
     isRead: false,
     timestamp: new Date()
 }));
-            if (adminNotifications.length > 0) {
-    await Notification.insertMany(adminNotifications);
-}
+            for (const admin of admins) {
+                await sendLiveNotification(
+                    req,
+                    admin.name, // Make sure Notification schema looks for admin's name, not ID
+                    req.body.clubname || "Club Portal",
+                    `New document submitted for review: ${req.file.originalname}`,
+                    'info',
+                    '/AdminDashboard/AdminDashboard.html'
+                );
+            }
 
             await newDoc.save();
             res.json({ success: true, message: "Document submitted successfully!" });
@@ -1017,13 +1079,21 @@ app.get('/api/clubs/:slug', async (req, res) => {
 
 app.patch('/api/clubs/update-description', async (req, res) => {
     try {
-        const { clubname, shortDescription, fullDescription } = req.body;
+        const { clubname, shortDescription, fullDescription, category } = req.body;
+        
+        // Build a smart update object
+        let updateFields = {};
+        if (shortDescription !== undefined) updateFields.shortDescription = shortDescription;
+        if (fullDescription !== undefined) updateFields.fullDescription = fullDescription;
+        if (category !== undefined) updateFields.category = category;
+
         const updatedClub = await Club.findOneAndUpdate(
             { clubname: clubname },
-            { shortDescription, fullDescription },
+            { $set: updateFields }, // Only updates the fields we provided!
             { new: true } 
         );
-        res.json({ message: "Description updated", club: updatedClub });
+        
+        res.json({ message: "Updated successfully", club: updatedClub });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -1145,6 +1215,14 @@ app.patch('/api/applications/:id/status', async (req, res) => {
         } else if (status === 'rejected') {
             await User.findOneAndUpdate({ name: updatedApp.studentname }, { club: "none" });
         }
+        await sendLiveNotification(
+            req,
+            updatedApp.studentname,
+            updatedApp.clubname,
+            status === 'approved' ? `Welcome! Your application to ${updatedApp.clubname} was approved.` : `Your application to ${updatedApp.clubname} was declined.`,
+            status === 'approved' ? 'success' : 'alert',
+            '/ClubPortalFeed/ClubPortalFeed.html'
+        );
         res.json({ message: `Application ${status}!`, data: updatedApp });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -1664,6 +1742,6 @@ app.get('/AdminDashboard/AdminClubAdviserDashboard.html', ensureAdminHtml, (req,
 // Logger
 
 
-app.listen(3000, '0.0.0.0', () => {
+server.listen(3000, '0.0.0.0', () => {
   console.log('Server is running on port 3000');
 });

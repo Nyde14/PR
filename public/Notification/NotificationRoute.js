@@ -3,7 +3,6 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Notification = require('../Schematics/NotificationSchema.js');
 const User = require('../Schematics/UserSchema.js');
-
 // Middleware to get current user
 const getAuthUser = async (req) => {
     const token = req.session.token || req.headers['authorization']?.split(' ')[1];
@@ -20,20 +19,18 @@ router.get('/', async (req, res) => {
         const user = await getAuthUser(req);
         if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-        // Get notifications for this user, newest first
         const notifs = await Notification.find({ recipient: user.name })
             .sort({ timestamp: -1 })
-            .limit(20); // Only get last 20 to keep it fast
+            .limit(10); 
 
-        // Count unread
-        const unreadCount = await Notification.countDocuments({ recipient: user.name, isRead: false });
+        // UPDATED: Count UNSEEN instead of UNREAD for the notification bell badge
+        const unseenCount = await Notification.countDocuments({ recipient: user.name, isSeen: false });
 
-        res.json({ notifications: notifs, unread: unreadCount });
+        res.json({ notifications: notifs, unseen: unseenCount });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
-
 // 2. MARK AS READ (When user opens the menu)
 router.put('/mark-read', async (req, res) => {
     try {
@@ -46,6 +43,47 @@ router.put('/mark-read', async (req, res) => {
         );
 
         res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+router.put('/mark-seen', async (req, res) => {
+    try {
+        const user = await getAuthUser(req);
+        if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+        await Notification.updateMany(
+            { recipient: user.name, isSeen: false },
+            { $set: { isSeen: true } }
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+router.get('/test-live', async (req, res) => {
+    try {
+        const user = await getAuthUser(req);
+        if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+        const newNotif = new Notification({
+            recipient: user.name,
+            message: "This is a live test notification!",
+            type: "success"
+        });
+        await newNotif.save();
+
+        // --- WEBSOCKET MAGIC: Fire the live event! ---
+        const io = req.app.get('io');
+        const activeUsers = req.app.get('activeUsers');
+        const socketId = activeUsers.get(user.name);
+
+        if (socketId) {
+            io.to(socketId).emit('new_notification', newNotif);
+        }
+
+        res.json({ success: true, message: "Live notification sent!" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
