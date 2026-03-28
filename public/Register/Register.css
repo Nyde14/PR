@@ -6,13 +6,7 @@
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
 }
 
-body {
-    background-color: #f4f4f4;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
+
 
 /* CONTAINER */
 .register-container {
@@ -21,13 +15,6 @@ body {
     padding: 20px;
 }
 
-.register-box {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
 
 /* HEADER */
 .form-header h2 {
@@ -141,4 +128,34 @@ body {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
+}
+/* Update the body to allow scrolling when content is too tall */
+body {
+    background-color: #f4f4f4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Changed from height to min-height */
+    margin: 0;         /* Ensure no default margin interference */
+    padding: 40px 0;   /* Adds breathing room at the top and bottom */
+}
+
+/* CONTAINER */
+.register-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    /* Ensure the container itself doesn't cause overflow issues */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure the box stays within the viewport on small screens */
+.register-box {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
 }
