@@ -223,3 +223,24 @@ body{
     width: 80px;           /* Adjust this to change logo size */
     height: auto;          /* Maintains aspect ratio */
 }
+#ModalMessage {
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.timer-active {
+    color: #fa3737 !important;
+    font-weight: bold;
+    display: block;
+    padding: 10px;
+    background: #fff5f5;
+    border-radius: 6px;
+    border: 1px solid #ffcccc;
+    margin-top: 15px;
+}
+
+.input-field:disabled {
+    background-color: #f0f0f0;
+    cursor: not-allowed;
+    border-color: #eee;
+}

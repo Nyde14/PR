@@ -1,10 +1,12 @@
 // ==========================================
 // 0. CUSTOM CAPTCHA SETUP
 // ==========================================
+let regAttempts = parseInt(localStorage.getItem('regAttempts')) || 0;
+const MAX_ATTEMPTS = 5;
 document.addEventListener('DOMContentLoaded', function() {
     const canvas = document.getElementById('captchaCanvas');
     let generatedCaptcha = '';
-
+    
     // Function to generate random jumbled characters
     function generateJumbledCharacters() {
         const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -131,7 +133,10 @@ document.getElementById('sendOtpBtn').addEventListener('click', async function()
 // B. Handle Form Submit (Registration)
 document.getElementById('RegisterForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-
+    if (regAttempts >= MAX_ATTEMPTS) {
+        alert("Too many failed attempts. Please wait 15 minutes.");
+        return;
+    }
     // Validate custom CAPTCHA (case-insensitive)
     const captchaInput = document.getElementById('captchaInput').value.trim().toUpperCase();
     const generatedCaptcha = window.generatedCaptcha();
@@ -182,35 +187,55 @@ document.getElementById('RegisterForm').addEventListener('submit', async functio
             alert("Registration Successful! Please log in.");
             window.location.href = "/Login/Login.html";
         } else {
+            regAttempts++;
             alert(data.message);
             submitBtn.innerText = "Sign Up";
             submitBtn.disabled = false;
             window.drawCaptcha(); // Reset CAPTCHA on error
+            if (regAttempts >= MAX_ATTEMPTS) {
+                const submitBtn = document.querySelector('.register-btn');
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Blocked (Too many attempts)";
+            }
         }
+
     } catch (error) {
         alert("Server error.");
+        regAttempts++;
         submitBtn.innerText = "Sign Up";
         submitBtn.disabled = false;
         window.drawCaptcha(); // Reset CAPTCHA on error
     }
 });
-(function(){
-    window.unlockConsole = function(passcode) {
-        // Use a specific developer passcode (Do NOT use your actual admin account password here)
-        if (passcode === "MeowMeowhahaha") {
-            
-            // 3. If correct, attach the dev tools to the window so you can use them
-            window.NexusAdmin = devTools;
-            
-            console.clear();
-            console.log("%c🔓 CONSOLE UNLOCKED", "color: #28a745; font-size: 24px; font-weight: bold;");
-            console.log("%cDeveloper tools have been mounted to 'NexusAdmin'.", "color: #333; font-size: 14px;");
-            console.log("Type %cNexusAdmin.%c to see available commands.", "color: #fa3737; font-weight: bold;", "color: inherit;");
-            
-            return "Welcome back, Admin.";
+function checkRegBlock() {
+    const blockExpiry = localStorage.getItem('regBlockExpiry');
+    if (blockExpiry && Date.now() < blockExpiry) {
+        startRegTimer(Math.ceil((blockExpiry - Date.now()) / 1000));
+    }
+}
+
+function startRegTimer(seconds) {
+    const btn = document.querySelector('.register-btn');
+    btn.disabled = true;
+    
+    const interval = setInterval(() => {
+        const remaining = Math.ceil((localStorage.getItem('regBlockExpiry') - Date.now()) / 1000);
+        if (remaining <= 0) {
+            clearInterval(interval);
+            btn.disabled = false;
+            btn.innerText = "Sign Up";
+            localStorage.removeItem('regBlockExpiry');
+            localStorage.setItem('regAttempts', 0);
+            regAttempts = 0;
         } else {
-            console.log("%c❌ ACCESS DENIED", "color: #fa3737; font-size: 24px; font-weight: bold;");
-            return "Intruder logged.";
+            btn.innerText = `Blocked (${remaining}s)`;
         }
-    };
-})();
+    }, 1000);
+}
+
+// In your form submit listener's failure block:
+if (response.status === 429 || regAttempts >= MAX_ATTEMPTS) {
+    const expiry = Date.now() + (15 * 60 * 1000); // 15 mins
+    localStorage.setItem('regBlockExpiry', expiry);
+    startRegTimer(15 * 60);
+}

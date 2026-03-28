@@ -31,8 +31,7 @@ async function loadClubs() {
 
 function renderClubs(clubs) {
     const container = document.getElementById('ClubsGrid');
-    container.innerHTML = "";
-
+    
     if (!clubs || clubs.length === 0) {                  
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align:center; padding:40px; color:#888;">
@@ -42,42 +41,44 @@ function renderClubs(clubs) {
         return;
     }
 
-    clubs.forEach(club => {
-        // Fallback for missing images
-        const logo = (club.branding && club.branding.logo) ? club.branding.logo : '/uploads/default_pfp.png';
-        const banner = (club.branding && club.branding.banner) ? `url('${club.branding.banner}')` : '#fa3737';
+    // Render all clubs instantly without spamming the server with bad image requests
+    container.innerHTML = clubs.map(club => {
+        // 1. BULLETPROOF LOGO CHECK (Stops bad API requests)
+        let logo = '/uploads/default_pfp.png'; // The premade fallback
+        if (club.branding && club.branding.logo && club.branding.logo.includes('.')) {
+            logo = club.branding.logo; // Only use custom if it has a valid file extension
+        }
+
+        // 2. BULLETPROOF BANNER CHECK
+        let bannerStyle = 'background-color: #fa3737;';
+        if (club.branding && club.branding.banner && club.branding.banner.includes('.')) {
+            bannerStyle = `background-image: url('${club.branding.banner}');`;
+        }
         
-        // Handle Banner: It can be a URL or a Color
-        const bannerStyle = banner.startsWith('url') ? `background-image: ${banner};` : `background-color: ${banner};`;
-        
-        // Handle category - could be string or array, default to Organization
+        // 3. CATEGORY CHECK
         let categoryDisplay = 'Organization';
         if (club.category) {
             if (Array.isArray(club.category) && club.category.length > 0) {
-                // Joins multiple tags like: "Tech • Academic • Social"
                 categoryDisplay = club.category.join(' &bull; '); 
             } else if (typeof club.category === 'string' && club.category.trim() !== '') {
                 categoryDisplay = club.category;
             }
         }
 
-        const card = document.createElement('div');
-        card.className = 'club-card';
-        card.onclick = () => window.location.href = `/ClubProfile/ClubProfile.html?slug=${club.urlSlug}`;
-        
-        card.innerHTML = `
-            <div class="card-banner" style="${bannerStyle}"></div>
-            <div class="card-logo" style="background-image: url('${logo}');"></div>
-            
-            <div class="card-name">${club.clubname}</div>
-            <div class="card-category">${categoryDisplay}</div>
-            
-            <div class="card-actions">
-                <span class="visit-btn" style="background:#fa3737; color:white;">View Club</span>
+        return `
+            <div class="club-card" onclick="window.location.href = '/ClubProfile/ClubProfile.html?slug=${club.urlSlug}'">
+                <div class="card-banner" style="${bannerStyle}"></div>
+                <div class="card-logo" style="background-image: url('${logo}');"></div>
+                
+                <div class="card-name">${club.clubname}</div>
+                <div class="card-category">${categoryDisplay}</div>
+                
+                <div class="card-actions">
+                    <span class="visit-btn" style="background:#fa3737; color:white;">View Club</span>
+                </div>
             </div>
         `;
-        container.appendChild(card);
-    });
+    }).join('');
 }
 
 function filterClubs() {

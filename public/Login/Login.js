@@ -269,13 +269,17 @@ window.requestOTP = async function() {
         btn.disabled = false;
     }
 };
-
+let forgotAttempts = 0;
 window.resetPassword = async function() {
     const email = document.getElementById('ForgotEmail').value;
     const otp = document.getElementById('OtpInput').value;
     const newPass = document.getElementById('NewPassInput').value;
     const msgBox = document.getElementById('ModalMessage');
-
+    if (forgotAttempts >= 5) {
+        msgBox.innerText = "Too many attempts. Action blocked.";
+        msgBox.style.color = "red";
+        return;
+    }
     if (!otp || !newPass) {
         msgBox.innerText = "Please fill in all fields.";
         return;
@@ -294,10 +298,12 @@ window.resetPassword = async function() {
             window.showToast("Password Reset Successful! You can now log in.");
             closeModal();
         } else {
+            forgotAttempts++;
             msgBox.innerText = data.message;
             msgBox.style.color = "red";
         }
     } catch (err) {
+        forgotattempts++;
         msgBox.innerText = "Error resetting password.";
     }
 };
@@ -309,3 +315,23 @@ window.resetPassword = async function() {
     
 })();
 
+function checkForgotBlock() {
+    const expiry = localStorage.getItem('forgotBlockExpiry');
+    const msgBox = document.getElementById('ModalMessage');
+    
+    if (expiry && Date.now() < expiry) {
+        const btn = document.getElementById('SendOtpBtn');
+        btn.disabled = true;
+        
+        const timer = setInterval(() => {
+            const left = Math.ceil((expiry - Date.now()) / 1000);
+            if (left <= 0) {
+                clearInterval(timer);
+                btn.disabled = false;
+                localStorage.removeItem('forgotBlockExpiry');
+            } else {
+                msgBox.innerText = `Too many requests. Try again in ${Math.floor(left/60)}m ${left%60}s`;
+            }
+        }, 1000);
+    }
+}
